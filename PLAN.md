@@ -1018,3 +1018,18 @@ CREATE INDEX idx_rewards_family ON rewards(family_id, available);
 +====================================================================+
 ```
 
+
+---
+## GSTACK REVIEW REPORT
+
+**Status : REVIEWED — pending user approval**
+**Branch :** main | **Date :** 2026-05-18
+
+### Cross-Phase Themes
+
+**Theme 1 : FCM comme single point of failure** — flaggé en Phase 1 (CEO, Section 2 Error Map) ET Phase 3 (Eng subagent). Confirmation haute confiance. Fix : outbox pattern (E1) + polling fallback (T3).
+
+**Theme 2 : Auth boundaries insuffisantes** — flaggé en Phase 1 (CEO, Section 3 Security) ET Phase 3 (Eng, 3 findings critiques : PIN DB, QR TTL, child IDOR). Confirmation haute confiance. Fix : E3, E4, E5.
+
+**Theme 3 : Interaction states manquants** — flaggé en Phase 1 (CEO, Section 11 Design) ET Phase 2 (Design passes 2 et 5). Confirmation haute confiance. Fix : D1, D2, D3.
+
