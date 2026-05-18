@@ -1,1 +1,25 @@
-# KidPoints
+# Node
+node_modules/
+.expo/
+dist/
+build/
+.next/
+
+# Env
+.env
+!.env.example
+
+# OS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Expo
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*

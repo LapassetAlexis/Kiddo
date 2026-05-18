@@ -1,0 +1,13 @@
+{
+  "name": "kidpoints",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/mobile",
+    "apps/api"
+  ],
+  "scripts": {
+    "mobile": "bun --cwd apps/mobile start",
+    "api": "bun --cwd apps/api start:dev"
+  }
+}
