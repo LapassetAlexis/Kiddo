@@ -19,3 +19,14 @@
 - [ ] Admin dashboard familles (outil de support)
 - [ ] Task marketplace (catalogue de tâches prédéfinies par âge et type)
 - [ ] API publique — intégrations tierces potentielles
+
+## Ajouts post-revue Eng (P1 critiques)
+
+- [ ] Outbox pattern pour FCM : table `notification_intents` + worker async — voir Section Eng Architecture
+- [ ] Streak timezone : families.timezone field + calcul de date en timezone famille — voir Eng edge cases
+- [ ] PIN lockout en PostgreSQL (pas en mémoire) : table pin_attempts — voir Eng Security
+- [ ] QR code : table qr_tokens(token_hash, child_id, expires_at, used_at) TTL 30s one-time — voir Eng Security
+- [ ] Notification JWT scoped task (24h, approve/reject seul) : pour deep-link depuis push notif — voir Eng Security
+- [ ] Ledger checkpoint : table ledger_snapshots + cron minuit — voir Eng Performance
+- [ ] Child IDOR sur endpoints child-auth : task.child_id === authenticatedChildId — voir Eng Security critique
+- [ ] Index PostgreSQL sur tasks/transactions/rewards — voir Eng Performance

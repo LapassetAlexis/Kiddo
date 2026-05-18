@@ -829,3 +829,192 @@ React Native = mobile-first par design. Points de vigilance :
 | D6 | P2 | ChildHomeScreen | Empty state first-time avec message encourageant |
 | D7 | P3 | App config | Lock portrait orientation (Expo config) |
 
+
+---
+## ENG REVIEW — Architecture + Sections 1-4
+
+### Step 0: Scope Challenge
+
+**Existing code leverage :** Greenfield — aucun code existant. Les 3 bibliothèques clés existent et ne sont pas à reconstruire : NestJS Auth (Passport), TypeORM (PostgreSQL), Firebase Admin SDK.
+
+**Minimum set :** Le plan est bien scopé — il y a une séparation nette entre : AuthModule, FamilyModule, TaskModule, RewardModule, NotificationModule. 5 modules = acceptable pour ce scope.
+
+**Complexity check :** 5 modules, ~15 entités/services = légèrement au-dessus du seuil de 8 fichiers. Pas une odeur car les modules sont indépendants et faiblement couplés.
+
+**TODOS cross-reference :** Les TODOs P1 (IDOR middleware, SELECT FOR UPDATE test) sont des prérequis pour le ship — confirmés comme dans scope.
+
+### Section 1 : Architecture ASCII
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    REACT NATIVE (EXPO)                   │
+│                                                          │
+│  ┌─────────────────────┐   ┌─────────────────────────┐  │
+│  │   PARENT NAVIGATOR  │   │    CHILD NAVIGATOR      │  │
+│  │  AuthStack          │   │  AuthStack (PIN/QR)     │  │
+│  │  DashboardStack     │   │  HomeStack              │  │
+│  │    TaskQueue        │   │    TaskList             │  │
+│  │    RewardApproval   │   │    RewardCatalog        │  │
+│  │    FamilySettings   │   │    History              │  │
+│  └──────────┬──────────┘   └──────────┬──────────────┘  │
+└─────────────┼──────────────────────────┼─────────────────┘
+              │ JWT                      │ Session token
+              ▼                          ▼
+┌─────────────────────────────────────────────────────────┐
+│                  NESTJS API (Railway)                     │
+│                                                          │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌───────────┐  │
+│  │AuthModule│ │TaskModule│ │RewardMod │ │NotifModule│  │
+│  │- JWT     │ │- CRUD    │ │- CRUD    │ │- FCM      │  │
+│  │- PIN hash│ │- State   │ │- Redeem  │ │- Retry    │  │
+│  │- QR token│ │- Photo   │ │- Approve │ │- Queue    │  │
+│  └──────────┘ └────┬─────┘ └────┬─────┘ └─────┬─────┘  │
+│                    │            │               │         │
+│  ┌──────────────────────────────────────────────────┐   │
+│  │               FamilyModule                        │   │
+│  │  - Parent management                              │   │
+│  │  - Child profile management                       │   │
+│  │  - IDOR middleware (familyId check)               │   │
+│  └──────────────────────────────────────────────────┘   │
+└──────────────────┬────────────────────────────┬──────────┘
+                   │                            │
+    ┌──────────────▼────────┐     ┌─────────────▼──────────┐
+    │   PostgreSQL           │     │   Firebase FCM          │
+    │  families              │     │  iOS APNS              │
+    │  parents               │     │  Android FCM           │
+    │  children              │     └────────────────────────┘
+    │  tasks (stateful)      │
+    │  rewards               │
+    │  transactions (immutable)
+    │  fcm_tokens            │
+    │  streak_snapshots      │
+    └────────────────────────┘
+```
+
+**Concerns de couplage identifiés :**
+- NotificationModule est appelé par TaskModule ET RewardModule — acceptable car c'est une dépendance de sortie, pas circulaire.
+- FamilyModule owns les profils child — TaskModule et RewardModule doivent le consommer via injection, pas de queries directes sur la table children.
+- **COUPLING RISK :** Si Firebase FCM tombe, le flow approval est bloqué. Mitigation : queue de retries async (déjà spécifiée). On doit aussi avoir un endpoint `/api/tasks/:id/status` que le client poll comme fallback.
+
+### Section 2 : Test Diagram + Test Plan
+
+**Test Diagram — tous les flows :**
+
+```
+NEW UX FLOWS:
+  A. Parent onboarding (email → verify → create family → create child)
+  B. Child login (QR scan OU PIN + 4 digits)
+  C. Task completion (child side: mark done → pending visual → poll)
+  D. Task validation (parent side: push notification → 1 tap → commit → undo 5s)
+  E. Reward redemption (child: select → debit → wait → parent confirm)
+  F. Streak computation (daily cron: count consecutive days)
+  G. Photo proof (child: camera → upload S3 → parent view)
+
+NEW DATA FLOWS:
+  1. Parent → POST /tasks → DB insert
+  2. Child → POST /tasks/:id/complete + photo → DB state change → FCM parent
+  3. Parent → POST /tasks/:id/approve → DB transaction + FCM child
+  4. Child → POST /rewards/:id/redeem → SELECT FOR UPDATE → debit transaction → FCM parent
+  5. Parent → POST /rewards/:id/confirm → DB confirm → FCM child
+  6. Cron → GET /streak/compute → read transactions → UPDATE streak_snapshots
+
+NEW CODEPATHS:
+  1. Rate limiter PIN (5 attempts → lock 15min)
+  2. IDOR check middleware (familyId verify)
+  3. Idempotent task complete (if PENDING_APPROVAL → 409)
+  4. FCM retry logic (3x exponential backoff)
+  5. Undo window (5s delay before transaction commit)
+  6. SELECT FOR UPDATE sur reward availability
+  7. S3 presigned URL generation pour photo upload
+
+NEW ERROR PATHS:
+  1. FCM échec après transaction committed
+  2. S3 upload échec (task submission retry)
+  3. PIN lockout + reset
+  4. Reward concurrent claim
+```
+
+**Tests par flow (avec gaps) :**
+
+| Flow | Unit | Integration | E2E | Gap critique |
+|---|---|---|---|---|
+| Task completion | État machine statuts | DB → state change | — | FCM failure path |
+| Task validation | Transaction create | DB + FCM mock | — | Undo window timing |
+| Reward concurrent | SELECT FOR UPDATE logic | **Concurrence test** | — | **OBLIGATOIRE** |
+| PIN rate limit | Counter increment | — | — | Reset counter |
+| IDOR middleware | familyId check | Cross-family test | — | — |
+| Streak compute | Calcul sur N transactions | — | — | Midnight edge |
+| Photo upload | S3 presign | Upload + retrieval | — | Large file (>10MB) |
+
+**Test plan artifact : écrit sur disk.**
+
+### Section 3 : Security (révision)
+
+Déjà couverte en Section 3 CEO Review. Points critiques restants :
+
+- **JWT refresh token rotation :** Si le JWT parent est volé, l'attaquant a accès à toute la famille. Solution : refresh token à courte durée (15min access token) avec rotation sur chaque usage.
+- **Child session token :** Le token enfant ne doit accéder qu'aux données de SES tâches et récompenses. Claim `childId` dans le JWT enfant, vérifié par middleware.
+- **QR code expiry :** Le QR code de login enfant doit expirer après 30 secondes (one-time use + time window). Sinon un screenshot peut servir de clé permanente.
+
+### Section 4 : Performance (compléments)
+
+**Index requis :**
+```sql
+CREATE INDEX idx_tasks_child_status ON tasks(child_id, status) WHERE status = 'PENDING_APPROVAL';
+CREATE INDEX idx_transactions_child ON transactions(child_id, created_at);
+CREATE INDEX idx_tasks_family ON tasks(family_id, due_date);
+CREATE INDEX idx_rewards_family ON rewards(family_id, available);
+```
+
+**Balance computation :**
+- v1 : `SUM(amount) FROM transactions WHERE child_id = ? AND type IN ('earn','spend')`
+- v1.1 : Vue matérialisée ou cache Redis si > 100 transactions par enfant (peu probable en MVP)
+
+**Streak computation :**
+- Ne pas calculer on-read à chaque page load
+- Calculer en cron minuit + stocker dans `streak_snapshots` table
+- Afficher la snapshot, pas recalculer en temps réel
+
+
+### Eng Review — Critical Additions (post-subagent)
+
+**Findings accepted (CRITICAL/HIGH, tous dans blast radius) :**
+
+1. **Outbox Pattern pour FCM (Architecture)** : Au lieu d'appeler FCM synchroniquement dans la transaction DB, persister un `notification_intents` record dans la même transaction, puis traiter async via worker. Si FCM est down, la transaction DB réussit, le push est retenté plus tard.
+   ```
+   Task.approve() → BEGIN TX
+     → INSERT transaction (points)
+     → INSERT notification_intent (type: 'task_validated', child_id, task_id)
+     → COMMIT TX
+   → Worker pickup notification_intents → send FCM → mark sent
+   ```
+
+2. **Streak Timezone (Data model)** : La famille a un `timezone` field (Europe/Paris, etc.). Le streak est calculé en comparant les dates dans CE fuseau, pas UTC. Stored dans `families.timezone`. La date de soumission de la tâche (pas la validation) est la date qui compte pour le streak.
+
+3. **PIN Lockout en PostgreSQL** : Table `pin_attempts(child_id, attempt_count, lockout_until)`. Non en mémoire (server restart reset). Nettoyage automatique des entries > 24h.
+
+4. **QR Code TTL + One-time use** : Le QR code génère un token `qr_tokens(token_hash, child_id, expires_at, used_at)`. TTL = 30 secondes. After use, `used_at` set. Rejected if `used_at IS NOT NULL` ou si expiré.
+
+5. **Notification JWT scoped task** : Pour le deep-link "approuver depuis notification", utiliser un token court-vécu (24h) scoped à `task_id` + `parent_id`. Pas le JWT principal. Permet l'action même si le JWT principal est expiré.
+
+6. **Ledger Checkpoint** : Table `ledger_snapshots(child_id, balance, as_of_date, transaction_count)`. Mise à jour à minuit (même cron que streak). Balance affichée = snapshot + SUM(transactions depuis snapshot). Limite la taille du SUM à max 24h de transactions.
+
+7. **Child IDOR sur child-auth paths** : Le middleware IDOR existe pour parent→child. Il faut aussi un check sur les endpoints accédés avec session token enfant : `task.child_id === authenticatedChildId`. Sinon enfant A peut voir tâches d'enfant B s'ils sont dans la même famille.
+
+### Eng Completion Summary
+
+```
++====================================================================+
+|            ENG REVIEW — COMPLETION SUMMARY                        |
++====================================================================+
+| Scope Challenge      | Greenfield, 5 modules, bien scopé          |
+| Arch ASCII diagram   | Produit (voir ci-dessus)                   |
+| Test diagram         | 7 flows, 5 gaps identifiés                 |
+| Section 2 (Errors)   | Voir CEO Review — complété                 |
+| Section 3 (Security) | 7 threats, 3 critiques résolus             |
+| Section 4 (Perf)     | N+1, ledger SUM, checkpoint, indexes       |
+| Critical gaps        | 2 CRITICAL (PIN lockout DB, child IDOR)    |
+| TODOS updates        | 4 nouveaux P1 ajoutés                      |
++====================================================================+
+```
+
