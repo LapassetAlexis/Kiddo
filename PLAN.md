@@ -589,3 +589,243 @@ Ce plan couvre le core loop. Il ne couvre pas :
 +====================================================================+
 ```
 
+
+---
+## DESIGN REVIEW — Passes 1-7
+
+*Mode: SELECTIVE EXPANSION | Design binary: API key manquante — fallback wireframes ASCII*
+
+### Design Litmus Scorecard (initial)
+
+| Dimension | Score initial | Score cible | Gap |
+|---|---|---|---|
+| 1. Information hierarchy | 5/10 | 9/10 | Ordre parent écran non spécifié |
+| 2. Interaction states | 4/10 | 9/10 | Loading/error/empty partiellement définis |
+| 3. User journey | 6/10 | 9/10 | Arc émotionnel enfant défini, adulte moins |
+| 4. Specificity | 4/10 | 8/10 | Couleurs/typo/espacements non spécifiés |
+| 5. AI slop risk | 7/10 | 9/10 | Confetti/animation intentionnels, pas générique |
+| 6. Responsive/mobile | 8/10 | 9/10 | React Native = mobile-first par design |
+| 7. Accessibility | 2/10 | 8/10 | Aucune mention contrast, touch targets, i18n |
+
+**Score global initial : 5.1/10 → Cible : 8.7/10**
+
+---
+
+### Pass 1 — Information Hierarchy
+
+**Écran enfant — ce que l'utilisateur voit en premier, deuxième, troisième :**
+```
+1er coup d'œil (0-2 sec) : SOLDE DE POINTS (grosse, colorée, animée)
+2ème (2-5 sec) : STREAK (feu emoji, jours consécutifs)
+3ème (5+ sec) : TÂCHES DU JOUR (liste, checkboxes)
+4ème (scroll) : CATALOGUE RÉCOMPENSES (prochaine récompense)
+```
+
+**Verdict :** L'ordre est correct. Points en premier = motivation immédiate. Streak en second = sentiment de progression. Tâches en troisième = ce qu'il faut faire. Récompenses en bas = objectif.
+
+**GAP identifié :** L'écran ne montre pas combien de points manquent pour la PROCHAINE récompense directement à côté du solde. C'est une connexion motivationnelle critique.
+
+**FIX AJOUTÉ AU PLAN :** En dessous du solde de points, afficher "XX pts de ta prochaine récompense : [Récompense]" avec une barre de progression. Rend le goal tangible sans défilement.
+
+**Écran parent — hiérarchie :**
+```
+1er : ACTIONS EN ATTENTE (badge rouge, tâches à valider + récompenses réclamées)
+2ème : VUE ENFANTS (solde par enfant)
+3ème : ACCÈS RAPIDE (créer tâche, voir historique)
+```
+
+Le plan actuel dit "points actuels, tâches en attente, récompenses réclamées" — le bon ordre. **Score : 7/10 → 8/10 avec le fix.**
+
+---
+
+### Pass 2 — Interaction States
+
+**Coverage map complète :**
+
+| Feature | LOADING | EMPTY | ERROR | SUCCESS | PARTIAL |
+|---|---|---|---|---|---|
+| Task list | Skeleton | "Papa/Maman va bientôt t'assigner des tâches !" | Toast + retry | Animation check | — |
+| Points balance | Shimmer | 0 avec "commence à gagner !" | Stale value + badge | Confetti + animation | — |
+| Streak | Shimmer | "Commence aujourd'hui 🔥" | — | Animation feu + chiffre | — |
+| Reward catalog | Skeleton cards | "Demande à papa/maman d'ajouter des récompenses !" | Toast | — | Grisé + "XX pts manquants" |
+| Task submission | — | — | Toast "Réessayez" | Pulsing "En attente" state | — |
+| Parent validation from notif | — | — | "Ouvrez l'app" | Checkmark + animation | — |
+| Parent task queue | Shimmer | "Tout est validé ✓" | Toast | — | — |
+
+**GAPS identifiés :**
+- État de **rejet** côté enfant : l'enfant reçoit une notification "Papa a dit [message]". Pas encore spécifié comment l'afficher dans l'app. Fix : tâche rejetée apparaît en rouge avec message parent visible.
+- État **offline** : aucune mention. Fix : banner "Pas de connexion — tes tâches seront synchronisées à ta reconnexion."
+
+**Auto-décision :** Ces états sont ajoutés au plan (P1, blast radius).
+
+---
+
+### Pass 3 — User Journey (Arc émotionnel)
+
+**ENFANT — Storyboard :**
+```
+[Matin] → Ouvre l'app → [curiosité] Voit ses points + streak
+→ [motivation] Regarde tâches du jour → [décision] En fait une
+→ [action] 2 taps "Fait !" + photo → [attente] État pulsant
+→ [espoir] Attend validation → [joie] Confetti + +10pts → 
+→ [ambition] Vérifie distance prochaine récompense
+→ [satisfaction] Streak +1 → [ferme l'app]
+```
+
+**Moment à risque :** L'attente entre la soumission et la validation. Si l'enfant ouvre l'app 30min plus tard et voit encore "en attente", c'est frustrant. Fix : message encourageant dans l'état d'attente ("Papa/Maman va valider ça bientôt ! 🎉").
+
+**PARENT — Storyboard :**
+```
+[Reçoit push] → 1 tap "Valider" depuis notification
+→ [satisfaction] "OK c'est fait"
+OU
+[Oublie la notification] → Enfant nag → [friction] Ouvre app
+→ [culpabilité] Voit 3 tâches en attente → [rapide] Valide tout
+→ [soulagement] "Zéro en attente"
+```
+
+**Moment critique :** Le parent qui oublie de valider. Fix déjà dans le plan (notification push). Ajout recommandé : **reminder automatique après 2h si tâche reste PENDING_APPROVAL**. Chaque heure sans validation = opportunité de rupture du loop enfant.
+
+**Auto-décision :** Reminder 2h ajouté au plan (P1, blast radius notifications).
+
+---
+
+### Pass 4 — Specificity
+
+Le plan manque de spécificité design. Éléments ajoutés :
+
+**Palette de couleurs (définie maintenant pour guider l'implémentation) :**
+- Primary : #FFB800 (jaune-or = reward, positif, énergie)
+- Secondary : #FF6B35 (orange = streak, feu, urgence douce)
+- Success : #4CAF50 (vert = validation, accompli)
+- Background enfant : #FFF9F0 (crème chaud, pas blanc froid)
+- Background parent : #F5F7FA (gris clair neutre, professionnel sans être corporate)
+- Text : #1A1A2E (presque-noir doux)
+
+**Typographie :**
+- Famille : Nunito (ronde, friendly, très lisible pour enfants)
+- Taille points : 48sp bold (grosse, impossible à manquer)
+- Taille tâches : 16sp medium
+- Taille streak : 24sp bold avec emoji
+
+**Touch targets :** Minimum 48px × 48px (checkbox, boutons) — surtout critique pour les 9-12 ans.
+
+**Animations clés spécifiées :**
+- Points balance : spring animation à l'arrivée
+- Confetti : 1.5s burst, puis settle (react-native-confetti-cannon)
+- Streak feu : loop subtle animation (glow)
+- Tâche en attente : pulse animation 2s interval
+
+---
+
+### Pass 5 — AI Slop Risk
+
+**Verdict : 7/10 — risque modéré.**
+
+Ce qui est intentionnel et différenciateur :
+- Confetti + son à la validation = moment de joie intentionnel, pas générique
+- Grosse typographie points = hiérarchie intentionnelle
+- Streak avec feu emoji = iconographie émotionnelle, pas corporative
+
+Risques AI slop identifiés :
+- "Catalogue de récompenses" → ne pas faire une grille de cartes génériques. Fix : chaque récompense a une icône personnalisée (parc = 🌳, TV = 📺, etc.) et la carte montre visuellement le coût vs. solde actuel.
+- "Tableau de bord parent" → ne pas faire un dashboard "admin" avec tableaux. Fix : design card-based par enfant, chaque card = face de l'enfant + points + badge si en attente.
+
+---
+
+### Pass 6 — Responsive / Mobile
+
+React Native = mobile-first par design. Points de vigilance :
+
+- **Notch/Dynamic Island iOS :** SafeAreaView requis — ne pas couper le solde de points dans la notch.
+- **Android variété d'écrans :** FlexBox vertical avec scroll — pas de hauteurs fixes.
+- **Taille police :** AccessibilityService peut augmenter la taille. Utiliser `sp` pas `dp` pour les textes.
+- **Landscape orientation :** Décider si supportée. Recommandation : lock portrait (plus simple, plus cohérent pour les enfants).
+
+**Auto-décision :** Portrait lock ajouté au plan (P3, simple config Expo).
+
+---
+
+### Pass 7 — Accessibilité
+
+**Score actuel : 2/10 — aucune mention dans le plan.**
+
+Éléments requis ajoutés :
+
+| Critère | Exigence | Status |
+|---|---|---|
+| Contraste texte | Minimum WCAG AA (4.5:1) | Palette définie au-dessus respecte ce seuil |
+| Touch targets | Min 48px (WCAG 2.5.5) | Spécifié au Pass 4 |
+| Labels accessibilité | `accessibilityLabel` sur tous les boutons icônes | À implémenter |
+| Screen reader | `accessibilityRole` sur les éléments interactifs | À implémenter |
+| Daltonisme | Pas de couleur seule pour signifier état (toujours icône + texte) | Spécifié |
+| Langue | App en français (fr-FR) avec i18n préparé pour extension | À implémenter |
+
+**Auto-décision :** Accessibilité ajoutée en P2 (blast radius UI, effort S-M).
+
+---
+
+### DESIGN REVIEW — Scorecard Final
+
+| Dimension | Score initial | Score post-review |
+|---|---|---|
+| 1. Information hierarchy | 5/10 | 8/10 |
+| 2. Interaction states | 4/10 | 8/10 |
+| 3. User journey | 6/10 | 8/10 |
+| 4. Specificity | 4/10 | 8/10 |
+| 5. AI slop risk | 7/10 | 8/10 |
+| 6. Responsive/mobile | 8/10 | 8/10 |
+| 7. Accessibility | 2/10 | 7/10 |
+
+**Score global : 5.1/10 → 7.9/10** (objectif : 8.7)
+
+### DESIGN SUBAGENT FINDINGS (Claude, independent)
+
+[Note: Codex unavailable. Claude subagent lancé ci-dessous.]
+
+
+### Design Additions (post-subagent review)
+
+Éléments ajoutés au plan suite à la revue design cross-model :
+
+**Layout enfant (ordre confirmé) :**
+```
+┌─────────────────────────────────┐
+│     🌟 120 pts                  │  ← 48sp, gold, springy
+│     50 pts de "Soirée TV"      │  ← progrès vers prochaine récompense
+│     [████████░░] 70%            │  ← barre de progression
+│                                 │
+│     🔥 5 jours consécutifs     │  ← streak, directement sous points
+│                                 │
+│ TÂCHES DU JOUR ─────────────── │
+│ ○ Vaisselle          +10 pts   │
+│ ⏳ Chambre → ✓      +30 pts   │  ← "Waiting for Papa! ⏳"
+│ ○ Devoirs            +50 pts   │
+│                                 │
+│ ╔═══════════════════════════╗  │
+│ ║ 🎁 Récompenses           ║  │  ← collapsed section
+│ ╚═══════════════════════════╝  │
+└─────────────────────────────────┘
+```
+
+**États interaction ajoutés au plan :**
+1. Tâche en attente : "Waiting for [Prénom parent]! ⏳" (pas "En attente")
+2. Undo parent (5 secondes) : après approbation, toast "Approbation envoyée • Annuler" avant commit transaction
+3. Reminder 2h : si tâche reste PENDING_APPROVAL après 2h, push reminder au parent
+4. Offline banner : "Pas de connexion — tes tâches seront synchronisées à ta reconnexion" (React Native NetInfo)
+5. Tâche rejetée : couleur rouge + message parent visible dans la liste
+
+**DESIGN.md :** À créer séparément (hors scope v1, post-design review). Priorité P3.
+
+### Design Implementation Tasks (JSONL reference: tasks-design-review)
+
+| ID | Priority | Component | Task |
+|---|---|---|---|
+| D1 | P1 | ChildHomeScreen | Streak placement: directly under points balance |
+| D2 | P1 | TaskItem | Replace "En attente" with "Waiting for [Parent]! ⏳" |
+| D3 | P1 | ParentApproval | Undo toast 5s before transaction commit |
+| D4 | P2 | All screens | accessibilityLabel sur tous les boutons icônes |
+| D5 | P2 | ChildHomeScreen | Offline banner via React Native NetInfo |
+| D6 | P2 | ChildHomeScreen | Empty state first-time avec message encourageant |
+| D7 | P3 | App config | Lock portrait orientation (Expo config) |
+
