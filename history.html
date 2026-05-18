@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#18181e">
+<title>KidPoints — Historique</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-screen:        #18181e;
+    --bg-card:          #26262e;
+    --bg-nav:           #18181e;
+    --color-gold:       #FFB800;
+    --color-orange:     #FF7040;
+    --color-green:      #4CAF50;
+    --color-text:       rgba(255,255,255,0.88);
+    --color-text-dim:   rgba(255,255,255,0.40);
+    --color-text-faint: rgba(255,255,255,0.22);
+    --color-border:     rgba(255,255,255,0.07);
+    --font: 'Nunito', 'Segoe UI', system-ui, Arial, sans-serif;
+    --radius-card: 18px;
+    --radius-pill: 99px;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: var(--font);
+    background: #0e0e12;
+    display: flex; justify-content: center; align-items: flex-start; min-height: 100vh;
+  }
+  .phone-shell {
+    width: 390px; min-height: 100vh;
+    background: var(--bg-screen); position: relative;
+  }
+  @media (min-width: 500px) {
+    body { padding: 24px; background: #0a0a0f; }
+    .phone-shell {
+      min-height: 844px; border-radius: 44px;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 32px 80px rgba(0,0,0,0.7);
+      overflow: hidden;
+    }
+  }
+  .status-bar {
+    display: flex; justify-content: space-between;
+    padding: 14px 24px 0;
+    font-size: 12px; font-weight: 700; color: var(--color-text-faint);
+  }
+
+  /* Header */
+  .header { padding: 12px 24px 14px; }
+  .page-title { font-size: 22px; font-weight: 900; color: var(--color-text); }
+
+  /* Stats strip */
+  .stats-strip {
+    display: flex; gap: 10px;
+    padding: 0 20px 16px;
+  }
+  .stat-card {
+    flex: 1;
+    background: var(--bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    padding: 14px 12px;
+    text-align: center;
+  }
+  .stat-value { font-size: 22px; font-weight: 900; color: var(--color-gold); line-height: 1; }
+  .stat-value.green { color: var(--color-green); }
+  .stat-value.orange { color: var(--color-orange); }
+  .stat-label { font-size: 10px; font-weight: 700; color: var(--color-text-faint); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px; }
+
+  /* Section label */
+  .section-label {
+    padding: 4px 20px 8px;
+    font-size: 11px; font-weight: 900;
+    color: var(--color-text-faint);
+    text-transform: uppercase; letter-spacing: 0.1em;
+  }
+
+  /* Transaction list */
+  .tx-list { padding: 0 20px; display: flex; flex-direction: column; gap: 2px; }
+
+  .tx-row {
+    background: var(--bg-card);
+    border-radius: 0;
+    padding: 13px 14px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .tx-row:first-child { border-radius: var(--radius-card) var(--radius-card) 0 0; }
+  .tx-row:last-child { border-radius: 0 0 var(--radius-card) var(--radius-card); }
+  .tx-row:only-child { border-radius: var(--radius-card); }
+  .tx-row + .tx-row { border-top: 1px solid rgba(255,255,255,0.04); }
+
+  .tx-icon {
+    width: 38px; height: 38px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  .tx-icon.earn { background: rgba(76,175,80,0.12); }
+  .tx-icon.spend { background: rgba(255,107,53,0.1); }
+
+  .tx-info { flex: 1; min-width: 0; }
+  .tx-name { font-size: 14px; font-weight: 800; color: var(--color-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tx-date { font-size: 11px; font-weight: 600; color: var(--color-text-faint); margin-top: 2px; }
+
+  .tx-amount {
+    font-size: 15px; font-weight: 900;
+    flex-shrink: 0;
+  }
+  .tx-amount.earn { color: var(--color-green); }
+  .tx-amount.spend { color: var(--color-orange); }
+
+  .bottom-spacer { height: 88px; }
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 390px; background: var(--bg-nav);
+    border-top: 1px solid var(--color-border);
+    padding: 10px 0 16px;
+    display: flex; justify-content: space-around; z-index: 10;
+  }
+  @media (max-width: 499px) { .bottom-nav { left: 0; transform: none; width: 100%; } }
+  .nav-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    min-width: 64px; cursor: pointer;
+    background: none; border: none; font-family: var(--font); padding: 4px 8px;
+  }
+  .nav-icon { font-size: 22px; }
+  .nav-label { font-size: 10px; font-weight: 800; color: var(--color-text-faint); }
+  .nav-btn[aria-current="page"] .nav-label { color: var(--color-gold); }
+  .nav-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--color-gold); margin-top: -2px; }
+</style>
+</head>
+<body>
+<div class="phone-shell">
+  <div class="status-bar" aria-hidden="true"><span>9:41</span><span>●●●</span></div>
+
+  <header class="header">
+    <h1 class="page-title">Historique 📊</h1>
+  </header>
+
+  <!-- Stats -->
+  <div class="stats-strip" role="list">
+    <div class="stat-card" role="listitem">
+      <div class="stat-value">120</div>
+      <div class="stat-label">Points actuels</div>
+    </div>
+    <div class="stat-card" role="listitem">
+      <div class="stat-value green">+230</div>
+      <div class="stat-label">Gagnés (7j)</div>
+    </div>
+    <div class="stat-card" role="listitem">
+      <div class="stat-value orange">−50</div>
+      <div class="stat-label">Dépensés (7j)</div>
+    </div>
+  </div>
+
+  <!-- Today -->
+  <div class="section-label">Aujourd'hui</div>
+  <div class="tx-list" role="list">
+    <div class="tx-row" role="listitem">
+      <div class="tx-icon earn" aria-hidden="true">✅</div>
+      <div class="tx-info">
+        <div class="tx-name">Ranger sa chambre</div>
+        <div class="tx-date">validé par Papa · 14h23</div>
+      </div>
+      <div class="tx-amount earn">+30 pts</div>
+    </div>
+    <div class="tx-row" role="listitem">
+      <div class="tx-icon earn" aria-hidden="true">✅</div>
+      <div class="tx-info">
+        <div class="tx-name">Faire la vaisselle</div>
+        <div class="tx-date">validé par Papa · 9h05</div>
+      </div>
+      <div class="tx-amount earn">+10 pts</div>
+    </div>
+  </div>
+
+  <!-- Yesterday -->
+  <div class="section-label" style="margin-top:18px">Hier</div>
+  <div class="tx-list" role="list">
+    <div class="tx-row" role="listitem">
+      <div class="tx-icon spend" aria-hidden="true">🎁</div>
+      <div class="tx-info">
+        <div class="tx-name">Soirée TV réclamée</div>
+        <div class="tx-date">accordée par Maman · 20h11</div>
+      </div>
+      <div class="tx-amount spend">−50 pts</div>
+    </div>
+    <div class="tx-row" role="listitem">
+      <div class="tx-icon earn" aria-hidden="true">✅</div>
+      <div class="tx-info">
+        <div class="tx-name">Faire ses devoirs</div>
+        <div class="tx-date">validé par Maman · 18h40</div>
+      </div>
+      <div class="tx-amount earn">+50 pts</div>
+    </div>
+    <div class="tx-row" role="listitem">
+      <div class="tx-icon earn" aria-hidden="true">✅</div>
+      <div class="tx-info">
+        <div class="tx-name">Mettre la table</div>
+        <div class="tx-date">validé par Papa · 12h30</div>
+      </div>
+      <div class="tx-amount earn">+10 pts</div>
+    </div>
+  </div>
+
+  <!-- Earlier -->
+  <div class="section-label" style="margin-top:18px">Il y a 2 jours</div>
+  <div class="tx-list" role="list">
+    <div class="tx-row" role="listitem">
+      <div class="tx-icon earn" aria-hidden="true">✅</div>
+      <div class="tx-info">
+        <div class="tx-name">Ranger sa chambre</div>
+        <div class="tx-date">validé par Maman · 17h15</div>
+      </div>
+      <div class="tx-amount earn">+30 pts</div>
+    </div>
+    <div class="tx-row" role="listitem">
+      <div class="tx-icon earn" aria-hidden="true">✅</div>
+      <div class="tx-info">
+        <div class="tx-name">Faire ses devoirs</div>
+        <div class="tx-date">validé par Papa · 19h02</div>
+      </div>
+      <div class="tx-amount earn">+50 pts</div>
+    </div>
+    <div class="tx-row" role="listitem">
+      <div class="tx-icon earn" aria-hidden="true">🔥</div>
+      <div class="tx-info">
+        <div class="tx-name">Bonus streak 7 jours</div>
+        <div class="tx-date">récompense automatique</div>
+      </div>
+      <div class="tx-amount earn">+25 pts</div>
+    </div>
+  </div>
+
+  <div class="bottom-spacer"></div>
+</div>
+
+<nav class="bottom-nav">
+  <button class="nav-btn" onclick="location.href='finalized.html'" aria-label="Accueil">
+    <span class="nav-icon">🏠</span><span class="nav-label">Accueil</span>
+  </button>
+  <button class="nav-btn" onclick="location.href='rewards.html'" aria-label="Récompenses">
+    <span class="nav-icon">🎁</span><span class="nav-label">Récompenses</span>
+  </button>
+  <button class="nav-btn" aria-current="page" aria-label="Historique">
+    <span class="nav-icon">📊</span><span class="nav-label">Historique</span>
+    <span class="nav-dot"></span>
+  </button>
+</nav>
+</body>
+</html>

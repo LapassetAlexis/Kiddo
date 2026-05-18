@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#18181e">
+<title>KidPoints — Dashboard Parent</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-screen:        #18181e;
+    --bg-card:          #26262e;
+    --bg-card-alt:      #222228;
+    --bg-nav:           #18181e;
+    --color-gold:       #FFB800;
+    --color-orange:     #FF7040;
+    --color-green:      #4CAF50;
+    --color-red:        #EF5350;
+    --color-text:       rgba(255,255,255,0.88);
+    --color-text-dim:   rgba(255,255,255,0.40);
+    --color-text-faint: rgba(255,255,255,0.22);
+    --color-border:     rgba(255,255,255,0.07);
+    --font: 'Nunito', 'Segoe UI', system-ui, Arial, sans-serif;
+    --radius-card: 20px;
+    --radius-pill: 99px;
+    --anim-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: var(--font);
+    background: #0e0e12;
+    display: flex; justify-content: center; align-items: flex-start; min-height: 100vh;
+  }
+  .phone-shell {
+    width: 390px; min-height: 100vh;
+    background: var(--bg-screen); position: relative; overflow: hidden;
+  }
+  @media (min-width: 500px) {
+    body { padding: 24px; background: #0a0a0f; }
+    .phone-shell {
+      min-height: 844px; border-radius: 44px;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 32px 80px rgba(0,0,0,0.7);
+    }
+  }
+  .status-bar {
+    display: flex; justify-content: space-between;
+    padding: 14px 24px 0;
+    font-size: 12px; font-weight: 700; color: var(--color-text-faint);
+  }
+
+  /* Header */
+  .header { padding: 12px 24px 16px; display: flex; justify-content: space-between; align-items: center; }
+  .header-left {}
+  .page-sub { font-size: 13px; font-weight: 600; color: var(--color-text-dim); }
+  .page-title { font-size: 22px; font-weight: 900; color: var(--color-text); }
+  .add-btn {
+    width: 44px; height: 44px;
+    background: var(--color-gold);
+    border: none; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; cursor: pointer; color: #1a1000;
+    font-weight: 900; transition: transform 0.15s;
+    font-family: var(--font);
+  }
+  .add-btn:active { transform: scale(0.90); }
+
+  /* Urgent banner */
+  .urgent-banner {
+    margin: 0 20px 14px;
+    background: rgba(255,107,53,0.1);
+    border: 1px solid rgba(255,107,53,0.22);
+    border-radius: 16px;
+    padding: 12px 16px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .urgent-icon { font-size: 20px; flex-shrink: 0; }
+  .urgent-text { flex: 1; }
+  .urgent-count { font-size: 14px; font-weight: 900; color: var(--color-orange); }
+  .urgent-sub { font-size: 11px; font-weight: 600; color: rgba(255,107,53,0.6); margin-top: 1px; }
+  .urgent-arrow { color: var(--color-orange); font-size: 18px; opacity: 0.7; }
+
+  /* Section header */
+  .section-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 20px; margin-bottom: 10px;
+  }
+  .section-title { font-size: 11px; font-weight: 900; color: var(--color-text-faint); text-transform: uppercase; letter-spacing: 0.1em; }
+  .section-link { font-size: 12px; font-weight: 800; color: var(--color-gold); background: none; border: none; cursor: pointer; font-family: var(--font); }
+
+  /* Children cards */
+  .children-scroll {
+    display: flex; gap: 12px;
+    padding: 0 20px;
+    overflow-x: auto; scrollbar-width: none;
+    margin-bottom: 20px;
+  }
+  .children-scroll::-webkit-scrollbar { display: none; }
+  .child-card {
+    background: var(--bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    padding: 16px 16px 14px;
+    min-width: 150px;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: transform 0.15s, border-color 0.2s;
+    position: relative;
+  }
+  .child-card:active { transform: scale(0.96); }
+  .child-card.has-pending {
+    border-color: rgba(255,184,0,0.2);
+  }
+  .pending-dot {
+    position: absolute; top: 12px; right: 12px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--color-orange);
+    border: 2px solid var(--bg-card);
+  }
+  .child-avatar {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: linear-gradient(135deg, #d46000, #FFB800);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+    margin-bottom: 10px;
+    box-shadow: 0 0 16px rgba(255,140,0,0.25);
+  }
+  .child-avatar.blue { background: linear-gradient(135deg, #1565C0, #42A5F5); box-shadow: 0 0 16px rgba(66,165,245,0.25); }
+  .child-name { font-size: 15px; font-weight: 900; color: var(--color-text); margin-bottom: 4px; }
+  .child-pts { font-size: 13px; font-weight: 800; color: var(--color-gold); margin-bottom: 8px; }
+  .child-progress-track {
+    background: rgba(255,255,255,0.07);
+    height: 5px; border-radius: var(--radius-pill); overflow: hidden;
+  }
+  .child-progress-fill {
+    height: 100%; border-radius: var(--radius-pill);
+    background: linear-gradient(90deg, var(--color-gold), var(--color-orange));
+  }
+  .child-progress-label {
+    font-size: 10px; font-weight: 700;
+    color: var(--color-text-faint); margin-top: 4px;
+  }
+
+  /* Pending validations */
+  .pending-list { padding: 0 20px; display: flex; flex-direction: column; gap: 10px; }
+  .pending-card {
+    background: var(--bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .pending-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg, #d46000, #FFB800);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .pending-avatar.blue { background: linear-gradient(135deg, #1565C0, #42A5F5); }
+  .pending-info { flex: 1; min-width: 0; }
+  .pending-task { font-size: 14px; font-weight: 800; color: var(--color-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pending-meta { font-size: 11px; font-weight: 600; color: var(--color-text-dim); margin-top: 2px; }
+  .pending-pts {
+    font-size: 13px; font-weight: 900; color: var(--color-gold);
+    background: rgba(255,184,0,0.1); border: 1px solid rgba(255,184,0,0.18);
+    padding: 4px 10px; border-radius: var(--radius-pill);
+    flex-shrink: 0;
+  }
+  .action-btns {
+    display: flex; gap: 8px;
+    margin-left: 4px; flex-shrink: 0;
+  }
+  .btn-approve {
+    width: 36px; height: 36px; border-radius: 12px;
+    background: rgba(76,175,80,0.15); border: 1px solid rgba(76,175,80,0.25);
+    color: var(--color-green); font-size: 17px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.15s;
+    font-family: var(--font);
+  }
+  .btn-reject {
+    width: 36px; height: 36px; border-radius: 12px;
+    background: rgba(239,83,80,0.1); border: 1px solid rgba(239,83,80,0.2);
+    color: var(--color-red); font-size: 17px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.15s;
+    font-family: var(--font);
+  }
+  .btn-approve:active { transform: scale(0.88); background: rgba(76,175,80,0.25); }
+  .btn-reject:active { transform: scale(0.88); background: rgba(239,83,80,0.2); }
+
+  /* Reward requests */
+  .reward-request {
+    background: var(--bg-card);
+    border: 1px solid rgba(255,184,0,0.15);
+    border-radius: var(--radius-card);
+    padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .rr-emoji { font-size: 28px; flex-shrink: 0; }
+  .rr-info { flex: 1; min-width: 0; }
+  .rr-title { font-size: 14px; font-weight: 800; color: var(--color-text); }
+  .rr-meta { font-size: 11px; font-weight: 600; color: var(--color-text-dim); margin-top: 2px; }
+  .btn-grant {
+    background: var(--color-gold); color: #1a1000;
+    border: none; border-radius: 12px;
+    padding: 9px 14px;
+    font-size: 13px; font-weight: 900; font-family: var(--font);
+    cursor: pointer; flex-shrink: 0;
+    transition: transform 0.15s;
+  }
+  .btn-grant:active { transform: scale(0.93); }
+
+  .bottom-spacer { height: 88px; }
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 390px; background: var(--bg-nav);
+    border-top: 1px solid var(--color-border);
+    padding: 10px 0 16px;
+    display: flex; justify-content: space-around; z-index: 10;
+  }
+  @media (max-width: 499px) { .bottom-nav { left: 0; transform: none; width: 100%; } }
+  .nav-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    min-width: 64px; cursor: pointer;
+    background: none; border: none; font-family: var(--font); padding: 4px 8px;
+  }
+  .nav-icon { font-size: 22px; }
+  .nav-label { font-size: 10px; font-weight: 800; color: var(--color-text-faint); }
+  .nav-btn[aria-current="page"] .nav-label { color: var(--color-gold); }
+  .nav-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--color-gold); margin-top: -2px; }
+</style>
+</head>
+<body>
+<div class="phone-shell">
+  <div class="status-bar" aria-hidden="true"><span>9:41</span><span>●●●</span></div>
+
+  <header class="header">
+    <div class="header-left">
+      <div class="page-sub">Bonjour,</div>
+      <h1 class="page-title">Marie 👋</h1>
+    </div>
+    <button class="add-btn" aria-label="Ajouter une tâche">+</button>
+  </header>
+
+  <!-- Urgent: pending validations -->
+  <div class="urgent-banner" role="alert">
+    <span class="urgent-icon">⚡</span>
+    <div class="urgent-text">
+      <div class="urgent-count">2 tâches à valider</div>
+      <div class="urgent-sub">Lucas et Emma attendent</div>
+    </div>
+    <span class="urgent-arrow">›</span>
+  </div>
+
+  <!-- Children overview -->
+  <div class="section-header">
+    <span class="section-title">Mes enfants</span>
+    <button class="section-link">Gérer</button>
+  </div>
+  <div class="children-scroll" role="list">
+    <div class="child-card has-pending" role="listitem" aria-label="Lucas, 120 points, 1 tâche en attente">
+      <div class="pending-dot" aria-hidden="true"></div>
+      <div class="child-avatar">🦊</div>
+      <div class="child-name">Lucas</div>
+      <div class="child-pts">⭐ 120 pts</div>
+      <div class="child-progress-track">
+        <div class="child-progress-fill" style="width:70%"></div>
+      </div>
+      <div class="child-progress-label">Soirée TV (70%)</div>
+    </div>
+    <div class="child-card has-pending" role="listitem" aria-label="Emma, 85 points, 1 tâche en attente">
+      <div class="pending-dot" aria-hidden="true"></div>
+      <div class="child-avatar blue">🐻</div>
+      <div class="child-name">Emma</div>
+      <div class="child-pts">⭐ 85 pts</div>
+      <div class="child-progress-track">
+        <div class="child-progress-fill" style="width:57%"></div>
+      </div>
+      <div class="child-progress-label">Sortie parc (57%)</div>
+    </div>
+    <div class="child-card" role="button" aria-label="Ajouter un enfant" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:140px;border-style:dashed;opacity:0.5;">
+      <span style="font-size:28px;margin-bottom:6px">＋</span>
+      <span style="font-size:13px;font-weight:800;color:var(--color-text-dim)">Ajouter</span>
+    </div>
+  </div>
+
+  <!-- Pending validations -->
+  <div class="section-header">
+    <span class="section-title">À valider</span>
+    <span style="font-size:12px;font-weight:800;color:var(--color-orange)">2</span>
+  </div>
+  <div class="pending-list">
+    <div class="pending-card">
+      <div class="pending-avatar">🦊</div>
+      <div class="pending-info">
+        <div class="pending-task">Ranger sa chambre</div>
+        <div class="pending-meta">Lucas · il y a 12 min</div>
+      </div>
+      <div class="pending-pts">+30 pts</div>
+      <div class="action-btns">
+        <button class="btn-approve" onclick="approveTask(this)" aria-label="Valider">✓</button>
+        <button class="btn-reject" onclick="rejectTask(this)" aria-label="Rejeter">✕</button>
+      </div>
+    </div>
+    <div class="pending-card">
+      <div class="pending-avatar blue">🐻</div>
+      <div class="pending-info">
+        <div class="pending-task">Mettre la table</div>
+        <div class="pending-meta">Emma · il y a 3 min</div>
+      </div>
+      <div class="pending-pts">+10 pts</div>
+      <div class="action-btns">
+        <button class="btn-approve" onclick="approveTask(this)" aria-label="Valider">✓</button>
+        <button class="btn-reject" onclick="rejectTask(this)" aria-label="Rejeter">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reward requests -->
+  <div class="section-header" style="margin-top:20px">
+    <span class="section-title">Récompenses réclamées</span>
+  </div>
+  <div class="pending-list">
+    <div class="reward-request">
+      <span class="rr-emoji">📺</span>
+      <div class="rr-info">
+        <div class="rr-title">Soirée TV</div>
+        <div class="rr-meta">Lucas · 50 pts débités</div>
+      </div>
+      <button class="btn-grant" onclick="grantReward(this)" aria-label="Accorder la récompense">Accorder ✓</button>
+    </div>
+  </div>
+
+  <div class="bottom-spacer"></div>
+</div>
+
+<nav class="bottom-nav">
+  <button class="nav-btn" aria-current="page" aria-label="Tableau de bord">
+    <span class="nav-icon">🏠</span><span class="nav-label">Tableau de bord</span>
+    <span class="nav-dot"></span>
+  </button>
+  <button class="nav-btn" aria-label="Tâches">
+    <span class="nav-icon">📋</span><span class="nav-label">Tâches</span>
+  </button>
+  <button class="nav-btn" aria-label="Récompenses">
+    <span class="nav-icon">🎁</span><span class="nav-label">Récompenses</span>
+  </button>
+  <button class="nav-btn" aria-label="Paramètres">
+    <span class="nav-icon">⚙️</span><span class="nav-label">Paramètres</span>
+  </button>
+</nav>
+
+<script>
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = `position:fixed;bottom:96px;left:50%;transform:translateX(-50%);
+    background:#38383f;border:1px solid rgba(255,255,255,0.1);border-radius:14px;
+    padding:12px 20px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;
+    color:rgba(255,255,255,0.88);white-space:nowrap;z-index:200;
+    box-shadow:0 8px 24px rgba(0,0,0,0.5);`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+function approveTask(btn) {
+  const card = btn.closest('.pending-card');
+  const name = card.querySelector('.pending-task').textContent;
+  card.style.transition = 'opacity 0.3s, transform 0.3s';
+  card.style.opacity = '0'; card.style.transform = 'translateX(20px)';
+  setTimeout(() => card.remove(), 300);
+  showToast('✅ ' + name + ' validée !');
+}
+function rejectTask(btn) {
+  const card = btn.closest('.pending-card');
+  card.style.transition = 'opacity 0.3s, transform 0.3s';
+  card.style.opacity = '0'; card.style.transform = 'translateX(-20px)';
+  setTimeout(() => card.remove(), 300);
+  showToast('❌ Tâche rejetée');
+}
+function grantReward(btn) {
+  const card = btn.closest('.reward-request');
+  card.style.transition = 'opacity 0.3s'; card.style.opacity = '0';
+  setTimeout(() => card.remove(), 300);
+  showToast('🎁 Récompense accordée !');
+}
+</script>
+</body>
+</html>

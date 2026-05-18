@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#18181e">
+<title>KidPoints — Récompenses</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-screen:        #18181e;
+    --bg-card:          #26262e;
+    --bg-nav:           #18181e;
+    --color-gold:       #FFB800;
+    --color-gold-dim:   rgba(255,184,0,0.5);
+    --color-orange:     #FF7040;
+    --color-green:      #4CAF50;
+    --color-text:       rgba(255,255,255,0.88);
+    --color-text-dim:   rgba(255,255,255,0.38);
+    --color-text-faint: rgba(255,255,255,0.22);
+    --color-border:     rgba(255,255,255,0.07);
+    --font: 'Nunito', 'Segoe UI', system-ui, Arial, sans-serif;
+    --radius-card: 20px;
+    --radius-pill: 99px;
+    --anim-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: var(--font);
+    background: #0e0e12;
+    display: flex; justify-content: center; align-items: flex-start;
+    min-height: 100vh;
+  }
+  .phone-shell {
+    width: 390px; min-height: 100vh;
+    background: var(--bg-screen);
+    position: relative; overflow: hidden;
+  }
+  @media (min-width: 500px) {
+    body { padding: 24px; background: #0a0a0f; }
+    .phone-shell {
+      min-height: 844px; border-radius: 44px;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 32px 80px rgba(0,0,0,0.7);
+    }
+  }
+
+  /* Status bar */
+  .status-bar {
+    display: flex; justify-content: space-between;
+    padding: 14px 24px 0;
+    font-size: 12px; font-weight: 700;
+    color: var(--color-text-faint);
+  }
+
+  /* Header */
+  .header {
+    padding: 12px 24px 0;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .page-title { font-size: 22px; font-weight: 900; color: var(--color-text); }
+
+  /* Points pill */
+  .pts-pill {
+    background: rgba(255,184,0,0.1);
+    border: 1px solid rgba(255,184,0,0.2);
+    border-radius: var(--radius-pill);
+    padding: 7px 14px;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 15px; font-weight: 900;
+    color: var(--color-gold);
+  }
+  .pts-pill span { font-size: 16px; }
+
+  /* Filter tabs */
+  .filter-tabs {
+    display: flex; gap: 8px;
+    padding: 14px 20px 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .filter-tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    padding: 7px 16px;
+    border-radius: var(--radius-pill);
+    font-size: 13px; font-weight: 800;
+    white-space: nowrap; cursor: pointer;
+    border: 1px solid var(--color-border);
+    background: transparent;
+    color: var(--color-text-dim);
+    font-family: var(--font);
+    transition: all 0.15s;
+  }
+  .tab.active {
+    background: rgba(255,184,0,0.12);
+    border-color: rgba(255,184,0,0.25);
+    color: var(--color-gold);
+  }
+
+  /* Reward grid */
+  .rewards-grid {
+    padding: 16px 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  /* Reward card */
+  .reward-card {
+    background: var(--bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    padding: 18px 14px 16px;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.15s, border-color 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .reward-card:active { transform: scale(0.96); }
+  .reward-card.locked {
+    opacity: 0.55;
+    cursor: default;
+  }
+  .reward-card.unlocked {
+    border-color: rgba(255,184,0,0.2);
+    box-shadow: 0 0 0 1px rgba(255,184,0,0.08);
+  }
+  .reward-card.unlocked:active { transform: scale(0.96); }
+
+  /* Lock overlay */
+  .lock-badge {
+    position: absolute;
+    top: 10px; right: 10px;
+    font-size: 14px;
+    opacity: 0.6;
+  }
+
+  /* Reward emoji */
+  .reward-emoji {
+    font-size: 38px;
+    line-height: 1;
+    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
+  }
+  .reward-card.locked .reward-emoji { filter: grayscale(0.4); }
+
+  /* Reward name */
+  .reward-name {
+    font-size: 14px; font-weight: 800;
+    color: var(--color-text);
+    text-align: center; line-height: 1.2;
+  }
+
+  /* Cost badge */
+  .cost-badge {
+    background: rgba(255,184,0,0.1);
+    border: 1px solid rgba(255,184,0,0.18);
+    color: var(--color-gold);
+    font-size: 13px; font-weight: 900;
+    padding: 4px 12px; border-radius: var(--radius-pill);
+  }
+  .reward-card.locked .cost-badge {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.08);
+    color: var(--color-text-dim);
+  }
+
+  /* Missing pts label */
+  .missing-pts {
+    font-size: 10px; font-weight: 700;
+    color: rgba(255,255,255,0.28);
+    text-align: center;
+  }
+
+  /* Full-width card (featured) */
+  .reward-card.featured {
+    grid-column: span 2;
+    flex-direction: row;
+    align-items: center;
+    padding: 16px 20px;
+    gap: 16px;
+  }
+  .reward-card.featured .reward-emoji { font-size: 44px; flex-shrink: 0; }
+  .featured-info { flex: 1; }
+  .featured-name {
+    font-size: 16px; font-weight: 900;
+    color: var(--color-text);
+    margin-bottom: 4px;
+  }
+  .featured-desc {
+    font-size: 12px; font-weight: 600;
+    color: var(--color-text-dim);
+    line-height: 1.4;
+  }
+  .featured-right { text-align: right; flex-shrink: 0; }
+  .claim-btn {
+    background: var(--color-gold);
+    color: #1a1000;
+    border: none; border-radius: 14px;
+    padding: 10px 18px;
+    font-size: 14px; font-weight: 900;
+    font-family: var(--font);
+    cursor: pointer;
+    margin-top: 6px;
+    transition: transform 0.15s, background 0.15s;
+    display: block;
+  }
+  .claim-btn:active { transform: scale(0.93); background: #ffc933; }
+
+  /* Section label */
+  .section-label {
+    padding: 4px 20px 0;
+    font-size: 11px; font-weight: 900;
+    color: var(--color-text-faint);
+    text-transform: uppercase; letter-spacing: 0.12em;
+  }
+
+  /* Bottom spacer + nav */
+  .bottom-spacer { height: 88px; }
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 390px;
+    background: var(--bg-nav);
+    border-top: 1px solid var(--color-border);
+    padding: 10px 0 16px;
+    display: flex; justify-content: space-around; z-index: 10;
+  }
+  @media (max-width: 499px) { .bottom-nav { left: 0; transform: none; width: 100%; } }
+  .nav-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    min-width: 64px; cursor: pointer;
+    background: none; border: none; font-family: var(--font);
+    padding: 4px 8px;
+  }
+  .nav-icon { font-size: 22px; line-height: 1; }
+  .nav-label { font-size: 10px; font-weight: 800; color: var(--color-text-faint); }
+  .nav-btn[aria-current="page"] .nav-label { color: var(--color-gold); }
+  .nav-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--color-gold); margin-top: -2px; }
+
+  /* Claim modal */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+    display: flex; align-items: flex-end; z-index: 100;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal-sheet {
+    width: 100%; max-width: 390px; margin: 0 auto;
+    background: #2a2a34;
+    border-radius: 28px 28px 0 0;
+    padding: 28px 24px 40px;
+    transform: translateY(20px);
+    transition: transform 0.3s var(--anim-spring);
+  }
+  .modal-overlay.open .modal-sheet { transform: translateY(0); }
+  .modal-handle {
+    width: 36px; height: 4px; border-radius: 99px;
+    background: rgba(255,255,255,0.15);
+    margin: 0 auto 20px;
+  }
+  .modal-emoji { font-size: 52px; text-align: center; margin-bottom: 12px; }
+  .modal-title {
+    font-size: 20px; font-weight: 900;
+    color: var(--color-text); text-align: center;
+    margin-bottom: 6px;
+  }
+  .modal-desc {
+    font-size: 14px; font-weight: 600;
+    color: var(--color-text-dim); text-align: center;
+    line-height: 1.5; margin-bottom: 20px;
+  }
+  .modal-cost {
+    background: rgba(255,184,0,0.1);
+    border: 1px solid rgba(255,184,0,0.2);
+    border-radius: 16px;
+    padding: 14px;
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 20px;
+  }
+  .modal-cost-label { font-size: 13px; font-weight: 700; color: var(--color-text-dim); }
+  .modal-cost-value { font-size: 18px; font-weight: 900; color: var(--color-gold); }
+  .modal-confirm {
+    width: 100%; padding: 16px;
+    background: var(--color-gold); color: #1a1000;
+    border: none; border-radius: 18px;
+    font-size: 16px; font-weight: 900; font-family: var(--font);
+    cursor: pointer;
+    transition: transform 0.15s;
+    margin-bottom: 10px;
+  }
+  .modal-confirm:active { transform: scale(0.97); }
+  .modal-cancel {
+    width: 100%; padding: 12px;
+    background: none; color: var(--color-text-dim);
+    border: none; font-size: 14px; font-weight: 700; font-family: var(--font);
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+<div class="phone-shell">
+  <div class="status-bar" aria-hidden="true"><span>9:41</span><span>●●●</span></div>
+
+  <header class="header">
+    <h1 class="page-title">Récompenses 🎁</h1>
+    <div class="pts-pill" aria-label="120 points disponibles">
+      <span>⭐</span> 120 pts
+    </div>
+  </header>
+
+  <div class="filter-tabs" role="tablist">
+    <button class="tab active" role="tab" aria-selected="true">Toutes</button>
+    <button class="tab" role="tab">Disponibles</button>
+    <button class="tab" role="tab">Bientôt</button>
+    <button class="tab" role="tab">Réclamées</button>
+  </div>
+
+  <!-- Featured: unlocked reward -->
+  <div style="padding: 16px 20px 0;">
+    <div class="section-label" style="padding:0 0 10px">🔓 Tu peux réclamer</div>
+    <div class="reward-card featured unlocked" onclick="openModal('Soirée TV','Choisir le film et regarder la TV jusqu\'à 22h !','📺',50)" role="button" tabindex="0" aria-label="Soirée TV — 50 points — disponible">
+      <span class="reward-emoji">📺</span>
+      <div class="featured-info">
+        <div class="featured-name">Soirée TV</div>
+        <div class="featured-desc">Choisir le film et regarder jusqu'à 22h !</div>
+      </div>
+      <div class="featured-right">
+        <div class="cost-badge" style="margin-bottom:8px">50 pts</div>
+        <button class="claim-btn" onclick="event.stopPropagation();openModal('Soirée TV','Choisir le film et regarder la TV jusqu\'à 22h !','📺',50)">Réclamer</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label" style="margin-top:18px">🔒 Il te manque des points</div>
+  <div class="rewards-grid">
+    <div class="reward-card unlocked" onclick="openModal('Choisir le dîner','Tu choisis ce qu\'on mange ce soir !','🍕',80)" role="button" tabindex="0" aria-label="Choisir le dîner — 80 points — disponible">
+      <span class="reward-emoji">🍕</span>
+      <div class="reward-name">Choisir le dîner</div>
+      <div class="cost-badge">80 pts</div>
+    </div>
+
+    <div class="reward-card locked" aria-label="Sortie au parc — 100 points — 30 points manquants">
+      <span class="lock-badge" aria-hidden="true">🔒</span>
+      <span class="reward-emoji">🌳</span>
+      <div class="reward-name">Sortie au parc</div>
+      <div class="cost-badge">100 pts</div>
+      <div class="missing-pts">encore 30 pts</div>
+    </div>
+
+    <div class="reward-card locked" aria-label="1h de jeu vidéo — 60 points — disponible bientôt">
+      <span class="lock-badge" aria-hidden="true">🔒</span>
+      <span class="reward-emoji">🎮</span>
+      <div class="reward-name">1h de jeu vidéo</div>
+      <div class="cost-badge">60 pts</div>
+      <div class="missing-pts">encore 10 pts</div>
+    </div>
+
+    <div class="reward-card locked" aria-label="Nuit chez un ami — 150 points — 60 points manquants">
+      <span class="lock-badge" aria-hidden="true">🔒</span>
+      <span class="reward-emoji">🏕️</span>
+      <div class="reward-name">Nuit chez un ami</div>
+      <div class="cost-badge">150 pts</div>
+      <div class="missing-pts">encore 60 pts</div>
+    </div>
+
+    <div class="reward-card locked" aria-label="Cinéma — 120 points — 30 points manquants">
+      <span class="lock-badge" aria-hidden="true">🔒</span>
+      <span class="reward-emoji">🎬</span>
+      <div class="reward-name">Cinéma</div>
+      <div class="cost-badge">120 pts</div>
+      <div class="missing-pts">encore 30 pts</div>
+    </div>
+
+    <div class="reward-card locked" aria-label="Dessert spécial — 40 points — disponible">
+      <span class="lock-badge" aria-hidden="true">🔒</span>
+      <span class="reward-emoji">🍰</span>
+      <div class="reward-name">Dessert spécial</div>
+      <div class="cost-badge">40 pts</div>
+      <div class="missing-pts">encore 0 pts</div>
+    </div>
+  </div>
+  <div class="bottom-spacer"></div>
+</div>
+
+<!-- Claim modal -->
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-emoji" id="modalEmoji">📺</div>
+    <div class="modal-title" id="modalTitle">Soirée TV</div>
+    <div class="modal-desc" id="modalDesc">Choisir le film et regarder jusqu'à 22h !</div>
+    <div class="modal-cost">
+      <span class="modal-cost-label">Coût de la récompense</span>
+      <span class="modal-cost-value" id="modalCost">50 pts</span>
+    </div>
+    <button class="modal-confirm" onclick="claimReward()">🎉 Réclamer maintenant</button>
+    <button class="modal-cancel" onclick="closeModal()">Annuler</button>
+  </div>
+</div>
+
+<!-- Bottom nav -->
+<nav class="bottom-nav">
+  <button class="nav-btn" onclick="location.href='finalized.html'" aria-label="Accueil">
+    <span class="nav-icon">🏠</span><span class="nav-label">Accueil</span>
+  </button>
+  <button class="nav-btn" aria-current="page" aria-label="Récompenses">
+    <span class="nav-icon">🎁</span><span class="nav-label">Récompenses</span>
+    <span class="nav-dot"></span>
+  </button>
+  <button class="nav-btn" onclick="location.href='history.html'" aria-label="Historique">
+    <span class="nav-icon">📊</span><span class="nav-label">Historique</span>
+  </button>
+</nav>
+
+<script>
+let _modalCost = 0;
+function openModal(title, desc, emoji, cost) {
+  _modalCost = cost;
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalDesc').textContent  = desc;
+  document.getElementById('modalEmoji').textContent  = emoji;
+  document.getElementById('modalCost').textContent   = cost + ' pts';
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('modal')) {
+    document.getElementById('modal').classList.remove('open');
+  }
+}
+function claimReward() {
+  document.getElementById('modal').classList.remove('open');
+  // Simulate: show confirmation
+  const toast = document.createElement('div');
+  toast.style.cssText = `position:fixed;bottom:96px;left:50%;transform:translateX(-50%);
+    background:#38383f;border:1px solid rgba(255,255,255,0.1);border-radius:14px;
+    padding:12px 20px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;
+    color:rgba(255,255,255,0.88);white-space:nowrap;z-index:200;
+    box-shadow:0 8px 24px rgba(0,0,0,0.5);`;
+  toast.textContent = '🎉 Demande envoyée à Papa / Maman !';
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3500);
+}
+// Tab switching
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => { t.classList.remove('active'); t.setAttribute('aria-selected','false'); });
+    tab.classList.add('active'); tab.setAttribute('aria-selected','true');
+  });
+});
+</script>
+</body>
+</html>
