@@ -19,31 +19,60 @@ kidpoints/
 ### Prérequis
 
 - Node 18+
-- Bun
+- Android Studio + émulateur Pixel 8 (API 35) **ou** Expo Go sur téléphone
 - Docker (pour PostgreSQL)
-- Expo Go sur votre téléphone (pour tester le mobile)
 
-### 1. Base de données
+---
+
+### Mobile (Android émulateur)
+
+> **Important** : lancer depuis `apps/mobile` uniquement, pas depuis la racine.
+> Le dossier `apps/mobile` est volontairement **hors workspace npm** pour éviter
+> le problème de double instance React qui fait crasher l'app.
 
 ```bash
-docker-compose up -d
+# 1. Installer les dépendances (première fois seulement)
+cd apps/mobile
+npm install
+
+# 2. Lancer Metro + ouvrir sur l'émulateur Android
+npx expo start --android
+
+# Si l'app ne s'ouvre pas automatiquement, forcer via adb :
+adb shell am start -a android.intent.action.VIEW \
+  -d "exp://192.168.1.221:8081" host.exp.exponent
 ```
 
-### 2. API
+**Comptes de test (données en dur) :**
+- Parent : n'importe quel email + mot de passe
+- Enfant : choisir Lucas ou Emma → PIN `1234`
+
+---
+
+### API (backend)
 
 ```bash
+# 1. Lancer PostgreSQL
+docker-compose up -d
+
+# 2. Configurer l'environnement
 cd apps/api
-cp .env.example .env   # renseigner les variables
+cp .env.example .env   # renseigner DATABASE_URL, JWT_SECRET, etc.
+
+# 3. Démarrer
 npm run start:dev
 ```
 
-### 3. Mobile
+---
 
-```bash
-cd apps/mobile
-npx expo start
-# Scanner le QR code avec Expo Go
-```
+### Points importants à retenir
+
+| Problème | Cause | Solution |
+|----------|-------|----------|
+| `Invalid hook call` / `useState of null` | Double React (workspace npm) | Toujours `cd apps/mobile && npm install` depuis le dossier mobile, jamais `npm install` à la racine |
+| `Cannot find module 'babel-preset-expo'` | Paquet manquant | `cd apps/mobile && npm install babel-preset-expo` |
+| `Cannot find module '@/constants/theme'` | Alias TypeScript | Configuré dans `tsconfig.json` + `babel.config.js`, ne pas toucher |
+| App ne s'affiche pas dans Expo Go | Mauvaise version Expo Go | La version 54.x est requise (SDK 54), installée automatiquement par `expo start` |
 
 ## Fonctionnalités
 
