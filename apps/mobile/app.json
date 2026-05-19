@@ -14,6 +14,6 @@
     },
     "ios": { "supportsTablet": false, "bundleIdentifier": "com.kidpoints.app" },
     "android": { "adaptiveIcon": { "foregroundImage": "./assets/adaptive-icon.png", "backgroundColor": "#18181e" }, "package": "com.kidpoints.app" },
-    "plugins": ["expo-router", "expo-secure-store"]
+    "plugins": ["expo-router", "expo-secure-store", "expo-image-picker"]
   }
 }

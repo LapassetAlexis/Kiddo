@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Radii, Spacing, Typography } from '@/constants/theme';
+import TaskCompleteSheet from '@/components/ui/TaskCompleteSheet';
 
 type TaskState = 'todo' | 'pending' | 'done';
 interface Task { id: string; name: string; pts: number; state: TaskState; }
@@ -15,10 +16,11 @@ const INITIAL_TASKS: Task[] = [
 
 export default function ChildHomeScreen() {
   const { fromParent } = useLocalSearchParams<{ fromParent?: string }>();
-  const [tasks, setTasks]   = useState<Task[]>(INITIAL_TASKS);
-  const [points, setPoints] = useState(120);
-  const [streak]            = useState(5);
-  const ptsAnim             = useRef(new Animated.Value(1)).current;
+  const [tasks, setTasks]       = useState<Task[]>(INITIAL_TASKS);
+  const [points, setPoints]     = useState(120);
+  const [streak]                = useState(5);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const ptsAnim                 = useRef(new Animated.Value(1)).current;
 
   const nextRewardName = 'Soirée TV';
   const nextRewardCost = 100;
@@ -32,16 +34,18 @@ export default function ChildHomeScreen() {
     ]).start();
   }
 
-  function markDone(id: string) {
+  function submitTask(id: string, _note: string) {
+    // Passe en "en attente de validation parent"
     setTasks(ts => ts.map(t => t.id === id && t.state === 'todo' ? { ...t, state: 'pending' } : t));
-    // Simulate parent approval after 3s
+    // TODO: POST /tasks/:id/complete { note }
+    // Simulation : le parent valide après 4s
     setTimeout(() => {
       setTasks(ts => {
         const task = ts.find(t => t.id === id);
         if (task) setPoints(p => { bumpPts(); return p + task.pts; });
         return ts.map(t => t.id === id && t.state === 'pending' ? { ...t, state: 'done' } : t);
       });
-    }, 3000);
+    }, 4000);
   }
 
   return (
@@ -114,7 +118,7 @@ export default function ChildHomeScreen() {
           <TouchableOpacity
             key={task.id}
             style={[styles.taskCard, task.state === 'done' && styles.taskDone, task.state === 'pending' && styles.taskPending]}
-            onPress={() => task.state === 'todo' && markDone(task.id)}
+            onPress={() => task.state === 'todo' && setSelectedTask(task)}
             activeOpacity={task.state === 'todo' ? 0.75 : 1}
             disabled={task.state !== 'todo'}
           >
@@ -135,6 +139,12 @@ export default function ChildHomeScreen() {
 
         <View style={{ height: 20 }} />
       </ScrollView>
+
+      <TaskCompleteSheet
+        task={selectedTask}
+        onConfirm={(id, note) => { setSelectedTask(null); submitTask(id, note); }}
+        onClose={() => setSelectedTask(null)}
+      />
     </SafeAreaView>
   );
 }
