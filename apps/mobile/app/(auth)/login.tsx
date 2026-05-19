@@ -60,15 +60,22 @@ export default function LoginScreen() {
           >
             <Text style={styles.btnText}>{loading ? 'Connexion…' : 'Se connecter'}</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity style={styles.forgotBtn} activeOpacity={0.7}>
+            <Text style={styles.forgotText}>Mot de passe oublié ?</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Switch to child mode */}
+        {/* Inscription */}
         <TouchableOpacity
-          style={styles.childBtn}
-          onPress={() => router.push('/(auth)/child-select')}
-          activeOpacity={0.7}
+          style={styles.registerBtn}
+          onPress={() => router.push('/(auth)/register')}
+          activeOpacity={0.8}
         >
-          <Text style={styles.childBtnText}>👶 Je suis un enfant</Text>
+          <Text style={styles.registerText}>
+            Pas encore de compte ?{' '}
+            <Text style={{ color: Colors.gold, fontWeight: '900' }}>S'inscrire</Text>
+          </Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -132,17 +139,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '900',
   },
-  childBtn: {
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: Radii.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.bgCard,
-  },
-  childBtnText: {
-    color: Colors.textDim,
-    fontSize: 15,
-    fontWeight: '800',
-  },
+  forgotBtn:  { alignItems: 'center', paddingTop: 8 },
+  forgotText: { fontSize: 13, fontWeight: '700', color: Colors.textFaint },
+
+  registerBtn:  { alignItems: 'center', paddingVertical: 14, backgroundColor: Colors.bgCard, borderRadius: Radii.md, borderWidth: 1, borderColor: Colors.border },
+  registerText: { fontSize: 14, fontWeight: '600', color: Colors.textDim },
+
 });
