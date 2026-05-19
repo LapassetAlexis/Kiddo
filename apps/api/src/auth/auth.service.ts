@@ -234,7 +234,7 @@ export class AuthService {
         id:        family.id,
         email:     family.email,
         timezone:  family.timezone,
-        children:  family.children.map(c => ({ id: c.id, name: c.name, avatar: c.avatar })),
+        children:  family.children.map(c => ({ id: c.id, name: c.name, avatar: c.avatar, color: c.color })),
       };
     }
 
@@ -246,6 +246,7 @@ export class AuthService {
       id:       child.id,
       name:     child.name,
       avatar:   child.avatar,
+      color:    child.color,
       familyId: child.family.id,
     };
   }

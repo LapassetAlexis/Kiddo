@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, Length, Matches } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, Length, Matches } from 'class-validator';
 
 export class CreateChildDto {
   @IsString()
@@ -8,6 +8,10 @@ export class CreateChildDto {
   @IsString()
   @IsNotEmpty()
   avatar: string; // emoji
+
+  @IsString()
+  @IsOptional()
+  color?: string;
 
   @IsString()
   @Length(4, 6)

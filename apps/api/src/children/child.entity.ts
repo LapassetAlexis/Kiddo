@@ -9,8 +9,9 @@ import { PinAttempt }  from './pin-attempt.entity';
 export class Child {
   @PrimaryGeneratedColumn('uuid') id: string;
   @Column()                       name: string;
-  @Column()                       avatar: string; // emoji
-  @Column()                       pinHash: string;
+  @Column()                             avatar: string; // emoji
+  @Column({ default: '#FFB300' })       color: string;
+  @Column()                             pinHash: string;
   @Column({ nullable: true })     fcmToken: string;
   @ManyToOne(() => Family, f => f.children, { onDelete: 'CASCADE' }) family: Family;
   @OneToMany(() => Task, t => t.child)         tasks: Task[];

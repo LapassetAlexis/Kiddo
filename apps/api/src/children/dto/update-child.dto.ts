@@ -10,4 +10,8 @@ export class UpdateChildDto {
   @IsNotEmpty()
   @IsOptional()
   avatar?: string;
+
+  @IsString()
+  @IsOptional()
+  color?: string;
 }

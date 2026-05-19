@@ -10,6 +10,7 @@ import { useApiData } from '@/lib/useApiData';
 import { tasksApi, Task } from '@/lib/api/tasks';
 import { transactionsApi } from '@/lib/api/transactions';
 import { rewardsApi } from '@/lib/api/rewards';
+import { childrenApi } from '@/lib/api/children';
 
 type TaskState = 'todo' | 'pending' | 'done';
 interface UITask { id: string; name: string; pts: number; state: TaskState; rejectionReason?: string; }
@@ -55,10 +56,13 @@ export default function ChildHomeScreen() {
     refresh: refreshStreak,
   } = useApiData(() => transactionsApi.getStreak(user?.id ?? ''), [user?.id]);
 
+  const { data: statsData, refresh: refreshStats } = useApiData(() => childrenApi.get(user?.id ?? ''), [user?.id]);
+
   useFocusEffect(useCallback(() => {
     refreshTasks();
     refreshBalance();
     refreshStreak();
+    refreshStats();
   }, []));
 
   const [selectedTask, setSelectedTask] = useState<UITask | null>(null);
@@ -82,6 +86,33 @@ export default function ChildHomeScreen() {
   const nextRewardEmoji = nextReward?.emoji ?? '🎁';
   const progress       = nextRewardCost > 0 ? Math.min(1, points / nextRewardCost) : 1;
   const doneCount      = tasks.filter(t => t.state === 'done').length;
+
+  const earnedTotal    = balanceData?.earnedTotal ?? 0;
+  const longestStreak  = streakData?.longestStreak ?? 0;
+  const tasksCompleted = statsData?.tasksCompleted ?? 0;
+  const rewardsClaimed = statsData?.rewardsClaimed ?? 0;
+
+  const allObjectives = [
+    { emoji: '🥉', label: '100 pts gagnés',      current: earnedTotal,    target: 100  },
+    { emoji: '🥈', label: '500 pts gagnés',      current: earnedTotal,    target: 500  },
+    { emoji: '🥇', label: '1 000 pts gagnés',    current: earnedTotal,    target: 1000 },
+    { emoji: '👑', label: '1 500 pts gagnés',    current: earnedTotal,    target: 1500 },
+    { emoji: '🌱', label: 'Série de 3 jours',    current: longestStreak,  target: 3    },
+    { emoji: '🔥', label: 'Série de 5 jours',    current: longestStreak,  target: 5    },
+    { emoji: '⚡', label: 'Série de 10 jours',   current: longestStreak,  target: 10   },
+    { emoji: '💎', label: 'Série de 30 jours',   current: longestStreak,  target: 30   },
+    { emoji: '💪', label: '10 tâches faites',    current: tasksCompleted, target: 10   },
+    { emoji: '🏅', label: '25 tâches faites',    current: tasksCompleted, target: 25   },
+    { emoji: '🏆', label: '50 tâches faites',    current: tasksCompleted, target: 50   },
+    { emoji: '🎊', label: '3 récompenses',       current: rewardsClaimed, target: 3    },
+    { emoji: '🎉', label: '5 récompenses',       current: rewardsClaimed, target: 5    },
+    { emoji: '🚀', label: '10 récompenses',      current: rewardsClaimed, target: 10   },
+  ];
+  const nextObjectives = allObjectives
+    .filter(o => o.current < o.target)
+    .map(o => ({ ...o, progress: Math.min(1, o.current / o.target) }))
+    .sort((a, b) => b.progress - a.progress)
+    .slice(0, 3);
 
   function bumpPts() {
     Animated.sequence([
@@ -117,26 +148,23 @@ export default function ChildHomeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.avatarRow}>
-            <View style={styles.avatar}><Text style={styles.avatarEmoji}>🦊</Text></View>
+            <View style={[styles.avatar, { backgroundColor: user?.color ?? Colors.gold, shadowColor: user?.color ?? Colors.gold }]}><Text style={styles.avatarEmoji}>{user?.avatar ?? '🦊'}</Text></View>
             <View>
               <Text style={styles.greetingSub}>Bonjour,</Text>
               <Text style={styles.greetingName}>{user?.name ?? 'Lucas'} 👋</Text>
             </View>
           </View>
           <View style={styles.headerRight}>
-            {fromParent === 'true' && (
-              <TouchableOpacity
-                style={styles.parentBtn}
-                onPress={async () => {
-                  const ok = await switchToParent();
-                  router.replace(ok ? '/(parent)/dashboard' : '/(auth)/login');
-                }}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.parentBtnText}>👨‍👩‍👧</Text>
-              </TouchableOpacity>
-            )}
-            <View style={styles.notifBtn}><Text style={{ fontSize: 18 }}>🔔</Text></View>
+            <TouchableOpacity
+              style={styles.parentBtn}
+              onPress={async () => {
+                const ok = await switchToParent();
+                router.replace(ok ? '/(parent)/dashboard' : '/(auth)/login');
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.parentBtnText}>👨‍👩‍👧</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -172,6 +200,27 @@ export default function ChildHomeScreen() {
           </View>
           <View style={styles.streakBadge}><Text style={styles.streakBadgeText}>Série</Text></View>
         </View>
+
+        {/* Prochains objectifs */}
+        {nextObjectives.length > 0 && (
+          <View style={styles.objectivesWrap}>
+            <Text style={styles.objectivesTitle}>🎯 PROCHAINS OBJECTIFS</Text>
+            {nextObjectives.map(obj => (
+              <View key={obj.label} style={styles.objectiveRow}>
+                <Text style={styles.objectiveEmoji}>{obj.emoji}</Text>
+                <View style={styles.objectiveInfo}>
+                  <View style={styles.objectiveMeta}>
+                    <Text style={styles.objectiveLabel}>{obj.label}</Text>
+                    <Text style={styles.objectiveCount}>{obj.current}/{obj.target}</Text>
+                  </View>
+                  <View style={styles.objectiveTrack}>
+                    <View style={[styles.objectiveFill, { width: `${Math.round(obj.progress * 100)}%` }]} />
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
 
         {/* Tasks */}
         <View style={styles.sectionHeader}>
@@ -232,7 +281,6 @@ const styles = StyleSheet.create({
   avatarEmoji: { fontSize: 24 },
   greetingSub:  { fontSize: 13, fontWeight: '600', color: Colors.textDim },
   greetingName: { fontSize: 18, fontWeight: '900', color: Colors.textPrimary },
-  notifBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
 
   hero: {
     marginHorizontal: Spacing.screen,
@@ -268,6 +316,17 @@ const styles = StyleSheet.create({
   streakSub: { fontSize: 11, fontWeight: '600', color: Colors.textFaint, marginTop: 1 },
   streakBadge: { backgroundColor: 'rgba(255,107,53,0.12)', borderWidth: 1, borderColor: 'rgba(255,107,53,0.22)', borderRadius: Radii.pill, paddingHorizontal: 10, paddingVertical: 4 },
   streakBadgeText: { fontSize: 10, fontWeight: '900', color: Colors.orange, textTransform: 'uppercase', letterSpacing: 0.6 },
+
+  objectivesWrap:  { marginHorizontal: Spacing.screen, marginTop: 12, backgroundColor: Colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: Colors.border, padding: 14, gap: 12 },
+  objectivesTitle: { fontSize: 11, fontWeight: '900', color: Colors.textFaint, letterSpacing: 1.2 },
+  objectiveRow:    { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  objectiveEmoji:  { fontSize: 22, width: 28, textAlign: 'center' },
+  objectiveInfo:   { flex: 1, gap: 5 },
+  objectiveMeta:   { flexDirection: 'row', justifyContent: 'space-between' },
+  objectiveLabel:  { fontSize: 13, fontWeight: '700', color: Colors.textPrimary },
+  objectiveCount:  { fontSize: 12, fontWeight: '700', color: Colors.textFaint },
+  objectiveTrack:  { height: 5, borderRadius: Radii.pill, backgroundColor: 'rgba(255,255,255,0.07)', overflow: 'hidden' },
+  objectiveFill:   { height: '100%', borderRadius: Radii.pill, backgroundColor: Colors.gold },
 
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginHorizontal: Spacing.screen, marginTop: 18, marginBottom: 10 },
   sectionTitle:  { fontSize: 11, fontWeight: '900', color: Colors.textFaint, textTransform: 'uppercase', letterSpacing: 1.2 },

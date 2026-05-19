@@ -10,6 +10,8 @@ interface AuthUser {
   email?: string;         // parent only
   familyId?: string;      // child only
   name?: string;
+  avatar?: string;        // child only
+  color?: string;         // child only
 }
 
 interface AuthContextType {
@@ -76,7 +78,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { accessToken } = await authApi.childPin(childId, pin);
     await authApi.saveToken(accessToken);
     const payload = parseJwt(accessToken);
-    setUser({ id: payload.sub, role: 'child', familyId: payload.familyId });
+    const me = await authApi.me().catch(() => null);
+    setUser({ id: payload.sub, role: 'child', familyId: payload.familyId, name: me?.name, avatar: me?.avatar, color: (me as any)?.color });
   }
 
   async function switchToParent(): Promise<boolean> {
@@ -101,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function refreshUser() {
     try {
       const me = await authApi.me();
-      setUser(u => u ? { ...u, email: me.email } : null);
+      setUser(u => u ? { ...u, email: me.email, name: me.name, avatar: me.avatar, color: (me as any).color } : null);
     } catch {
       await logout();
     }

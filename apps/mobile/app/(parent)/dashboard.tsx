@@ -7,13 +7,14 @@ import AppModal, { useAppModal } from '@/components/ui/AppModal';
 import { tasksApi } from '@/lib/api/tasks';
 import { rewardsApi } from '@/lib/api/rewards';
 import { childrenApi } from '@/lib/api/children';
+import { transactionsApi } from '@/lib/api/transactions';
 import { familiesApi } from '@/lib/api/families';
 import { formatName } from '@/lib/formatName';
 import { useApiData } from '@/lib/useApiData';
 import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
 import { useAuth } from '@/contexts/AuthContext';
 
-type PendingTask = { id: string; childName: string; childEmoji: string; taskName: string; pts: number; ago: string; note?: string; photoUrl?: string; };
+type PendingTask = { id: string; childName: string; childEmoji: string; childColor: string; taskName: string; pts: number; ago: string; note?: string; photoUrl?: string; };
 type RewardRequest = { id: string; childName: string; childEmoji: string; rewardName: string; emoji: string; pts: number; };
 
 function formatAgo(dateStr?: string): string {
@@ -33,6 +34,7 @@ export default function ParentDashboardScreen() {
   const parentName = formatName(profileData?.name, profileData?.email) || 'Bonjour';
   const [addModal, setAddModal]         = useState(false);
   const [reviewTask, setReviewTask]     = useState<PendingTask | null>(null);
+  const [balances, setBalances]         = useState<Record<string, number>>({});
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
   const slideAnim = useRef(new Animated.Value(300)).current;
 
@@ -63,6 +65,16 @@ export default function ParentDashboardScreen() {
     refresh: todoRefresh,
   } = useApiData(() => tasksApi.list(undefined, 'created'), []);
 
+  async function refreshBalances(children: typeof childrenData) {
+    if (!children?.length) return;
+    const entries = await Promise.all(
+      children.map(c => transactionsApi.getBalance(c.id).then(b => [c.id, b.balance] as const).catch(() => [c.id, 0] as const))
+    );
+    setBalances(Object.fromEntries(entries));
+  }
+
+  useEffect(() => { refreshBalances(childrenData); }, [childrenData]);
+
   // Refresh toutes les données quand l'écran revient au premier plan
   useFocusEffect(useCallback(() => {
     profileRefresh();
@@ -76,6 +88,7 @@ export default function ParentDashboardScreen() {
     id: task.id,
     childName: task.child.name,
     childEmoji: task.child.avatar,
+    childColor: task.child.color ?? '#FFB300',
     taskName: task.title,
     pts: task.points,
     ago: formatAgo(task.submittedAt),
@@ -148,6 +161,7 @@ export default function ParentDashboardScreen() {
     setReviewTask(null);
     try { await tasksApi.approve(task.id); } catch {}
     pendingRefresh();
+    refreshBalances(childrenData);
     showModal({
       icon: '✅',
       title: 'Tâche validée !',
@@ -192,7 +206,7 @@ export default function ParentDashboardScreen() {
               onPress={() => router.push({ pathname: '/(auth)/child-select', params: { fromParent: 'true' } })}
               activeOpacity={0.8}
             >
-              <Text style={styles.switchBtnText}>👶</Text>
+              <Text style={styles.switchBtnLabel}>Enfant</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.addBtn}
@@ -220,18 +234,18 @@ export default function ParentDashboardScreen() {
           <Text style={styles.sectionTitle}>MES ENFANTS</Text>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.childScroll}>
-          {(childrenData ?? []).map((child, idx) => (
-            <View key={child.id} style={[styles.childCard, styles.childCardAlert]}>
-              <View style={[styles.childAvatar, idx % 2 === 1 && styles.childAvatarBlue]}>
+          {(childrenData ?? []).map((child) => (
+            <TouchableOpacity key={child.id} style={[styles.childCard, styles.childCardAlert]} onPress={() => router.push({ pathname: '/(parent)/edit-child', params: { childId: child.id, childName: child.name, childEmoji: child.avatar, childColor: child.color } })} activeOpacity={0.8}>
+              <View style={[styles.childAvatar, { backgroundColor: child.color ?? '#FFB300', shadowColor: child.color ?? '#FFB300' }]}>
                 <Text style={{ fontSize: 26 }}>{child.avatar}</Text>
               </View>
               <Text style={styles.childName}>{child.name}</Text>
-              <Text style={styles.childPts}>⭐ 0 pts</Text>
+              <Text style={styles.childPts}>⭐ {balances[child.id] ?? 0} pts</Text>
               <View style={styles.childTrack}>
                 <View style={[styles.childFill, { width: '0%' }]} />
               </View>
               <Text style={styles.childReward}>—</Text>
-            </View>
+            </TouchableOpacity>
           ))}
           <TouchableOpacity
             style={styles.addChildCard}
@@ -264,7 +278,7 @@ export default function ParentDashboardScreen() {
               const wasRejected = task.rejectionReason != null;
               return (
                 <View key={task.id} style={[styles.todoCard, wasRejected && styles.todoCardRejected]}>
-                  <View style={styles.childAvatarSm}>
+                  <View style={[styles.childAvatarSm, { backgroundColor: task.child.color ?? '#FFB300' }]}>
                     <Text style={{ fontSize: 18 }}>{task.child.avatar}</Text>
                   </View>
                   <View style={{ flex: 1 }}>
@@ -310,7 +324,7 @@ export default function ParentDashboardScreen() {
           <View style={styles.list}>
             {pending.map(task => (
               <TouchableOpacity key={task.id} style={styles.pendingCard} onPress={() => setReviewTask(task)} activeOpacity={0.8}>
-                <View style={styles.childAvatarSm}><Text style={{ fontSize: 18 }}>{task.childEmoji}</Text></View>
+                <View style={[styles.childAvatarSm, { backgroundColor: task.childColor }]}><Text style={{ fontSize: 18 }}>{task.childEmoji}</Text></View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.pendingTask}>{task.taskName}</Text>
                   <Text style={styles.pendingMeta}>{task.childName} · {task.ago}{task.note ? ' · 💬' : ''}{task.photoUrl ? ' · 📷' : ''}</Text>
@@ -378,7 +392,7 @@ export default function ParentDashboardScreen() {
             {reviewTask && (
               <>
                 <View style={styles.reviewHeader}>
-                  <View style={styles.childAvatarSm}><Text style={{ fontSize: 22 }}>{reviewTask.childEmoji}</Text></View>
+                  <View style={[styles.childAvatarSm, { backgroundColor: reviewTask.childColor }]}><Text style={{ fontSize: 22 }}>{reviewTask.childEmoji}</Text></View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.reviewTaskName}>{reviewTask.taskName}</Text>
                     <Text style={styles.reviewMeta}>{reviewTask.childName} · {reviewTask.ago}</Text>
@@ -468,8 +482,8 @@ const styles = StyleSheet.create({
   headerActions: { flexDirection: 'row', gap: 10, alignItems: 'center' },
   sub:           { fontSize: 13, fontWeight: '600', color: Colors.textDim },
   title:         { fontSize: 22, fontWeight: '900', color: Colors.textPrimary },
-  switchBtn:     { width: 44, height: 44, backgroundColor: Colors.bgCard, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
-  switchBtnText: { fontSize: 22 },
+  switchBtn:      { paddingHorizontal: 12, height: 36, backgroundColor: Colors.bgCard, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
+  switchBtnLabel: { fontSize: 13, fontWeight: '800', color: Colors.textPrimary },
   addBtn:        { width: 44, height: 44, backgroundColor: Colors.gold, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   addBtnText:    { fontSize: 24, fontWeight: '900', color: '#1a1000', lineHeight: 28 },
 
@@ -489,8 +503,7 @@ const styles = StyleSheet.create({
   childCard:   { backgroundColor: Colors.bgCard, borderRadius: 20, borderWidth: 1, borderColor: Colors.border, padding: 16, width: 150, gap: 8, marginBottom: 16, position: 'relative' },
   childCardAlert: { borderColor: 'rgba(255,184,0,0.2)' },
   pendingDot: { position: 'absolute', top: 12, right: 12, width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.orange, borderWidth: 2, borderColor: Colors.bgCard },
-  childAvatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: Colors.gold, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.gold, shadowOpacity: 0.3, shadowRadius: 6 },
-  childAvatarBlue: { backgroundColor: '#1565C0', shadowColor: '#42A5F5' },
+  childAvatar: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', shadowOpacity: 0.3, shadowRadius: 6 },
   childName:  { fontSize: 15, fontWeight: '900', color: Colors.textPrimary },
   childPts:   { fontSize: 13, fontWeight: '800', color: Colors.gold },
   childTrack: { height: 5, borderRadius: Radii.pill, backgroundColor: 'rgba(255,255,255,0.07)', overflow: 'hidden' },
@@ -501,7 +514,7 @@ const styles = StyleSheet.create({
 
   list:       { paddingHorizontal: Spacing.screen, gap: 10 },
   pendingCard:{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: Colors.bgCard, borderRadius: Radii.card, padding: 14, borderWidth: 1, borderColor: Colors.border },
-  childAvatarSm: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.gold, alignItems: 'center', justifyContent: 'center' },
+  childAvatarSm: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   pendingTask:{ fontSize: 14, fontWeight: '800', color: Colors.textPrimary },
   pendingMeta:{ fontSize: 11, fontWeight: '600', color: Colors.textDim, marginTop: 2 },
   ptsBadge:   { backgroundColor: 'rgba(255,184,0,0.1)', borderWidth: 1, borderColor: 'rgba(255,184,0,0.18)', borderRadius: Radii.pill, paddingHorizontal: 10, paddingVertical: 4 },

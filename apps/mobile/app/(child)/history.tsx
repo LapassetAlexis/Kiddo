@@ -161,7 +161,7 @@ export default function HistoryScreen() {
                 <Text style={styles.statLabel}>Gagnés</Text>
               </View>
               <View style={styles.stat}>
-                <Text style={[styles.statValue, { color: Colors.orange }]}>−{spentW}</Text>
+                <Text style={[styles.statValue, { color: Colors.orange }]}>{spentW > 0 ? `−${spentW}` : '0'}</Text>
                 <Text style={styles.statLabel}>Dépensés</Text>
               </View>
               <View style={[styles.stat, styles.statStreak]}>

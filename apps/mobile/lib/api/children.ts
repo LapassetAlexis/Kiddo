@@ -4,6 +4,7 @@ export interface Child {
   id: string;
   name: string;
   avatar: string;
+  color: string;
   fcmToken?: string;
   createdAt: string;
 }
@@ -24,10 +25,10 @@ export const childrenApi = {
 
   get: (id: string) => api.get<ChildStats>(`/children/${id}`),
 
-  create: (data: { name: string; avatar: string; pin: string }) =>
+  create: (data: { name: string; avatar: string; color: string; pin: string }) =>
     api.post<Child>('/children', data),
 
-  update: (id: string, data: { name?: string; avatar?: string }) =>
+  update: (id: string, data: { name?: string; avatar?: string; color?: string }) =>
     api.patch<Child>(`/children/${id}`, data),
 
   delete: (id: string) =>

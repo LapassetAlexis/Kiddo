@@ -9,14 +9,60 @@ import { useApiData } from '@/lib/useApiData';
 import { childrenApi } from '@/lib/api/children';
 import { transactionsApi } from '@/lib/api/transactions';
 
-const BADGES = [
-  { id: '1', emoji: '🏆', label: 'Première tâche',     unlocked: true  },
-  { id: '2', emoji: '🔥', label: 'Série de 7 jours',   unlocked: true  },
-  { id: '3', emoji: '⭐', label: '100 points gagnés',  unlocked: true  },
-  { id: '4', emoji: '🎯', label: '10 tâches en 1 sem', unlocked: false },
-  { id: '5', emoji: '💎', label: 'Série de 30 jours',  unlocked: false },
-  { id: '6', emoji: '🚀', label: '500 points dépensés',unlocked: false },
-];
+interface BadgeGroup {
+  title: string;
+  badges: { id: string; emoji: string; label: string; unlocked: boolean }[];
+}
+
+function buildBadgeGroups(tasksCompleted: number, earnedTotal: number, spentTotal: number, longestStreak: number, rewardsClaimed: number): BadgeGroup[] {
+  return [
+    {
+      title: '🎯 Premiers objectifs',
+      badges: [
+        { id: 'o1', emoji: '🌟', label: 'Bienvenue !',          unlocked: true                },
+        { id: 'o2', emoji: '🏆', label: 'Première tâche',       unlocked: tasksCompleted >= 1 },
+        { id: 'o3', emoji: '🎁', label: 'Première récompense',  unlocked: rewardsClaimed >= 1 },
+        { id: 'o4', emoji: '🔥', label: 'Première série',       unlocked: longestStreak >= 2  },
+      ],
+    },
+    {
+      title: '⭐ Points gagnés',
+      badges: [
+        { id: 'p1', emoji: '🥉', label: '100 pts',   unlocked: earnedTotal >= 100  },
+        { id: 'p2', emoji: '🥈', label: '500 pts',   unlocked: earnedTotal >= 500  },
+        { id: 'p3', emoji: '🥇', label: '1 000 pts', unlocked: earnedTotal >= 1000 },
+        { id: 'p4', emoji: '👑', label: '1 500 pts', unlocked: earnedTotal >= 1500 },
+      ],
+    },
+    {
+      title: '🔥 Séries',
+      badges: [
+        { id: 's1', emoji: '🌱', label: '3 jours',  unlocked: longestStreak >= 3  },
+        { id: 's2', emoji: '🔥', label: '5 jours',  unlocked: longestStreak >= 5  },
+        { id: 's3', emoji: '⚡', label: '10 jours', unlocked: longestStreak >= 10 },
+        { id: 's4', emoji: '💎', label: '30 jours', unlocked: longestStreak >= 30 },
+      ],
+    },
+    {
+      title: '✅ Tâches',
+      badges: [
+        { id: 't1', emoji: '🎯', label: '1 tâche',    unlocked: tasksCompleted >= 1  },
+        { id: 't2', emoji: '💪', label: '10 tâches',  unlocked: tasksCompleted >= 10 },
+        { id: 't3', emoji: '🏅', label: '25 tâches',  unlocked: tasksCompleted >= 25 },
+        { id: 't4', emoji: '🏆', label: '50 tâches',  unlocked: tasksCompleted >= 50 },
+      ],
+    },
+    {
+      title: '🎁 Récompenses',
+      badges: [
+        { id: 'r1', emoji: '🎀', label: '1 récompense',  unlocked: rewardsClaimed >= 1  },
+        { id: 'r2', emoji: '🎊', label: '3 récompenses', unlocked: rewardsClaimed >= 3  },
+        { id: 'r3', emoji: '🎉', label: '5 récompenses', unlocked: rewardsClaimed >= 5  },
+        { id: 'r4', emoji: '🚀', label: '10 récompenses',unlocked: rewardsClaimed >= 10 },
+      ],
+    },
+  ];
+}
 
 export default function ChildProfileScreen() {
   const { user } = useAuth();
@@ -54,6 +100,15 @@ export default function ChildProfileScreen() {
   const currentPts   = balanceData?.balance ?? 0;
   const currentStreak= streakData?.currentStreak ?? 0;
   const earnedTotal  = balanceData?.earnedTotal ?? 0;
+  const spentTotal   = balanceData?.spentTotal ?? 0;
+  const longestStreak= streakData?.longestStreak ?? 0;
+  const BADGE_GROUPS = buildBadgeGroups(
+    statsData?.tasksCompleted ?? 0,
+    earnedTotal,
+    spentTotal,
+    longestStreak,
+    statsData?.rewardsClaimed ?? 0,
+  );
 
   const joinedDate = childInfo?.createdAt
     ? new Date(childInfo.createdAt).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
@@ -122,15 +177,20 @@ export default function ChildProfileScreen() {
 
         {/* Badges */}
         <Text style={styles.sectionLabel}>Mes badges</Text>
-        <View style={styles.badgesGrid}>
-          {BADGES.map(b => (
-            <View key={b.id} style={[styles.badgeCard, !b.unlocked && styles.badgeLocked]}>
-              <Text style={[styles.badgeEmoji, !b.unlocked && { opacity: 0.3 }]}>{b.emoji}</Text>
-              <Text style={[styles.badgeLabel, !b.unlocked && styles.badgeLabelLocked]}>{b.label}</Text>
-              {!b.unlocked && <Text style={styles.badgeLockIcon}>🔒</Text>}
+        {BADGE_GROUPS.map(group => (
+          <View key={group.title} style={styles.badgeGroup}>
+            <Text style={styles.badgeGroupTitle}>{group.title}</Text>
+            <View style={styles.badgeRow}>
+              {group.badges.map(b => (
+                <View key={b.id} style={[styles.badgeCard, !b.unlocked && styles.badgeLocked]}>
+                  <Text style={[styles.badgeEmoji, !b.unlocked && { opacity: 0.25 }]}>{b.emoji}</Text>
+                  <Text style={[styles.badgeLabel, !b.unlocked && styles.badgeLabelLocked]}>{b.label}</Text>
+                  {!b.unlocked && <Text style={styles.badgeLockIcon}>🔒</Text>}
+                </View>
+              ))}
             </View>
-          ))}
-        </View>
+          </View>
+        ))}
 
         {/* Actions */}
         <Text style={styles.sectionLabel}>Mon compte</Text>
@@ -198,19 +258,22 @@ const styles = StyleSheet.create({
   statLabel: { fontSize: 11, fontWeight: '700', color: Colors.textFaint, textAlign: 'center' },
 
   // Badges
-  badgesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  badgeGroup:      { gap: 8 },
+  badgeGroupTitle: { fontSize: 12, fontWeight: '800', color: Colors.textDim },
+  badgeRow:        { flexDirection: 'row', gap: 8 },
   badgeCard: {
-    width: '30%',
+    flex: 1,
     backgroundColor: Colors.bgCard, borderRadius: Radii.card,
     borderWidth: 1, borderColor: Colors.border,
-    padding: 14, alignItems: 'center', gap: 6,
+    paddingVertical: 12, paddingHorizontal: 4,
+    alignItems: 'center', gap: 5,
     position: 'relative',
   },
-  badgeLocked:    { opacity: 0.5 },
-  badgeEmoji:     { fontSize: 30 },
-  badgeLabel:     { fontSize: 10, fontWeight: '700', color: Colors.textPrimary, textAlign: 'center', lineHeight: 13 },
+  badgeLocked:      { opacity: 0.45 },
+  badgeEmoji:       { fontSize: 26 },
+  badgeLabel:       { fontSize: 9, fontWeight: '700', color: Colors.textPrimary, textAlign: 'center', lineHeight: 12 },
   badgeLabelLocked: { color: Colors.textFaint },
-  badgeLockIcon:  { position: 'absolute', top: 6, right: 6, fontSize: 10 },
+  badgeLockIcon:    { position: 'absolute', top: 5, right: 5, fontSize: 9 },
 
   // Actions
   actionsCard: {

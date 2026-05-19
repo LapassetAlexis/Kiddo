@@ -16,7 +16,7 @@ export interface Task {
   submittedAt?: string;
   validatedAt?: string;
   createdAt: string;
-  child: { id: string; name: string; avatar: string };
+  child: { id: string; name: string; avatar: string; color: string };
 }
 
 export const tasksApi = {

@@ -28,6 +28,7 @@ export class ChildrenService {
     const child = this.children.create({
       name: dto.name,
       avatar: dto.avatar,
+      color: dto.color ?? '#FFB300',
       pinHash,
       family: { id: familyId } as any,
     });

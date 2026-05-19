@@ -10,7 +10,22 @@ import { childrenApi } from '@/lib/api/children';
 import { ApiError } from '@/lib/api-client';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 
-const AVATARS = ['🦊','🐻','🐼','🐨','🦁','🐯','🐸','🐙','🦄','🐶','🐱','🐰'];
+const AVATARS = [
+  // Animaux universels
+  '🦊','🐺','🦁','🐯','🦅','🐉','🦈','🦋',
+  // Sports & action
+  '⚽','🏀','🎯','🏄','🏂','🤸','🎾','🥊',
+  // Gaming, musique & créa
+  '🎮','👾','🎸','🎧','🎨','🤖','🎤','🥁',
+  // Attitude & cool
+  '😎','⚡','🔥','🚀',
+];
+
+const COLORS = [
+  '#FFB300', '#E53935', '#8E24AA', '#1E88E5',
+  '#00897B', '#43A047', '#FB8C00', '#F06292',
+  '#5C6BC0', '#26C6DA',
+];
 
 type Step = 'info' | 'pin' | 'confirm';
 
@@ -18,6 +33,7 @@ export default function CreateChildScreen() {
   const [step, setStep]         = useState<Step>('info');
   const [name, setName]         = useState('');
   const [avatar, setAvatar]     = useState('🦊');
+  const [color, setColor]       = useState('#FFB300');
   const [pin, setPin]           = useState('');
   const [pinConfirm, setPinConfirm] = useState('');
   const [loading, setLoading]   = useState(false);
@@ -56,7 +72,7 @@ export default function CreateChildScreen() {
     }
     setLoading(true);
     try {
-      await childrenApi.create({ name: name.trim(), avatar, pin });
+      await childrenApi.create({ name: name.trim(), avatar, color, pin });
     } catch (err) {
       showModal({ icon: '❌', title: 'Erreur', message: err instanceof ApiError ? err.message : 'Impossible de créer le profil.' });
       setLoading(false);
@@ -130,9 +146,21 @@ export default function CreateChildScreen() {
               ))}
             </View>
 
+            <Text style={styles.sectionLabel}>Couleur</Text>
+            <View style={styles.colorRow}>
+              {COLORS.map(c => (
+                <TouchableOpacity
+                  key={c}
+                  style={[styles.colorDot, { backgroundColor: c }, color === c && styles.colorDotSelected]}
+                  onPress={() => setColor(c)}
+                  activeOpacity={0.7}
+                />
+              ))}
+            </View>
+
             {/* Prévisualisation */}
             <View style={styles.preview}>
-              <View style={styles.previewAvatar}><Text style={{ fontSize: 32 }}>{avatar}</Text></View>
+              <View style={[styles.previewAvatar, { backgroundColor: color + '33' }]}><Text style={{ fontSize: 32 }}>{avatar}</Text></View>
               <View>
                 <Text style={styles.previewName}>{name || 'Prénom'}</Text>
                 <Text style={styles.previewPts}>⭐ 0 pts</Text>
@@ -156,7 +184,7 @@ export default function CreateChildScreen() {
             </Text>
 
             {/* Avatar + dots */}
-            <View style={styles.pinAvatar}><Text style={{ fontSize: 40 }}>{avatar}</Text></View>
+            <View style={[styles.pinAvatar, { backgroundColor: color + '33' }]}><Text style={{ fontSize: 40 }}>{avatar}</Text></View>
             <View style={styles.dots}>
               {[0,1,2,3].map(i => (
                 <View key={i} style={[styles.dot, currentPin.length > i && styles.dotFilled]} />
@@ -223,6 +251,10 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: Colors.border,
     padding: 16, fontSize: 18, fontWeight: '700', color: Colors.textPrimary,
   },
+
+  colorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  colorDot: { width: 36, height: 36, borderRadius: 18 },
+  colorDotSelected: { borderWidth: 3, borderColor: '#fff', transform: [{ scale: 1.15 }] },
 
   avatarGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   avatarOption: {

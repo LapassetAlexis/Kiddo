@@ -39,7 +39,9 @@ export default function ChildSelectScreen() {
             })}
             activeOpacity={0.8}
           >
-            <Text style={styles.emoji}>{child.avatar}</Text>
+            <View style={[styles.avatarCircle, { backgroundColor: (child.color ?? '#FFB300') + '33', borderColor: (child.color ?? '#FFB300') + '88' }]}>
+              <Text style={styles.emoji}>{child.avatar}</Text>
+            </View>
             <Text style={styles.name}>{child.name}</Text>
           </TouchableOpacity>
         ))}
@@ -95,8 +97,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
+  avatarCircle: {
+    width: 80, height: 80, borderRadius: 40,
+    borderWidth: 2,
+    alignItems: 'center', justifyContent: 'center',
+  },
   emoji: {
-    fontSize: 52,
+    fontSize: 44,
   },
   name: {
     fontSize: 18,

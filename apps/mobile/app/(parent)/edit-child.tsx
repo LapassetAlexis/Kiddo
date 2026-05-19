@@ -9,15 +9,31 @@ import { Colors, Radii, Spacing } from '@/constants/theme';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
 import { childrenApi } from '@/lib/api/children';
 
-const AVATARS = ['🦊','🐻','🐼','🐨','🦁','🐯','🐸','🐙','🦄','🐶','🐱','🐰'];
+const COLORS = [
+  '#FFB300', '#E53935', '#8E24AA', '#1E88E5',
+  '#00897B', '#43A047', '#FB8C00', '#F06292',
+  '#5C6BC0', '#26C6DA',
+];
+
+const AVATARS = [
+  // Animaux universels
+  '🦊','🐺','🦁','🐯','🦅','🐉','🦈','🦋',
+  // Sports & action
+  '⚽','🏀','🎯','🏄','🏂','🤸','🎾','🥊',
+  // Gaming, musique & créa
+  '🎮','👾','🎸','🎧','🎨','🤖','🎤','🥁',
+  // Attitude & cool
+  '😎','⚡','🔥','🚀',
+];
 
 export default function EditChildScreen() {
-  const { childId, childName, childEmoji } = useLocalSearchParams<{
-    childId: string; childName: string; childEmoji: string;
+  const { childId, childName, childEmoji, childColor } = useLocalSearchParams<{
+    childId: string; childName: string; childEmoji: string; childColor?: string;
   }>();
 
   const [name,    setName]    = useState(childName ?? '');
   const [emoji,   setEmoji]   = useState(childEmoji ?? '🦊');
+  const [color,   setColor]   = useState(childColor ?? '#FFB300');
   const [pinMode, setPinMode] = useState(false);
   const [newPin,  setNewPin]  = useState('');
   const [confirm, setConfirm] = useState('');
@@ -28,7 +44,7 @@ export default function EditChildScreen() {
     if (!name.trim()) { showModal({ icon: '✏️', title: 'Prénom requis', message: 'Entre le prénom de l\'enfant.' }); return; }
     setLoading(true);
     try {
-      await childrenApi.update(childId, { name: name.trim(), avatar: emoji });
+      await childrenApi.update(childId, { name: name.trim(), avatar: emoji, color });
       showModal({ icon: '✅', title: 'Profil mis à jour', message: `Le profil de ${name} a été enregistré.`, buttons: [{ label: 'OK', style: 'default', onPress: () => router.back() }] });
     } catch {
       showModal({ icon: '❌', title: 'Erreur', message: 'Impossible de sauvegarder. Réessaie.' });
@@ -88,7 +104,9 @@ export default function EditChildScreen() {
 
             {/* Avatar preview */}
             <View style={styles.avatarSection}>
-              <Text style={styles.bigEmoji}>{emoji}</Text>
+              <View style={[styles.avatarPreviewCircle, { backgroundColor: color + '33', borderColor: color + '66' }]}>
+                <Text style={styles.bigEmoji}>{emoji}</Text>
+              </View>
               <Text style={styles.childNameDisplay}>{name}</Text>
             </View>
 
@@ -105,6 +123,19 @@ export default function EditChildScreen() {
                 <TouchableOpacity key={a} style={[styles.avatarOption, emoji === a && styles.avatarSelected]} onPress={() => setEmoji(a)} activeOpacity={0.7}>
                   <Text style={{ fontSize: 28 }}>{a}</Text>
                 </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Couleur */}
+            <Text style={styles.sectionLabel}>Couleur</Text>
+            <View style={styles.colorRow}>
+              {COLORS.map(c => (
+                <TouchableOpacity
+                  key={c}
+                  style={[styles.colorDot, { backgroundColor: c }, color === c && styles.colorDotSelected]}
+                  onPress={() => setColor(c)}
+                  activeOpacity={0.7}
+                />
               ))}
             </View>
 
@@ -130,7 +161,9 @@ export default function EditChildScreen() {
           <View style={styles.pinContent}>
             <Text style={styles.pinTitle}>Nouveau code pour {name}</Text>
             <Text style={styles.pinSub}>4 chiffres que {name} devra entrer</Text>
-            <Text style={styles.bigEmoji}>{emoji}</Text>
+            <View style={[styles.avatarPreviewCircle, { backgroundColor: color + '33', borderColor: color + '66' }]}>
+              <Text style={styles.bigEmoji}>{emoji}</Text>
+            </View>
 
             {/* Étape */}
             <Text style={styles.pinStep}>{newPin.length < 4 ? 'Nouveau code' : 'Confirme le code'}</Text>
@@ -184,7 +217,12 @@ const styles = StyleSheet.create({
   content: { padding: Spacing.screen, gap: 12 },
 
   avatarSection: { alignItems: 'center', paddingVertical: 8, gap: 6 },
-  bigEmoji:      { fontSize: 64 },
+  avatarPreviewCircle: { width: 96, height: 96, borderRadius: 48, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  bigEmoji:      { fontSize: 52 },
+
+  colorRow:        { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  colorDot:        { width: 36, height: 36, borderRadius: 18 },
+  colorDotSelected:{ borderWidth: 3, borderColor: '#fff', transform: [{ scale: 1.15 }] },
   childNameDisplay: { fontSize: 20, fontWeight: '900', color: Colors.textPrimary },
 
   sectionLabel: { fontSize: 11, fontWeight: '900', color: Colors.textFaint, textTransform: 'uppercase', letterSpacing: 1.1, marginTop: 4 },

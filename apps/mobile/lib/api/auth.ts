@@ -27,7 +27,7 @@ export const authApi = {
   resetPassword: (email: string, code: string, newPassword: string) =>
     api.post<{ message: string }>('/auth/reset-password', { email, code, newPassword }, false),
 
-  me: () => api.get<{ id: string; email: string; children: any[] }>('/auth/me'),
+  me: () => api.get<{ id: string; role: string; email?: string; name?: string; avatar?: string; familyId?: string; children?: any[] }>('/auth/me'),
 
   saveToken,
   clearToken,
