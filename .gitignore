@@ -1,25 +1,36 @@
-# Node
+# ── Node ──
 node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# ── Expo / React Native ──
 .expo/
 dist/
 build/
-.next/
-
-# Env
-.env
-!.env.example
-
-# OS
-.DS_Store
-
-# IDE
-.vscode/
-.idea/
-
-# Expo
+web-build/
 *.jks
 *.p8
 *.p12
 *.key
 *.mobileprovision
 *.orig.*
+
+# ── NestJS ──
+apps/api/dist/
+
+# ── Environnement ──
+.env
+!.env.example
+
+# ── OS ──
+.DS_Store
+Thumbs.db
+
+# ── IDE ──
+.vscode/
+.idea/
+*.swp
+
+# ── Outils locaux (ne pas committer) ──
+.claude/
+.gstack/
