@@ -95,8 +95,9 @@ export default function ChildProfileScreen() {
   if (streakError)  return <ErrorScreen message={streakError}  onRetry={refreshStreak} />;
 
   const childInfo    = statsData?.child;
-  const childName    = childInfo?.name ?? user?.name ?? 'Lucas';
-  const childEmoji   = childInfo?.avatar ?? '🦊';
+  const childName    = childInfo?.name ?? user?.name ?? '';
+  const childEmoji   = childInfo?.avatar ?? user?.avatar ?? '🧒';
+  const childColor   = user?.color ?? '#FFB300';
   const currentPts   = balanceData?.balance ?? 0;
   const currentStreak= streakData?.currentStreak ?? 0;
   const earnedTotal  = balanceData?.earnedTotal ?? 0;
@@ -149,7 +150,9 @@ export default function ChildProfileScreen() {
         {/* Avatar + nom */}
         <View style={styles.heroSection}>
           <View style={styles.avatarWrap}>
-            <Text style={styles.avatarEmoji}>{childEmoji}</Text>
+            <View style={[styles.avatarCircle, { backgroundColor: childColor + '33', borderColor: childColor + '66' }]}>
+              <Text style={styles.avatarEmoji}>{childEmoji}</Text>
+            </View>
             <View style={styles.streakBadge}>
               <Text style={styles.streakBadgeText}>🔥 {currentStreak}</Text>
             </View>
@@ -222,8 +225,9 @@ const styles = StyleSheet.create({
 
   // Hero
   heroSection: { alignItems: 'center', paddingVertical: 16, gap: 10 },
-  avatarWrap:  { position: 'relative', marginBottom: 4 },
-  avatarEmoji: { fontSize: 72 },
+  avatarWrap:   { position: 'relative', marginBottom: 4 },
+  avatarCircle: { width: 100, height: 100, borderRadius: 50, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  avatarEmoji:  { fontSize: 56 },
   streakBadge: {
     position: 'absolute', bottom: -4, right: -8,
     backgroundColor: 'rgba(255,107,53,0.15)',
