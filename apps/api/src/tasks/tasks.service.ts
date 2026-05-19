@@ -21,13 +21,13 @@ export class TasksService {
   }
 
   async create(body: { childId: string; title: string; points: number; frequency?: string }) {
-    const child = await this.children.findOneOrFail({ where: { id: body.childId } });
+    const child = await this.children.findOne({ where: { id: body.childId } }).then(c => { if (!c) throw new NotFoundException('Enfant introuvable'); return c; });
     const task  = this.tasks.create({ title: body.title, points: body.points, frequency: (body.frequency as any) ?? 'daily', child });
     return this.tasks.save(task);
   }
 
   async complete(id: string, photoUrl?: string) {
-    const task = await this.tasks.findOneOrFail({ where: { id }, relations: ['child', 'child.family'] });
+    const task = await this.tasks.findOne({ where: { id }, relations: ['child', 'child.family'] }).then(t => { if (!t) throw new NotFoundException('Tâche introuvable'); return t; });
     if (task.status !== 'created') throw new ConflictException('Tâche déjà soumise');
 
     await this.ds.transaction(async em => {
@@ -41,11 +41,11 @@ export class TasksService {
         }));
       }
     });
-    return this.tasks.findOneOrFail({ where: { id } });
+    return this.tasks.findOne({ where: { id } }).then(t => { if (!t) throw new NotFoundException('Tâche introuvable'); return t; });
   }
 
   async approve(id: string) {
-    const task = await this.tasks.findOneOrFail({ where: { id }, relations: ['child'] });
+    const task = await this.tasks.findOne({ where: { id }, relations: ['child'] }).then(t => { if (!t) throw new NotFoundException('Tâche introuvable'); return t; });
     if (task.status !== 'pending_approval') throw new ConflictException();
 
     await this.ds.transaction(async em => {
@@ -61,13 +61,13 @@ export class TasksService {
         }));
       }
     });
-    return this.tasks.findOneOrFail({ where: { id } });
+    return this.tasks.findOne({ where: { id } }).then(t => { if (!t) throw new NotFoundException('Tâche introuvable'); return t; });
   }
 
   async reject(id: string, reason?: string) {
-    const task = await this.tasks.findOneOrFail({ where: { id }, relations: ['child'] });
+    const task = await this.tasks.findOne({ where: { id }, relations: ['child'] }).then(t => { if (!t) throw new NotFoundException('Tâche introuvable'); return t; });
     if (task.status !== 'pending_approval') throw new ConflictException();
     await this.tasks.update(id, { status: 'rejected', rejectionReason: reason ?? '' });
-    return this.tasks.findOneOrFail({ where: { id } });
+    return this.tasks.findOne({ where: { id } }).then(t => { if (!t) throw new NotFoundException('Tâche introuvable'); return t; });
   }
 }
