@@ -20,6 +20,7 @@ import { PinAttempt }         from '../children/pin-attempt.entity';
 import { EmailVerification }  from './entities/email-verification.entity';
 import { PasswordReset }      from './entities/password-reset.entity';
 import { JwtPayload }         from './decorators/current-user.decorator';
+import { EmailService }       from '../email/email.service';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -28,10 +29,6 @@ const PIN_LOCK_MINUTES  = 15;
 const CODE_EXPIRES_MIN  = 15;
 const BCRYPT_ROUNDS     = 12;
 
-// ─── Console colours (kept light – no prod email yet) ────────────────────────
-const cyan  = (s: string) => `\x1b[36m${s}\x1b[0m`;
-const green = (s: string) => `\x1b[32m${s}\x1b[0m`;
-const bold  = (s: string) => `\x1b[1m${s}\x1b[0m`;
 
 // ─── JWT Strategy (lives here to keep the module lean) ───────────────────────
 
@@ -62,6 +59,7 @@ export class AuthService {
     @InjectRepository(EmailVerification)  private emailVerifs:   Repository<EmailVerification>,
     @InjectRepository(PasswordReset)      private pwdResets:     Repository<PasswordReset>,
     private jwt:    JwtService,
+    private email:  EmailService,
   ) {}
 
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -76,15 +74,6 @@ export class AuthService {
 
   private codeExpiry(): Date {
     return new Date(Date.now() + CODE_EXPIRES_MIN * 60 * 1_000);
-  }
-
-  private logCode(action: string, email: string, code: string): void {
-    console.log(
-      bold(`\n  [KidPoints Auth] ${action}`),
-      `\n  Email : ${cyan(email)}`,
-      `\n  Code  : ${green(bold(code))}`,
-      `\n  (expires in ${CODE_EXPIRES_MIN} minutes)\n`,
-    );
   }
 
   private parentJwt(account: ParentAccount & { family: Family }) {
@@ -113,7 +102,7 @@ export class AuthService {
     );
 
     const code = await this.createEmailVerificationCode(email);
-    this.logCode('Email verification code', email, code);
+    await this.email.sendVerificationCode(email, code);
 
     return { message: 'Famille créée. Vérifiez votre e-mail pour confirmer votre compte.' };
   }
@@ -146,7 +135,7 @@ export class AuthService {
     }
 
     const code = await this.createEmailVerificationCode(email);
-    this.logCode('Email verification code (resend)', email, code);
+    await this.email.sendVerificationCode(email, code);
 
     return { message: 'Si ce compte existe, un nouveau code vous a été envoyé.' };
   }
@@ -158,7 +147,7 @@ export class AuthService {
     const account = await this.accounts.findOne({ where: { email } });
     if (account) {
       const code = await this.createPasswordResetCode(email);
-      this.logCode('Password reset code', email, code);
+      await this.email.sendPasswordReset(email, code);
     }
     return { message: 'Si ce compte existe, un code de réinitialisation vous a été envoyé.' };
   }
@@ -255,7 +244,7 @@ export class AuthService {
     );
 
     const code = await this.createEmailVerificationCode(email);
-    this.logCode('Email verification code (join)', email, code);
+    await this.email.sendVerificationCode(email, code);
 
     return { message: 'Compte co-parent créé. Vérifiez votre e-mail pour confirmer.' };
   }

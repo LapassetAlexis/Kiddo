@@ -5,6 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule }   from '@nestjs/typeorm';
 import { AuthController }      from './auth.controller';
 import { AuthService, JwtStrategy } from './auth.service';
+import { EmailModule }     from '../email/email.module';
 import { Family }              from '../families/family.entity';
 import { ParentAccount }       from '../families/parent-account.entity';
 import { Child }               from '../children/child.entity';
@@ -14,6 +15,7 @@ import { PasswordReset }       from './entities/password-reset.entity';
 
 @Module({
   imports: [
+    EmailModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     TypeOrmModule.forFeature([Family, ParentAccount, Child, PinAttempt, EmailVerification, PasswordReset]),
     JwtModule.registerAsync({

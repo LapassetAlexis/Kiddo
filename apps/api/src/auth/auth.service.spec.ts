@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 
 import { AuthService } from './auth.service';
+import { EmailService } from '../email/email.service';
 import { Family } from '../families/family.entity';
 import { ParentAccount } from '../families/parent-account.entity';
 import { Child } from '../children/child.entity';
@@ -72,6 +73,11 @@ describe('AuthService', () => {
 
     jwtService = { sign: jest.fn().mockReturnValue('signed-token') };
 
+    const emailSvc: jest.Mocked<Pick<EmailService, 'sendVerificationCode' | 'sendPasswordReset'>> = {
+      sendVerificationCode: jest.fn().mockResolvedValue(undefined),
+      sendPasswordReset:    jest.fn().mockResolvedValue(undefined),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
@@ -82,6 +88,7 @@ describe('AuthService', () => {
         { provide: getRepositoryToken(EmailVerification), useValue: emailVerifRepo },
         { provide: getRepositoryToken(PasswordReset),     useValue: pwdResetRepo },
         { provide: JwtService,                            useValue: jwtService },
+        { provide: EmailService,                          useValue: emailSvc },
       ],
     }).compile();
 
