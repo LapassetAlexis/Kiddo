@@ -58,7 +58,11 @@ export default function ParentDashboardScreen() {
             >
               <Text style={styles.switchBtnText}>👶</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.addBtn} activeOpacity={0.8}>
+            <TouchableOpacity
+              style={styles.addBtn}
+              onPress={() => router.push('/(parent)/create-task')}
+              activeOpacity={0.8}
+            >
               <Text style={styles.addBtnText}>+</Text>
             </TouchableOpacity>
           </View>
