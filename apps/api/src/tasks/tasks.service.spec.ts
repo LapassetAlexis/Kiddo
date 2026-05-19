@@ -135,13 +135,13 @@ describe('TasksService', () => {
       const child = makeChild();
       const savedTask = makeTask();
 
-      childRepo.findOneOrFail.mockResolvedValue(child);
+      childRepo.findOne.mockResolvedValue(child);
       taskRepo.create.mockReturnValue(savedTask);
       taskRepo.save.mockResolvedValue(savedTask);
 
       const result = await service.create({ childId: 'child-1', title: 'Clean room', points: 10 });
 
-      expect(childRepo.findOneOrFail).toHaveBeenCalledWith({ where: { id: 'child-1' } });
+      expect(childRepo.findOne).toHaveBeenCalledWith({ where: { id: 'child-1' } });
       expect(taskRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({ title: 'Clean room', points: 10 }),
       );
@@ -151,7 +151,7 @@ describe('TasksService', () => {
 
     it('defaults frequency to daily when not provided', async () => {
       const child = makeChild();
-      childRepo.findOneOrFail.mockResolvedValue(child);
+      childRepo.findOne.mockResolvedValue(child);
       taskRepo.create.mockReturnValue(makeTask({ frequency: 'daily' }));
       taskRepo.save.mockResolvedValue(makeTask({ frequency: 'daily' }));
 
@@ -164,7 +164,7 @@ describe('TasksService', () => {
 
     it('uses provided frequency when given', async () => {
       const child = makeChild();
-      childRepo.findOneOrFail.mockResolvedValue(child);
+      childRepo.findOne.mockResolvedValue(child);
       taskRepo.create.mockReturnValue(makeTask({ frequency: 'weekly' }));
       taskRepo.save.mockResolvedValue(makeTask({ frequency: 'weekly' }));
 
@@ -183,8 +183,8 @@ describe('TasksService', () => {
       const task = makeTask({ status: 'created' });
       const updatedTask = makeTask({ status: 'pending_approval', submittedAt: new Date() });
 
-      taskRepo.findOneOrFail.mockResolvedValueOnce(task); // first call in complete()
-      taskRepo.findOneOrFail.mockResolvedValueOnce(updatedTask); // second call after transaction
+      taskRepo.findOne.mockResolvedValueOnce(task); // first call in complete()
+      taskRepo.findOne.mockResolvedValueOnce(updatedTask); // second call after transaction
 
       const result = await service.complete('task-1');
 
@@ -203,8 +203,8 @@ describe('TasksService', () => {
       const task = makeTask({ status: 'created', child });
       const updatedTask = makeTask({ status: 'pending_approval', submittedAt: new Date(), child });
 
-      taskRepo.findOneOrFail.mockResolvedValueOnce(task);
-      taskRepo.findOneOrFail.mockResolvedValueOnce(updatedTask);
+      taskRepo.findOne.mockResolvedValueOnce(task);
+      taskRepo.findOne.mockResolvedValueOnce(updatedTask);
 
       await service.complete('task-1');
 
@@ -220,8 +220,8 @@ describe('TasksService', () => {
       const task = makeTask({ status: 'created', child });
       const updatedTask = makeTask({ status: 'pending_approval', child });
 
-      taskRepo.findOneOrFail.mockResolvedValueOnce(task);
-      taskRepo.findOneOrFail.mockResolvedValueOnce(updatedTask);
+      taskRepo.findOne.mockResolvedValueOnce(task);
+      taskRepo.findOne.mockResolvedValueOnce(updatedTask);
 
       await service.complete('task-1');
 
@@ -230,21 +230,21 @@ describe('TasksService', () => {
 
     it('throws ConflictException when task is already in pending_approval', async () => {
       const task = makeTask({ status: 'pending_approval' });
-      taskRepo.findOneOrFail.mockResolvedValue(task);
+      taskRepo.findOne.mockResolvedValue(task);
 
       await expect(service.complete('task-1')).rejects.toThrow(ConflictException);
     });
 
     it('throws ConflictException when task is already validated', async () => {
       const task = makeTask({ status: 'validated' });
-      taskRepo.findOneOrFail.mockResolvedValue(task);
+      taskRepo.findOne.mockResolvedValue(task);
 
       await expect(service.complete('task-1')).rejects.toThrow(ConflictException);
     });
 
     it('throws ConflictException when task is already rejected', async () => {
       const task = makeTask({ status: 'rejected' });
-      taskRepo.findOneOrFail.mockResolvedValue(task);
+      taskRepo.findOne.mockResolvedValue(task);
 
       await expect(service.complete('task-1')).rejects.toThrow(ConflictException);
     });
@@ -257,8 +257,8 @@ describe('TasksService', () => {
       const task = makeTask({ status: 'pending_approval', points: 25 });
       const validatedTask = makeTask({ status: 'validated', validatedAt: new Date() });
 
-      taskRepo.findOneOrFail.mockResolvedValueOnce(task);   // initial load
-      taskRepo.findOneOrFail.mockResolvedValueOnce(validatedTask); // after transaction
+      taskRepo.findOne.mockResolvedValueOnce(task);   // initial load
+      taskRepo.findOne.mockResolvedValueOnce(validatedTask); // after transaction
 
       const result = await service.approve('task-1');
 
@@ -280,8 +280,8 @@ describe('TasksService', () => {
       const task = makeTask({ status: 'pending_approval', points: 10, child });
       const validatedTask = makeTask({ status: 'validated' });
 
-      taskRepo.findOneOrFail.mockResolvedValueOnce(task);
-      taskRepo.findOneOrFail.mockResolvedValueOnce(validatedTask);
+      taskRepo.findOne.mockResolvedValueOnce(task);
+      taskRepo.findOne.mockResolvedValueOnce(validatedTask);
 
       await service.approve('task-1');
 
@@ -296,8 +296,8 @@ describe('TasksService', () => {
       const task = makeTask({ status: 'pending_approval', points: 10, child });
       const validatedTask = makeTask({ status: 'validated' });
 
-      taskRepo.findOneOrFail.mockResolvedValueOnce(task);
-      taskRepo.findOneOrFail.mockResolvedValueOnce(validatedTask);
+      taskRepo.findOne.mockResolvedValueOnce(task);
+      taskRepo.findOne.mockResolvedValueOnce(validatedTask);
 
       await service.approve('task-1');
 
@@ -310,14 +310,14 @@ describe('TasksService', () => {
 
     it('throws ConflictException when task is still in created state', async () => {
       const task = makeTask({ status: 'created' });
-      taskRepo.findOneOrFail.mockResolvedValue(task);
+      taskRepo.findOne.mockResolvedValue(task);
 
       await expect(service.approve('task-1')).rejects.toThrow(ConflictException);
     });
 
     it('throws ConflictException when task is already validated', async () => {
       const task = makeTask({ status: 'validated' });
-      taskRepo.findOneOrFail.mockResolvedValue(task);
+      taskRepo.findOne.mockResolvedValue(task);
 
       await expect(service.approve('task-1')).rejects.toThrow(ConflictException);
     });
@@ -330,9 +330,9 @@ describe('TasksService', () => {
       const task = makeTask({ status: 'pending_approval' });
       const rejectedTask = makeTask({ status: 'rejected', rejectionReason: 'Not done well' });
 
-      taskRepo.findOneOrFail.mockResolvedValueOnce(task);
+      taskRepo.findOne.mockResolvedValueOnce(task);
       taskRepo.update.mockResolvedValue(undefined as any);
-      taskRepo.findOneOrFail.mockResolvedValueOnce(rejectedTask);
+      taskRepo.findOne.mockResolvedValueOnce(rejectedTask);
 
       const result = await service.reject('task-1', 'Not done well');
 
@@ -350,9 +350,9 @@ describe('TasksService', () => {
       const task = makeTask({ status: 'pending_approval' });
       const rejectedTask = makeTask({ status: 'rejected', rejectionReason: '' });
 
-      taskRepo.findOneOrFail.mockResolvedValueOnce(task);
+      taskRepo.findOne.mockResolvedValueOnce(task);
       taskRepo.update.mockResolvedValue(undefined as any);
-      taskRepo.findOneOrFail.mockResolvedValueOnce(rejectedTask);
+      taskRepo.findOne.mockResolvedValueOnce(rejectedTask);
 
       await service.reject('task-1');
 
@@ -364,21 +364,21 @@ describe('TasksService', () => {
 
     it('throws ConflictException when task is still in created state', async () => {
       const task = makeTask({ status: 'created' });
-      taskRepo.findOneOrFail.mockResolvedValue(task);
+      taskRepo.findOne.mockResolvedValue(task);
 
       await expect(service.reject('task-1', 'reason')).rejects.toThrow(ConflictException);
     });
 
     it('throws ConflictException when task is already validated', async () => {
       const task = makeTask({ status: 'validated' });
-      taskRepo.findOneOrFail.mockResolvedValue(task);
+      taskRepo.findOne.mockResolvedValue(task);
 
       await expect(service.reject('task-1')).rejects.toThrow(ConflictException);
     });
 
     it('throws ConflictException when task is already rejected', async () => {
       const task = makeTask({ status: 'rejected' });
-      taskRepo.findOneOrFail.mockResolvedValue(task);
+      taskRepo.findOne.mockResolvedValue(task);
 
       await expect(service.reject('task-1')).rejects.toThrow(ConflictException);
     });
@@ -387,9 +387,9 @@ describe('TasksService', () => {
       const task = makeTask({ status: 'pending_approval' });
       const rejectedTask = makeTask({ status: 'rejected' });
 
-      taskRepo.findOneOrFail.mockResolvedValueOnce(task);
+      taskRepo.findOne.mockResolvedValueOnce(task);
       taskRepo.update.mockResolvedValue(undefined as any);
-      taskRepo.findOneOrFail.mockResolvedValueOnce(rejectedTask);
+      taskRepo.findOne.mockResolvedValueOnce(rejectedTask);
 
       await service.reject('task-1', 'reason');
 
