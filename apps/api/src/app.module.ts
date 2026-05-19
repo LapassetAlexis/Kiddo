@@ -1,13 +1,31 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AuthModule }         from './auth/auth.module';
-import { FamiliesModule }     from './families/families.module';
-import { ChildrenModule }     from './children/children.module';
-import { TasksModule }        from './tasks/tasks.module';
-import { RewardsModule }      from './rewards/rewards.module';
-import { TransactionsModule } from './transactions/transactions.module';
-import { NotificationsModule }from './notifications/notifications.module';
+import { AuthModule }          from './auth/auth.module';
+import { FamiliesModule }      from './families/families.module';
+import { ChildrenModule }      from './children/children.module';
+import { TasksModule }         from './tasks/tasks.module';
+import { RewardsModule }       from './rewards/rewards.module';
+import { TransactionsModule }  from './transactions/transactions.module';
+import { NotificationsModule } from './notifications/notifications.module';
+
+// Entities
+import { Family }               from './families/family.entity';
+import { Child }                from './children/child.entity';
+import { PinAttempt }           from './children/pin-attempt.entity';
+import { Task }                 from './tasks/task.entity';
+import { Reward }               from './rewards/reward.entity';
+import { Transaction }          from './transactions/transaction.entity';
+import { NotificationIntent }   from './notifications/notification-intent.entity';
+import { EmailVerification }    from './auth/entities/email-verification.entity';
+import { PasswordReset }        from './auth/entities/password-reset.entity';
+
+const entities = [
+  Family, Child, PinAttempt,
+  Task, Reward, Transaction,
+  NotificationIntent,
+  EmailVerification, PasswordReset,
+];
 
 @Module({
   imports: [
@@ -18,9 +36,9 @@ import { NotificationsModule }from './notifications/notifications.module';
       useFactory: (config: ConfigService) => ({
         type:        'postgres',
         url:          config.get<string>('DATABASE_URL'),
-        entities:    [__dirname + '/**/*.entity{.ts,.js}'],
+        entities,
         synchronize:  config.get<string>('NODE_ENV') === 'development',
-        logging:      false,
+        logging:      config.get<string>('NODE_ENV') === 'development',
       }),
     }),
     AuthModule,

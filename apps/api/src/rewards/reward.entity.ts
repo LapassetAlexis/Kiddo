@@ -9,6 +9,7 @@ export class Reward {
   @PrimaryGeneratedColumn('uuid') id: string;
   @Column()                       title: string;
   @Column({ nullable: true })     description: string;
+  @Column({ nullable: true })     emoji: string;
   @Column()                       cost: number;
   @Column({ default: 'unlimited' }) availability: RewardAvailability;
   @Column({ default: 'available' }) status: RewardStatus;

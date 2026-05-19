@@ -11,5 +11,6 @@ import { Child }           from '../children/child.entity';
   imports:     [TypeOrmModule.forFeature([Task, Transaction, NotificationIntent, Child])],
   controllers: [TasksController],
   providers:   [TasksService],
+  exports:     [TasksService, TypeOrmModule],
 })
 export class TasksModule {}
