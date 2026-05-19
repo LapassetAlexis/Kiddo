@@ -307,7 +307,7 @@ describe('Tasks E2E', () => {
   // ── Parent rejects task ───────────────────────────────────────────────────────
 
   describe('PATCH /api/tasks/:id/reject', () => {
-    it('changes status to rejected without creating a transaction', async () => {
+    it('remet la tâche en created avec la raison et sans transaction', async () => {
       const createRes = await request(app.getHttpServer())
         .post('/api/tasks')
         .set('Authorization', `Bearer ${parentTokenA}`)
@@ -325,8 +325,10 @@ describe('Tasks E2E', () => {
         .send({ reason: 'Not done properly' });
 
       expect(rejectRes.status).toBe(200);
-      expect(rejectRes.body.status).toBe('rejected');
+      expect(rejectRes.body.status).toBe('created');
       expect(rejectRes.body.rejectionReason).toBe('Not done properly');
+      expect(rejectRes.body.note).toBeNull();
+      expect(rejectRes.body.photoUrl).toBeNull();
 
       // No transaction should have been created
       const transactions = await transactionRepo.find({ where: { referenceId: taskId } });
