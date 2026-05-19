@@ -1,8 +1,9 @@
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, KeyboardAvoidingView, Platform, Alert,
+  ScrollView, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { useState } from 'react';
+import AppModal, { useAppModal } from '@/components/ui/AppModal';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Radii, Spacing } from '@/constants/theme';
@@ -18,11 +19,12 @@ export default function CreateChildScreen() {
   const [pin, setPin]           = useState('');
   const [pinConfirm, setPinConfirm] = useState('');
   const [loading, setLoading]   = useState(false);
+  const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
 
   // ── Step 1 : nom + avatar ──────────────────────────────────────────
   function submitInfo() {
     if (!name.trim()) {
-      Alert.alert('Prénom requis', 'Entre le prénom de l\'enfant.');
+      showModal({ icon: '✏️', title: 'Prénom requis', message: 'Entre le prénom de l\'enfant.' });
       return;
     }
     setStep('pin');
@@ -47,20 +49,18 @@ export default function CreateChildScreen() {
   // ── Step 3 : confirmation PIN ──────────────────────────────────────
   async function submitCreate() {
     if (pin !== pinConfirm) {
-      Alert.alert('Les codes ne correspondent pas', 'Recommence la confirmation.');
-      setPinConfirm('');
-      setStep('confirm');
+      showModal({ icon: '🔢', title: 'Codes différents', message: 'Les deux codes ne correspondent pas.\nRecommence la confirmation.', buttons: [{ label: 'Réessayer', style: 'default', onPress: () => { setPinConfirm(''); setStep('confirm'); } }] });
       return;
     }
     setLoading(true);
-    // TODO: POST /children { name, avatar, pin, familyId }
     await new Promise(r => setTimeout(r, 600));
     setLoading(false);
-    Alert.alert(
-      `${avatar} ${name} ajouté·e !`,
-      'Le profil est créé. Tu peux maintenant lui assigner des tâches.',
-      [{ text: 'OK', onPress: () => router.replace('/(parent)/dashboard') }]
-    );
+    showModal({
+      icon: avatar,
+      title: `${name} ajouté·e !`,
+      message: 'Le profil est créé. Tu peux maintenant lui assigner des tâches.',
+      buttons: [{ label: 'Aller au tableau de bord', style: 'default', onPress: () => router.replace('/(parent)/dashboard') }],
+    });
   }
 
   const KEYS = ['1','2','3','4','5','6','7','8','9','','0','⌫'];
@@ -185,6 +185,7 @@ export default function CreateChildScreen() {
         )}
 
       </KeyboardAvoidingView>
+      <AppModal config={modalCfg} onHide={hideModal} />
     </SafeAreaView>
   );
 }

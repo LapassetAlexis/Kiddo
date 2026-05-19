@@ -1,8 +1,9 @@
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, Animated, Pressable } from 'react-native';
+import { useState, useRef } from 'react';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Radii, Spacing } from '@/constants/theme';
+import AppModal, { useAppModal } from '@/components/ui/AppModal';
 
 const CHILDREN = [
   { id: '1', name: 'Lucas', emoji: '🦊', pts: 120, nextReward: 'Soirée TV',   progress: 0.70, pending: 1 },
@@ -21,23 +22,47 @@ const REWARD_REQUESTS = [
 ];
 
 export default function ParentDashboardScreen() {
-  const [pending, setPending] = useState<PendingTask[]>(INITIAL_PENDING);
+  const [pending, setPending]     = useState<PendingTask[]>(INITIAL_PENDING);
+  const [addModal, setAddModal]   = useState(false);
+  const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
+  const slideAnim = useRef(new Animated.Value(300)).current;
+
+  function openAddModal() {
+    setAddModal(true);
+    Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, bounciness: 4 }).start();
+  }
+
+  function closeAddModal() {
+    Animated.timing(slideAnim, { toValue: 300, duration: 200, useNativeDriver: true }).start(() => setAddModal(false));
+  }
+
+  function goTo(path: '/(parent)/create-task' | '/(parent)/create-reward') {
+    closeAddModal();
+    setTimeout(() => router.push(path), 220);
+  }
 
   function approve(id: string) {
     const task = pending.find(t => t.id === id);
     setPending(p => p.filter(t => t.id !== id));
-    Alert.alert('✅ Validé !', `${task?.taskName} de ${task?.childName} validée. +${task?.pts} pts crédités.`);
+    showModal({
+      icon: '✅',
+      title: 'Tâche validée !',
+      message: `${task?.taskName} de ${task?.childName} validée.\n+${task?.pts} pts crédités.`,
+      buttons: [{ label: 'Super !', style: 'default' }],
+    });
   }
 
   function reject(id: string) {
-    Alert.prompt(
-      'Raison du rejet',
-      'Message pour ton enfant (optionnel)',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        { text: 'Rejeter', style: 'destructive', onPress: () => setPending(p => p.filter(t => t.id !== id)) },
-      ]
-    );
+    const task = pending.find(t => t.id === id);
+    showModal({
+      icon: '❌',
+      title: 'Rejeter la tâche ?',
+      message: `${task?.taskName} de ${task?.childName} sera rejetée et l'enfant en sera notifié.`,
+      buttons: [
+        { label: 'Rejeter', style: 'destructive', onPress: () => setPending(p => p.filter(t => t.id !== id)) },
+        { label: 'Annuler', style: 'cancel' },
+      ],
+    });
   }
 
   return (
@@ -60,7 +85,7 @@ export default function ParentDashboardScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.addBtn}
-              onPress={() => router.push('/(parent)/create-task')}
+              onPress={openAddModal}
               activeOpacity={0.8}
             >
               <Text style={styles.addBtnText}>+</Text>
@@ -141,7 +166,7 @@ export default function ParentDashboardScreen() {
         )}
 
         {/* Reward requests */}
-        <View style={styles.sectionHeader}>
+        <View style={[styles.sectionHeader, { marginTop: 28 }]}>
           <Text style={styles.sectionTitle}>RÉCOMPENSES RÉCLAMÉES</Text>
         </View>
         <View style={styles.list}>
@@ -161,6 +186,55 @@ export default function ParentDashboardScreen() {
 
         <View style={{ height: 20 }} />
       </ScrollView>
+
+      <AppModal config={modalCfg} onHide={hideModal} />
+
+      {/* ── Modal Ajouter ── */}
+      <Modal visible={addModal} transparent animationType="none" onRequestClose={closeAddModal}>
+        <Pressable style={styles.modalOverlay} onPress={closeAddModal}>
+          <Animated.View
+            style={[styles.modalSheet, { transform: [{ translateY: slideAnim }] }]}
+          >
+            <Pressable>
+              {/* Handle */}
+              <View style={styles.modalHandle} />
+
+              <Text style={styles.modalTitle}>Ajouter</Text>
+              <Text style={styles.modalSub}>Que veux-tu créer ?</Text>
+
+              <TouchableOpacity
+                style={styles.modalBtn}
+                onPress={() => goTo('/(parent)/create-task')}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.modalBtnIcon}>📋</Text>
+                <View style={styles.modalBtnText}>
+                  <Text style={styles.modalBtnLabel}>Une tâche</Text>
+                  <Text style={styles.modalBtnDesc}>Assigne une mission à tes enfants</Text>
+                </View>
+                <Text style={styles.modalBtnArrow}>›</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.modalBtn}
+                onPress={() => goTo('/(parent)/create-reward')}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.modalBtnIcon}>🎁</Text>
+                <View style={styles.modalBtnText}>
+                  <Text style={styles.modalBtnLabel}>Une récompense</Text>
+                  <Text style={styles.modalBtnDesc}>Crée un cadeau à échanger contre des points</Text>
+                </View>
+                <Text style={styles.modalBtnArrow}>›</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.modalCancel} onPress={closeAddModal} activeOpacity={0.7}>
+                <Text style={styles.modalCancelText}>Annuler</Text>
+              </TouchableOpacity>
+            </Pressable>
+          </Animated.View>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -212,4 +286,40 @@ const styles = StyleSheet.create({
   grantBtnText: { fontSize: 13, fontWeight: '900', color: '#1a1000' },
   emptyPending: { alignItems: 'center', padding: 32 },
   emptyText:    { fontSize: 15, fontWeight: '800', color: Colors.textDim },
+  // Modal
+  modalOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    backgroundColor: '#1e1e26',
+    borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    padding: 20, paddingBottom: 36,
+    borderTopWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
+  },
+  modalHandle: {
+    width: 36, height: 4, borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignSelf: 'center', marginBottom: 20,
+  },
+  modalTitle: { fontSize: 20, fontWeight: '900', color: Colors.textPrimary, marginBottom: 4 },
+  modalSub:   { fontSize: 13, fontWeight: '600', color: Colors.textDim, marginBottom: 20 },
+
+  modalBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    backgroundColor: Colors.orange,
+    borderRadius: 18, padding: 18, marginBottom: 12,
+  },
+  modalBtnIcon:  { fontSize: 26 },
+  modalBtnText:  { flex: 1 },
+  modalBtnLabel: { fontSize: 16, fontWeight: '900', color: '#fff' },
+  modalBtnDesc:  { fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.7)', marginTop: 2 },
+  modalBtnArrow: { fontSize: 22, color: 'rgba(255,255,255,0.5)', fontWeight: '300' },
+
+  modalCancel: {
+    alignItems: 'center', padding: 16,
+    backgroundColor: Colors.bgCard, borderRadius: 18,
+    borderWidth: 1, borderColor: Colors.border, marginTop: 4,
+  },
+  modalCancelText: { fontSize: 15, fontWeight: '800', color: Colors.textDim },
 });

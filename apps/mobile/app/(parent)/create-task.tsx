@@ -1,8 +1,9 @@
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, KeyboardAvoidingView, Platform, Alert, Switch,
+  ScrollView, KeyboardAvoidingView, Platform, Switch,
 } from 'react-native';
 import { useState } from 'react';
+import AppModal, { useAppModal } from '@/components/ui/AppModal';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Radii, Spacing } from '@/constants/theme';
@@ -40,6 +41,7 @@ export default function CreateTaskScreen() {
   const [weekDay, setWeekDay]       = useState(0); // 0=Lun … 6=Dim
   const [assignedIds, setAssignedIds] = useState<string[]>(CHILDREN.map(c => c.id));
   const [loading, setLoading]       = useState(false);
+  const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
 
   function toggleChild(id: string) {
     setAssignedIds(prev =>
@@ -54,30 +56,30 @@ export default function CreateTaskScreen() {
 
   async function submit() {
     if (!title.trim()) {
-      Alert.alert('Titre requis', 'Donne un nom à la tâche.');
+      showModal({ icon: '✏️', title: 'Titre requis', message: 'Donne un nom à la tâche.' });
       return;
     }
     const pts = parseInt(points, 10);
     if (!pts || pts < 1 || pts > 999) {
-      Alert.alert('Points invalides', 'Entre un nombre entre 1 et 999.');
+      showModal({ icon: '🔢', title: 'Points invalides', message: 'Entre un nombre entre 1 et 999.' });
       return;
     }
     if (assignedIds.length === 0) {
-      Alert.alert('Enfant requis', 'Assigne la tâche à au moins un enfant.');
+      showModal({ icon: '👶', title: 'Enfant requis', message: 'Assigne la tâche à au moins un enfant.' });
       return;
     }
 
     setLoading(true);
-    // TODO: POST /tasks { title, points: pts, frequency, weekDay: frequency === 'weekly' ? weekDay : null, childIds: assignedIds }
     await new Promise(r => setTimeout(r, 600));
     setLoading(false);
 
     const names = CHILDREN.filter(c => assignedIds.includes(c.id)).map(c => c.name).join(' et ');
-    Alert.alert(
-      'Tâche créée !',
-      `"${title}" (+${pts} pts) assignée à ${names}.`,
-      [{ text: 'OK', onPress: () => router.back() }]
-    );
+    showModal({
+      icon: '📋',
+      title: 'Tâche créée !',
+      message: `"${title}" (+${pts} pts)\nassignée à ${names}.`,
+      buttons: [{ label: 'Super !', style: 'default', onPress: () => router.back() }],
+    });
   }
 
   return (
@@ -267,6 +269,7 @@ export default function CreateTaskScreen() {
           <View style={{ height: 32 }} />
         </ScrollView>
       </KeyboardAvoidingView>
+      <AppModal config={modalCfg} onHide={hideModal} />
     </SafeAreaView>
   );
 }

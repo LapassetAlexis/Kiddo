@@ -1,6 +1,8 @@
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Radii, Spacing } from '@/constants/theme';
+import AppModal, { useAppModal } from '@/components/ui/AppModal';
 
 const REWARDS = [
   { id: '1', name: 'Soirée TV',        emoji: '📺', cost: 50,  available: true  },
@@ -14,16 +16,19 @@ const REWARDS = [
 const MY_PTS = 120;
 
 export default function RewardsScreen() {
+  const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
+
   function claim(reward: typeof REWARDS[0]) {
     if (!reward.available) return;
-    Alert.alert(
-      `Réclamer "${reward.name}" ?`,
-      `Cela coûte ${reward.cost} pts. Papa/Maman va recevoir ta demande.`,
-      [
-        { text: 'Annuler', style: 'cancel' },
-        { text: 'Réclamer 🎉', onPress: () => { /* TODO: POST /rewards/:id/redeem */ } },
-      ]
-    );
+    showModal({
+      icon: reward.emoji,
+      title: `Réclamer "${reward.name}" ?`,
+      message: `Cela coûte ${reward.cost} pts.\nPapa/Maman va recevoir ta demande.`,
+      buttons: [
+        { label: 'Réclamer 🎉', style: 'default', onPress: () => { /* TODO: POST /rewards/:id/redeem */ } },
+        { label: 'Annuler', style: 'cancel' },
+      ],
+    });
   }
 
   return (
@@ -66,6 +71,7 @@ export default function RewardsScreen() {
           );
         }}
       />
+      <AppModal config={modalCfg} onHide={hideModal} />
     </SafeAreaView>
   );
 }
