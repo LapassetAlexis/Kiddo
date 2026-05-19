@@ -3,6 +3,8 @@ import {
   KeyboardAvoidingView, Platform, ScrollView,
 } from 'react-native';
 import { useState } from 'react';
+import { authApi } from '@/lib/api/auth';
+import { ApiError } from '@/lib/api-client';
 import { router } from 'expo-router';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
@@ -43,11 +45,16 @@ export default function RegisterScreen() {
     }
 
     setLoading(true);
-    // TODO: POST /families { email, password, name } → sends confirmation email
-    await new Promise(r => setTimeout(r, 900));
-    setLoading(false);
-    setCode('');
-    setStep(3);
+    try {
+      await authApi.register(name.trim(), email.trim(), password);
+      setCode('');
+      setStep(3);
+    } catch (err) {
+      const msg = err instanceof ApiError && err.status === 409 ? 'Cet email est déjà utilisé.' : 'Erreur lors de la création du compte.';
+      showModal({ icon: '❌', title: 'Erreur', message: msg });
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function verifyCode() {
@@ -55,26 +62,25 @@ export default function RegisterScreen() {
       showModal({ icon: '🔢', title: 'Code incomplet', message: 'Le code de confirmation fait 6 chiffres.' }); return;
     }
     setLoading(true);
-    // TODO: POST /auth/verify-email { email, code }
-    await new Promise(r => setTimeout(r, 700));
-    setLoading(false);
-
-    if (code === '123456') { // demo code
+    try {
+      const { accessToken } = await authApi.verifyEmail(email.trim(), code);
+      await authApi.saveToken(accessToken);
       showModal({
         icon: '🎉',
         title: 'Email confirmé !',
         message: `Bienvenue ${name} ! Tu peux maintenant ajouter tes enfants et créer leurs premières tâches.`,
         buttons: [{ label: 'Commencer →', style: 'default', onPress: () => router.replace('/(parent)/dashboard') }],
       });
-    } else {
+    } catch {
       showModal({ icon: '❌', title: 'Code incorrect', message: 'Vérifie le code reçu par email et réessaie.', buttons: [{ label: 'Réessayer', style: 'default' }] });
+    } finally {
+      setLoading(false);
     }
   }
 
   async function resendCode() {
     setResending(true);
-    // TODO: POST /auth/resend-verification { email }
-    await new Promise(r => setTimeout(r, 800));
+    try { await authApi.resendVerification(email.trim()); } catch {}
     setResending(false);
     showModal({ icon: '📧', title: 'Code renvoyé', message: `Un nouveau code a été envoyé à ${email}.`, buttons: [{ label: 'OK', style: 'default' }] });
   }

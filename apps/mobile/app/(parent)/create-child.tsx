@@ -6,6 +6,8 @@ import { useState } from 'react';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { childrenApi } from '@/lib/api/children';
+import { ApiError } from '@/lib/api-client';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 
 const AVATARS = ['🦊','🐻','🐼','🐨','🦁','🐯','🐸','🐙','🦄','🐶','🐱','🐰'];
@@ -53,7 +55,13 @@ export default function CreateChildScreen() {
       return;
     }
     setLoading(true);
-    await new Promise(r => setTimeout(r, 600));
+    try {
+      await childrenApi.create({ name: name.trim(), avatar, pin });
+    } catch (err) {
+      showModal({ icon: '❌', title: 'Erreur', message: err instanceof ApiError ? err.message : 'Impossible de créer le profil.' });
+      setLoading(false);
+      return;
+    }
     setLoading(false);
     showModal({
       icon: avatar,

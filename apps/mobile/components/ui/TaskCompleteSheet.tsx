@@ -5,6 +5,7 @@ import {
 import { useRef, useEffect, useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import { Colors, Radii } from '@/constants/theme';
+import { tasksApi } from '@/lib/api/tasks';
 
 interface Task { id: string; name: string; pts: number; }
 

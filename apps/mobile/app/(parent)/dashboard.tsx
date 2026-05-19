@@ -4,6 +4,8 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
+import { tasksApi } from '@/lib/api/tasks';
+import { rewardsApi } from '@/lib/api/rewards';
 
 const CHILDREN = [
   { id: '1', name: 'Lucas', emoji: '🦊', pts: 120, nextReward: 'Soirée TV',   progress: 0.70, pending: 1 },
@@ -47,7 +49,8 @@ export default function ParentDashboardScreen() {
       title: `Accorder "${r.rewardName}" ?`,
       message: `${r.childEmoji} ${r.childName} recevra sa récompense.\nLes ${r.pts} pts sont déjà débités.`,
       buttons: [
-        { label: 'Accorder 🎉', style: 'default', onPress: () => {
+        { label: 'Accorder 🎉', style: 'default', onPress: async () => {
+          try { await rewardsApi.grant(id); } catch {}
           setRewards(rs => rs.filter(x => x.id !== id));
           showModal({ icon: '🎉', title: 'Récompense accordée !', message: `${r.childName} va être ravi·e !`, buttons: [{ label: 'Super !', style: 'default' }] });
         }},
@@ -64,7 +67,8 @@ export default function ParentDashboardScreen() {
       title: `Refuser "${r.rewardName}" ?`,
       message: `Les ${r.pts} pts seront recrédités à ${r.childName}.`,
       buttons: [
-        { label: 'Refuser et recréditer', style: 'destructive', onPress: () => {
+        { label: 'Refuser et recréditer', style: 'destructive', onPress: async () => {
+          try { await rewardsApi.refuse(id); } catch {}
           setRewards(rs => rs.filter(x => x.id !== id));
           showModal({ icon: '✅', title: 'Points recrédités', message: `${r.pts} pts rendus à ${r.childName}.`, buttons: [{ label: 'OK', style: 'default' }] });
         }},
@@ -78,8 +82,9 @@ export default function ParentDashboardScreen() {
     setTimeout(() => router.push(path), 220);
   }
 
-  function approve(id: string) {
+  async function approve(id: string) {
     const task = pending.find(t => t.id === id);
+    try { await tasksApi.approve(id); } catch {}
     setPending(p => p.filter(t => t.id !== id));
     showModal({
       icon: '✅',
@@ -96,7 +101,10 @@ export default function ParentDashboardScreen() {
       title: 'Rejeter la tâche ?',
       message: `${task?.taskName} de ${task?.childName} sera rejetée et l'enfant en sera notifié.`,
       buttons: [
-        { label: 'Rejeter', style: 'destructive', onPress: () => setPending(p => p.filter(t => t.id !== id)) },
+        { label: 'Rejeter', style: 'destructive', onPress: async () => {
+          try { await tasksApi.reject(id); } catch {}
+          setPending(p => p.filter(t => t.id !== id));
+        }},
         { label: 'Annuler', style: 'cancel' },
       ],
     });

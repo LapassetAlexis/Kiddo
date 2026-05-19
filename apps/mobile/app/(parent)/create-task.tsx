@@ -6,6 +6,8 @@ import { useState } from 'react';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { tasksApi } from '@/lib/api/tasks';
+import { ApiError } from '@/lib/api-client';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 
 type Frequency = 'once' | 'daily' | 'weekly';
@@ -70,16 +72,27 @@ export default function CreateTaskScreen() {
     }
 
     setLoading(true);
-    await new Promise(r => setTimeout(r, 600));
-    setLoading(false);
-
-    const names = CHILDREN.filter(c => assignedIds.includes(c.id)).map(c => c.name).join(' et ');
-    showModal({
-      icon: '📋',
-      title: 'Tâche créée !',
-      message: `"${title}" (+${pts} pts)\nassignée à ${names}.`,
-      buttons: [{ label: 'Super !', style: 'default', onPress: () => router.back() }],
-    });
+    try {
+      // Créer la tâche pour chaque enfant assigné
+      await Promise.all(assignedIds.map(childId =>
+        tasksApi.create({
+          childId, title, points: pts,
+          frequency,
+          weekDay: frequency === 'weekly' ? weekDay : undefined,
+        })
+      ));
+      const names = CHILDREN.filter(c => assignedIds.includes(c.id)).map(c => c.name).join(' et ');
+      showModal({
+        icon: '📋',
+        title: 'Tâche créée !',
+        message: `"${title}" (+${pts} pts)\nassignée à ${names}.`,
+        buttons: [{ label: 'Super !', style: 'default', onPress: () => router.back() }],
+      });
+    } catch (err) {
+      showModal({ icon: '❌', title: 'Erreur', message: err instanceof ApiError ? err.message : 'Impossible de créer la tâche.' });
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (

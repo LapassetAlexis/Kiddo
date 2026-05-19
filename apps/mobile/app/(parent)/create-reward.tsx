@@ -6,6 +6,8 @@ import { useState } from 'react';
 import { router } from 'expo-router';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { rewardsApi } from '@/lib/api/rewards';
+import { ApiError } from '@/lib/api-client';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 
 type Availability = 'unlimited' | 'once';
@@ -59,15 +61,19 @@ export default function CreateRewardScreen() {
     }
 
     setLoading(true);
-    await new Promise(r => setTimeout(r, 600));
-    setLoading(false);
-
-    showModal({
-      icon: emoji,
-      title: 'Récompense créée !',
-      message: `"${title}" — ${pts} pts\n${availability === 'once' ? 'Une seule fois' : 'Illimitée'}.`,
-      buttons: [{ label: 'Super !', style: 'default', onPress: () => router.back() }],
-    });
+    try {
+      await rewardsApi.create({ title, emoji, cost: pts, availability });
+      showModal({
+        icon: emoji,
+        title: 'Récompense créée !',
+        message: `"${title}" — ${pts} pts\n${availability === 'once' ? 'Une seule fois' : 'Illimitée'}.`,
+        buttons: [{ label: 'Super !', style: 'default', onPress: () => router.back() }],
+      });
+    } catch (err) {
+      showModal({ icon: '❌', title: 'Erreur', message: err instanceof ApiError ? err.message : 'Impossible de créer la récompense.' });
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (

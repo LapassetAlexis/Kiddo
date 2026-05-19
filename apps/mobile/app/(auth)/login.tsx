@@ -1,20 +1,30 @@
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { useState } from 'react';
 import { router } from 'expo-router';
 import { Colors, Radii, Spacing } from '@/constants/theme';
+import { useAuth } from '@/contexts/AuthContext';
+import { ApiError } from '@/lib/api-client';
 
 export default function LoginScreen() {
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading]   = useState(false);
+  const { loginParent } = useAuth();
 
   async function handleParentLogin() {
     if (!email || !password) return;
     setLoading(true);
-    // TODO: POST /auth/parent/login
-    await new Promise(r => setTimeout(r, 800));
-    setLoading(false);
-    router.replace('/(parent)/dashboard');
+    try {
+      await loginParent(email.trim(), password);
+      router.replace('/(parent)/dashboard');
+    } catch (err) {
+      const msg = err instanceof ApiError
+        ? (err.status === 401 ? 'Email ou mot de passe incorrect.' : err.message)
+        : 'Impossible de se connecter. Vérifie ta connexion.';
+      Alert.alert('Connexion échouée', msg);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (

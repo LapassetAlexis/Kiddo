@@ -2,11 +2,14 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors, Radii } from '@/constants/theme';
+import { useAuth } from '@/contexts/AuthContext';
+import { ApiError } from '@/lib/api-client';
 
 export default function ChildPinScreen() {
-  const { name, fromParent } = useLocalSearchParams<{ name: string; fromParent?: string }>();
-  const [pin, setPin] = useState('');
+  const { name, childId, fromParent } = useLocalSearchParams<{ name: string; childId?: string; fromParent?: string }>();
+  const [pin, setPin]   = useState('');
   const [error, setError] = useState(false);
+  const { loginChild }  = useAuth();
 
   function pressDigit(d: string) {
     if (pin.length >= 4) return;
@@ -22,11 +25,10 @@ export default function ChildPinScreen() {
   }
 
   async function validatePin(p: string) {
-    // TODO: POST /auth/child/pin
-    await new Promise(r => setTimeout(r, 400));
-    if (p === '1234') { // demo PIN
+    try {
+      await loginChild(childId ?? '', p);
       router.replace({ pathname: '/(child)/home', params: { fromParent } });
-    } else {
+    } catch (err) {
       setPin('');
       setError(true);
     }

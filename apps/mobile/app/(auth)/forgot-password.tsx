@@ -3,6 +3,8 @@ import {
   KeyboardAvoidingView, Platform, ScrollView,
 } from 'react-native';
 import { useState } from 'react';
+import { authApi } from '@/lib/api/auth';
+import { ApiError } from '@/lib/api-client';
 import { router } from 'expo-router';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
@@ -26,16 +28,20 @@ export default function ForgotPasswordScreen() {
       return;
     }
     setLoading(true);
-    // TODO: POST /auth/forgot-password { email }
-    await new Promise(r => setTimeout(r, 800));
-    setLoading(false);
-    setCode('');
-    setStep('code');
+    try {
+      await authApi.forgotPassword(email.trim());
+      setCode('');
+      setStep('code');
+    } catch {
+      showModal({ icon: '❌', title: 'Erreur', message: 'Impossible d\'envoyer le code. Vérifie l\'email saisi.' });
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function resendCode() {
     setResending(true);
-    await new Promise(r => setTimeout(r, 800));
+    try { await authApi.forgotPassword(email.trim()); } catch {}
     setResending(false);
     showModal({ icon: '📧', title: 'Code renvoyé', message: `Un nouveau code a été envoyé à ${email}.`, buttons: [{ label: 'OK', style: 'default' }] });
   }
@@ -47,16 +53,15 @@ export default function ForgotPasswordScreen() {
       return;
     }
     setLoading(true);
-    // TODO: POST /auth/verify-reset-code { email, code }
-    await new Promise(r => setTimeout(r, 700));
-    setLoading(false);
-
-    if (code === '123456') { // demo code
+    try {
+      await authApi.verifyResetCode(email.trim(), code);
       setNewPwd('');
       setConfirmPwd('');
       setStep('password');
-    } else {
+    } catch {
       showModal({ icon: '❌', title: 'Code incorrect', message: 'Vérifie le code reçu par email.', buttons: [{ label: 'Réessayer', style: 'default' }] });
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -71,8 +76,13 @@ export default function ForgotPasswordScreen() {
       return;
     }
     setLoading(true);
-    // TODO: POST /auth/reset-password { email, code, newPassword }
-    await new Promise(r => setTimeout(r, 900));
+    try {
+      await authApi.resetPassword(email.trim(), code, newPwd);
+    } catch {
+      showModal({ icon: '❌', title: 'Erreur', message: 'Impossible de réinitialiser le mot de passe.' });
+      setLoading(false);
+      return;
+    }
     setLoading(false);
 
     showModal({

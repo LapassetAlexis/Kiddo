@@ -6,6 +6,7 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
+import { useAuth } from '@/contexts/AuthContext';
 
 const CHILDREN = [
   { id: '1', name: 'Lucas', emoji: '🦊', pts: 120 },
@@ -17,6 +18,7 @@ export default function SettingsScreen() {
   const [notifReward, setNotifReward] = useState(true);
   const [notifStreak, setNotifStreak] = useState(false);
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
+  const { logout } = useAuth();
 
   function confirmLogout() {
     showModal({
@@ -24,7 +26,7 @@ export default function SettingsScreen() {
       title: 'Se déconnecter ?',
       message: 'Tu devras te reconnecter avec ton email et ton mot de passe.',
       buttons: [
-        { label: 'Se déconnecter', style: 'destructive', onPress: () => router.replace('/(auth)/login') },
+        { label: 'Se déconnecter', style: 'destructive', onPress: async () => { await logout(); router.replace('/(auth)/login'); } },
         { label: 'Annuler', style: 'cancel' },
       ],
     });
