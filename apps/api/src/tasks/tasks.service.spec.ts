@@ -12,7 +12,7 @@ import { Family } from '../families/family.entity';
 
 // ── Repository mock factory ─────────────────────────────────────────────────
 
-function mockRepo<T>(): jest.Mocked<Repository<T>> {
+function mockRepo<T extends Record<string, any>>(): jest.Mocked<Repository<T>> {
   return {
     findOne: jest.fn(),
     findOneOrFail: jest.fn(),
