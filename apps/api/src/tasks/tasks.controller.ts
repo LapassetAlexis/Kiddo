@@ -1,11 +1,13 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { TasksService } from './tasks.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { JwtPayload } from '../auth/decorators/current-user.decorator';
 
 @Controller('tasks')
 export class TasksController {
   constructor(private svc: TasksService) {}
 
-  // GET /api/tasks?childId=X&status=Y  (dashboard parent + liste enfant)
   @Get()
   getAll(
     @Query('childId') childId?: string,
@@ -14,13 +16,11 @@ export class TasksController {
     return this.svc.getAll(childId, status);
   }
 
-  // GET /api/tasks/history?childId=X  (historique parent)
   @Get('history')
   getHistory(@Query('childId') childId?: string) {
     return this.svc.getHistory(childId);
   }
 
-  // Ancienne route gardée pour compatibilité
   @Get('child/:childId')
   getForChild(@Param('childId') childId: string) {
     return this.svc.getAll(childId);
@@ -37,12 +37,14 @@ export class TasksController {
   }
 
   @Patch(':id/approve')
-  approve(@Param('id') id: string) {
-    return this.svc.approve(id);
+  @UseGuards(JwtAuthGuard)
+  approve(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.svc.approve(id, user.sub);
   }
 
   @Patch(':id/reject')
-  reject(@Param('id') id: string, @Body() body: { reason?: string }) {
-    return this.svc.reject(id, body.reason);
+  @UseGuards(JwtAuthGuard)
+  reject(@Param('id') id: string, @Body() body: { reason?: string }, @CurrentUser() user: JwtPayload) {
+    return this.svc.reject(id, user.sub, body.reason);
   }
 }

@@ -65,7 +65,7 @@ function buildBadgeGroups(tasksCompleted: number, earnedTotal: number, spentTota
 }
 
 export default function ChildProfileScreen() {
-  const { user } = useAuth();
+  const { user, switchToParent: authSwitchToParent } = useAuth();
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
 
   const {
@@ -137,7 +137,14 @@ export default function ChildProfileScreen() {
       title: 'Espace parent',
       message: 'Papa ou maman devra entrer son mot de passe.',
       buttons: [
-        { label: 'Continuer', style: 'default', onPress: () => router.replace('/(parent)/dashboard') },
+        {
+          label: 'Continuer',
+          style: 'default',
+          onPress: async () => {
+            const ok = await authSwitchToParent();
+            if (!ok) router.replace('/(auth)/login');
+          },
+        },
         { label: 'Annuler', style: 'cancel' },
       ],
     });

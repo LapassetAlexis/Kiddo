@@ -1,10 +1,11 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 
 export interface JwtPayload {
-  sub:      string;           // familyId for parent, childId for child
+  sub:      string;           // parentAccountId for parent, childId for child
   role:     'parent' | 'child';
   email?:   string;           // present for parent tokens
-  familyId?: string;          // present for child tokens
+  name?:    string;           // parent display name (from ParentAccount.name)
+  familyId?: string;          // present for both parent and child tokens
   iat?:     number;
   exp?:     number;
 }

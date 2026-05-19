@@ -14,6 +14,7 @@ export interface Reward {
   childId?: string;
   childName?: string;
   childEmoji?: string;
+  grantedByName?: string;
 }
 
 export const rewardsApi = {

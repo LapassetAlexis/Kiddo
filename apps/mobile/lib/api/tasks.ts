@@ -15,6 +15,7 @@ export interface Task {
   rejectionReason?: string;
   submittedAt?: string;
   validatedAt?: string;
+  approvedByName?: string;
   createdAt: string;
   child: { id: string; name: string; avatar: string; color: string };
 }

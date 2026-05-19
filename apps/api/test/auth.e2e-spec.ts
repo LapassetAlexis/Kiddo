@@ -16,6 +16,7 @@ import { TransactionsModule } from '../src/transactions/transactions.module';
 import { NotificationsModule } from '../src/notifications/notifications.module';
 
 import { Family } from '../src/families/family.entity';
+import { ParentAccount } from '../src/families/parent-account.entity';
 import { Child } from '../src/children/child.entity';
 import { PinAttempt } from '../src/children/pin-attempt.entity';
 import { Task } from '../src/tasks/task.entity';
@@ -29,7 +30,7 @@ const TEST_DB_URL =
   process.env.DATABASE_URL_TEST ?? process.env.DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/kidpoints_test';
 
 const ALL_ENTITIES = [
-  Family, Child, PinAttempt,
+  Family, ParentAccount, Child, PinAttempt,
   Task, Reward, Transaction,
   NotificationIntent,
   EmailVerification, PasswordReset,

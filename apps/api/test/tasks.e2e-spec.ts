@@ -15,6 +15,7 @@ import { TransactionsModule } from '../src/transactions/transactions.module';
 import { NotificationsModule } from '../src/notifications/notifications.module';
 
 import { Family } from '../src/families/family.entity';
+import { ParentAccount } from '../src/families/parent-account.entity';
 import { Child } from '../src/children/child.entity';
 import { PinAttempt } from '../src/children/pin-attempt.entity';
 import { Task } from '../src/tasks/task.entity';
@@ -29,7 +30,7 @@ const TEST_DB_URL =
   process.env.DATABASE_URL_TEST ?? process.env.DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/kidpoints_test';
 
 const ALL_ENTITIES = [
-  Family, Child, PinAttempt,
+  Family, ParentAccount, Child, PinAttempt,
   Task, Reward, Transaction,
   NotificationIntent,
   EmailVerification, PasswordReset,
@@ -45,8 +46,8 @@ async function truncateAll(ds: DataSource): Promise<void> {
 }
 
 /** Mint a parent JWT directly without going through HTTP. */
-function mintParentToken(jwt: JwtService, familyId: string, email: string): string {
-  return jwt.sign({ sub: familyId, role: 'parent', email });
+function mintParentToken(jwt: JwtService, accountId: string, familyId: string, email: string): string {
+  return jwt.sign({ sub: accountId, familyId, role: 'parent', email });
 }
 
 /** Mint a child JWT directly. */
@@ -59,12 +60,15 @@ describe('Tasks E2E', () => {
   let ds: DataSource;
   let jwt: JwtService;
   let familyRepo: Repository<Family>;
+  let accountRepo: Repository<ParentAccount>;
   let childRepo: Repository<Child>;
   let transactionRepo: Repository<Transaction>;
 
   // Fixtures seeded before each test
   let familyA: Family;
   let familyB: Family;
+  let accountA: ParentAccount;
+  let accountB: ParentAccount;
   let childA: Child;
   let childB: Child;
   let parentTokenA: string;
@@ -102,6 +106,7 @@ describe('Tasks E2E', () => {
     ds = module.get(DataSource);
     jwt = module.get(JwtService);
     familyRepo = module.get<Repository<Family>>(getRepositoryToken(Family));
+    accountRepo = module.get<Repository<ParentAccount>>(getRepositoryToken(ParentAccount));
     childRepo = module.get<Repository<Child>>(getRepositoryToken(Child));
     transactionRepo = module.get<Repository<Transaction>>(getRepositoryToken(Transaction));
   });
@@ -114,13 +119,17 @@ describe('Tasks E2E', () => {
   beforeEach(async () => {
     await truncateAll(ds);
 
-    // Seed family A
-    familyA = familyRepo.create({ email: 'parentA@test.com', passwordHash: await bcrypt.hash('pass', 4) });
+    // Seed family A + parent account A
+    familyA = familyRepo.create({});
     await familyRepo.save(familyA);
+    accountA = accountRepo.create({ email: 'parentA@test.com', passwordHash: await bcrypt.hash('pass', 4), family: familyA });
+    await accountRepo.save(accountA);
 
-    // Seed family B
-    familyB = familyRepo.create({ email: 'parentB@test.com', passwordHash: await bcrypt.hash('pass', 4) });
+    // Seed family B + parent account B
+    familyB = familyRepo.create({});
     await familyRepo.save(familyB);
+    accountB = accountRepo.create({ email: 'parentB@test.com', passwordHash: await bcrypt.hash('pass', 4), family: familyB });
+    await accountRepo.save(accountB);
 
     // Seed child for family A
     childA = childRepo.create({
@@ -140,8 +149,8 @@ describe('Tasks E2E', () => {
     });
     await childRepo.save(childB);
 
-    parentTokenA = mintParentToken(jwt, familyA.id, familyA.email);
-    parentTokenB = mintParentToken(jwt, familyB.id, familyB.email);
+    parentTokenA = mintParentToken(jwt, accountA.id, familyA.id, accountA.email);
+    parentTokenB = mintParentToken(jwt, accountB.id, familyB.id, accountB.email);
     childTokenA = mintChildToken(jwt, childA.id, familyA.id);
   });
 

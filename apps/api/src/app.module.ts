@@ -11,6 +11,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 
 // Entities
 import { Family }               from './families/family.entity';
+import { ParentAccount }        from './families/parent-account.entity';
 import { Child }                from './children/child.entity';
 import { PinAttempt }           from './children/pin-attempt.entity';
 import { Task }                 from './tasks/task.entity';
@@ -21,7 +22,7 @@ import { EmailVerification }    from './auth/entities/email-verification.entity'
 import { PasswordReset }        from './auth/entities/password-reset.entity';
 
 const entities = [
-  Family, Child, PinAttempt,
+  Family, ParentAccount, Child, PinAttempt,
   Task, Reward, Transaction,
   NotificationIntent,
   EmailVerification, PasswordReset,

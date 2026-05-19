@@ -77,16 +77,28 @@ export default function LoginScreen() {
         </View>
 
         {/* Inscription */}
-        <TouchableOpacity
-          style={styles.registerBtn}
-          onPress={() => router.push('/(auth)/register')}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.registerText}>
-            Pas encore de compte ?{' '}
-            <Text style={{ color: Colors.gold, fontWeight: '900' }}>S'inscrire</Text>
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.authLinks}>
+          <TouchableOpacity
+            style={styles.registerBtn}
+            onPress={() => router.push('/(auth)/register')}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.registerText}>
+              Pas encore de compte ?{' '}
+              <Text style={{ color: Colors.gold, fontWeight: '900' }}>S'inscrire</Text>
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.registerBtn, { borderColor: 'rgba(255,184,0,0.2)', backgroundColor: 'rgba(255,184,0,0.05)' }]}
+            onPress={() => router.push('/(auth)/join-family')}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.registerText}>
+              Tu as un code famille ?{' '}
+              <Text style={{ color: Colors.gold, fontWeight: '900' }}>Rejoindre</Text>
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );
@@ -152,6 +164,7 @@ const styles = StyleSheet.create({
   forgotBtn:  { alignItems: 'center', paddingTop: 8 },
   forgotText: { fontSize: 13, fontWeight: '700', color: Colors.textFaint },
 
+  authLinks:    { gap: 10 },
   registerBtn:  { alignItems: 'center', paddingVertical: 14, backgroundColor: Colors.bgCard, borderRadius: Radii.md, borderWidth: 1, borderColor: Colors.border },
   registerText: { fontSize: 14, fontWeight: '600', color: Colors.textDim },
 

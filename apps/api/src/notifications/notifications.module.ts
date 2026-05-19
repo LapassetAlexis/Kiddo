@@ -4,9 +4,10 @@ import { NotificationIntent } from './notification-intent.entity';
 import { Child } from '../children/child.entity';
 import { NotificationsService } from './notifications.service';
 import { NotificationsController } from './notifications.controller';
+import { FamiliesModule } from '../families/families.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([NotificationIntent, Child])],
+  imports: [TypeOrmModule.forFeature([NotificationIntent, Child]), FamiliesModule],
   controllers: [NotificationsController],
   providers: [NotificationsService],
   exports: [NotificationsService, TypeOrmModule],

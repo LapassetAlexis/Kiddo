@@ -9,6 +9,7 @@ import { Transaction } from '../transactions/transaction.entity';
 import { NotificationIntent } from '../notifications/notification-intent.entity';
 import { Child } from '../children/child.entity';
 import { Family } from '../families/family.entity';
+import { FamiliesService } from '../families/families.service';
 
 // ── Repository mock factory ─────────────────────────────────────────────────
 
@@ -24,23 +25,36 @@ function mockRepo<T extends Record<string, any>>(): jest.Mocked<Repository<T>> {
   } as unknown as jest.Mocked<Repository<T>>;
 }
 
+// ── QueryBuilder mock ───────────────────────────────────────────────────────
+
+function mockQueryBuilder(affected = 1) {
+  const qb: any = {
+    update:  jest.fn().mockReturnThis(),
+    set:     jest.fn().mockReturnThis(),
+    where:   jest.fn().mockReturnThis(),
+    execute: jest.fn().mockResolvedValue({ affected }),
+  };
+  return qb;
+}
+
 // ── EntityManager mock ──────────────────────────────────────────────────────
 
-function mockEntityManager(): jest.Mocked<EntityManager> {
+function mockEntityManager(affected = 1): jest.Mocked<EntityManager> & { _qb: ReturnType<typeof mockQueryBuilder> } {
+  const qb = mockQueryBuilder(affected);
   return {
+    _qb: qb,
     update: jest.fn().mockResolvedValue(undefined),
-    save: jest.fn().mockResolvedValue({}),
+    save:   jest.fn().mockResolvedValue({}),
     create: jest.fn().mockImplementation((_cls: any, data: any) => data),
-  } as unknown as jest.Mocked<EntityManager>;
+    createQueryBuilder: jest.fn().mockReturnValue(qb),
+  } as unknown as jest.Mocked<EntityManager> & { _qb: ReturnType<typeof mockQueryBuilder> };
 }
 
 // ── DataSource mock ─────────────────────────────────────────────────────────
 
 function mockDataSource(em: jest.Mocked<EntityManager>): jest.Mocked<DataSource> {
   return {
-    transaction: jest.fn().mockImplementation(async (cb: (em: EntityManager) => Promise<any>) => {
-      return cb(em);
-    }),
+    transaction: jest.fn().mockImplementation(async (cb: (em: EntityManager) => Promise<any>) => cb(em)),
   } as unknown as jest.Mocked<DataSource>;
 }
 
@@ -49,12 +63,9 @@ function mockDataSource(em: jest.Mocked<EntityManager>): jest.Mocked<DataSource>
 function makeFamily(overrides: Partial<Family> = {}): Family {
   return {
     id: 'fam-1',
-    email: 'parent@test.com',
-    passwordHash: 'hash',
     timezone: 'Europe/Paris',
     children: [],
     createdAt: new Date(),
-    fcmToken: undefined,
     ...overrides,
   } as any;
 }
@@ -87,6 +98,7 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     status: 'created',
     photoUrl: null as any,
     rejectionReason: null as any,
+    approvedByName: null as any,
     child: makeChild(),
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -104,16 +116,22 @@ describe('TasksService', () => {
   let txRepo: jest.Mocked<Repository<Transaction>>;
   let notifRepo: jest.Mocked<Repository<NotificationIntent>>;
   let childRepo: jest.Mocked<Repository<Child>>;
-  let em: jest.Mocked<EntityManager>;
+  let em: jest.Mocked<EntityManager> & { _qb: ReturnType<typeof mockQueryBuilder> };
   let ds: jest.Mocked<DataSource>;
+  let familiesSvc: jest.Mocked<Pick<FamiliesService, 'getFamilyParentTokens' | 'getDisplayName'>>;
 
   beforeEach(async () => {
-    taskRepo = mockRepo<Task>();
-    txRepo = mockRepo<Transaction>();
+    taskRepo  = mockRepo<Task>();
+    txRepo    = mockRepo<Transaction>();
     notifRepo = mockRepo<NotificationIntent>();
     childRepo = mockRepo<Child>();
-    em = mockEntityManager();
-    ds = mockDataSource(em);
+    em        = mockEntityManager();
+    ds        = mockDataSource(em);
+
+    familiesSvc = {
+      getFamilyParentTokens: jest.fn().mockResolvedValue([]),
+      getDisplayName:        jest.fn().mockResolvedValue('Alice Parent'),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -123,6 +141,7 @@ describe('TasksService', () => {
         { provide: getRepositoryToken(NotificationIntent), useValue: notifRepo },
         { provide: getRepositoryToken(Child),              useValue: childRepo },
         { provide: DataSource,                             useValue: ds },
+        { provide: FamiliesService,                        useValue: familiesSvc },
       ],
     }).compile();
 
@@ -180,72 +199,70 @@ describe('TasksService', () => {
   // ── complete ─────────────────────────────────────────────────────────────────
 
   describe('complete', () => {
-    it('changes status to pending_approval and calls ds.transaction', async () => {
+    it('runs inside a transaction and uses conditional update', async () => {
       const task = makeTask({ status: 'created' });
       const updatedTask = makeTask({ status: 'pending_approval', submittedAt: new Date() });
 
-      taskRepo.findOne.mockResolvedValueOnce(task); // first call in complete()
-      taskRepo.findOne.mockResolvedValueOnce(updatedTask); // second call after transaction
+      taskRepo.findOne.mockResolvedValue(task);
+      taskRepo.findOneOrFail.mockResolvedValue(updatedTask);
 
       const result = await service.complete('task-1');
 
       expect(ds.transaction).toHaveBeenCalled();
-      expect(em.update).toHaveBeenCalledWith(
-        Task,
-        'task-1',
+      expect(em.createQueryBuilder).toHaveBeenCalled();
+      expect(em._qb.update).toHaveBeenCalledWith(Task);
+      expect(em._qb.set).toHaveBeenCalledWith(
         expect.objectContaining({ status: 'pending_approval' }),
       );
       expect(result.status).toBe('pending_approval');
     });
 
-    it('saves a NotificationIntent when the parent has an FCM token', async () => {
-      const family = makeFamily({ fcmToken: 'parent-fcm-token' } as any);
-      const child = makeChild({ family });
-      const task = makeTask({ status: 'created', child });
-      const updatedTask = makeTask({ status: 'pending_approval', submittedAt: new Date(), child });
+    it('sends a NotificationIntent when a parent has an FCM token', async () => {
+      const task = makeTask({ status: 'created' });
+      const updatedTask = makeTask({ status: 'pending_approval', submittedAt: new Date() });
 
-      taskRepo.findOne.mockResolvedValueOnce(task);
-      taskRepo.findOne.mockResolvedValueOnce(updatedTask);
+      taskRepo.findOne.mockResolvedValue(task);
+      taskRepo.findOneOrFail.mockResolvedValue(updatedTask);
+      familiesSvc.getFamilyParentTokens.mockResolvedValue(['parent-fcm-token']);
 
       await service.complete('task-1');
 
-      expect(em.save).toHaveBeenCalledWith(
-        NotificationIntent,
-        expect.objectContaining({ fcmToken: 'parent-fcm-token' }),
-      );
+      const saveCalls = (em.save as jest.Mock).mock.calls;
+      const notifCall = saveCalls.find(([cls]) => cls === NotificationIntent);
+      expect(notifCall).toBeDefined();
+      expect(notifCall![1]).toMatchObject({ fcmToken: 'parent-fcm-token' });
     });
 
-    it('does not save a NotificationIntent when the parent has no FCM token', async () => {
-      const family = makeFamily({ fcmToken: null } as any);
-      const child = makeChild({ family });
-      const task = makeTask({ status: 'created', child });
-      const updatedTask = makeTask({ status: 'pending_approval', child });
+    it('sends no NotificationIntent when no parent has an FCM token', async () => {
+      const task = makeTask({ status: 'created' });
+      const updatedTask = makeTask({ status: 'pending_approval' });
 
-      taskRepo.findOne.mockResolvedValueOnce(task);
-      taskRepo.findOne.mockResolvedValueOnce(updatedTask);
+      taskRepo.findOne.mockResolvedValue(task);
+      taskRepo.findOneOrFail.mockResolvedValue(updatedTask);
+      familiesSvc.getFamilyParentTokens.mockResolvedValue([]);
 
       await service.complete('task-1');
 
-      expect(em.save).not.toHaveBeenCalled();
+      const saveCalls = (em.save as jest.Mock).mock.calls;
+      const notifCall = saveCalls.find(([cls]) => cls === NotificationIntent);
+      expect(notifCall).toBeUndefined();
     });
 
     it('throws ConflictException when task is already in pending_approval', async () => {
-      const task = makeTask({ status: 'pending_approval' });
-      taskRepo.findOne.mockResolvedValue(task);
-
+      taskRepo.findOne.mockResolvedValue(makeTask({ status: 'pending_approval' }));
       await expect(service.complete('task-1')).rejects.toThrow(ConflictException);
     });
 
     it('throws ConflictException when task is already validated', async () => {
-      const task = makeTask({ status: 'validated' });
-      taskRepo.findOne.mockResolvedValue(task);
-
+      taskRepo.findOne.mockResolvedValue(makeTask({ status: 'validated' }));
       await expect(service.complete('task-1')).rejects.toThrow(ConflictException);
     });
 
-    it('throws ConflictException when task is pending_approval', async () => {
-      const task = makeTask({ status: 'pending_approval' });
+    it('throws ConflictException when concurrent complete beats us (affected=0)', async () => {
+      const task = makeTask({ status: 'created' });
       taskRepo.findOne.mockResolvedValue(task);
+      familiesSvc.getFamilyParentTokens.mockResolvedValue([]);
+      em._qb.execute.mockResolvedValue({ affected: 0 });
 
       await expect(service.complete('task-1')).rejects.toThrow(ConflictException);
     });
@@ -254,148 +271,170 @@ describe('TasksService', () => {
   // ── approve ──────────────────────────────────────────────────────────────────
 
   describe('approve', () => {
-    it('changes status to validated and inserts a transaction with correct amount', async () => {
+    it('runs inside a transaction and performs conditional update to validated', async () => {
       const task = makeTask({ status: 'pending_approval', points: 25 });
       const validatedTask = makeTask({ status: 'validated', validatedAt: new Date() });
 
-      taskRepo.findOne.mockResolvedValueOnce(task);   // initial load
-      taskRepo.findOne.mockResolvedValueOnce(validatedTask); // after transaction
+      taskRepo.findOne.mockResolvedValue(task);
+      taskRepo.findOneOrFail.mockResolvedValue(validatedTask);
 
-      const result = await service.approve('task-1');
+      const result = await service.approve('task-1', 'acc-1');
 
       expect(ds.transaction).toHaveBeenCalled();
-      expect(em.update).toHaveBeenCalledWith(
-        Task,
-        'task-1',
+      expect(em._qb.set).toHaveBeenCalledWith(
         expect.objectContaining({ status: 'validated' }),
-      );
-      expect(em.save).toHaveBeenCalledWith(
-        Transaction,
-        expect.objectContaining({ type: 'earn', amount: 25, referenceId: 'task-1' }),
       );
       expect(result.status).toBe('validated');
     });
 
-    it('creates the transaction with the child entity reference', async () => {
+    it('creates an earn transaction with the correct amount and child', async () => {
       const child = makeChild({ id: 'child-99' });
-      const task = makeTask({ status: 'pending_approval', points: 10, child });
+      const task = makeTask({ status: 'pending_approval', points: 25, child });
       const validatedTask = makeTask({ status: 'validated' });
 
-      taskRepo.findOne.mockResolvedValueOnce(task);
-      taskRepo.findOne.mockResolvedValueOnce(validatedTask);
+      taskRepo.findOne.mockResolvedValue(task);
+      taskRepo.findOneOrFail.mockResolvedValue(validatedTask);
 
-      await service.approve('task-1');
+      await service.approve('task-1', 'acc-1');
 
       expect(em.save).toHaveBeenCalledWith(
         Transaction,
-        expect.objectContaining({ child: child }),
+        expect.objectContaining({ type: 'earn', amount: 25, referenceId: 'task-1', child }),
       );
     });
 
     it('notifies child via FCM when child has an FCM token', async () => {
-      const child = makeChild({ id: 'child-1', fcmToken: 'child-fcm-token' });
-      const task = makeTask({ status: 'pending_approval', points: 10, child });
+      const child = makeChild({ fcmToken: 'child-fcm-token' });
+      const task = makeTask({ status: 'pending_approval', child });
       const validatedTask = makeTask({ status: 'validated' });
 
-      taskRepo.findOne.mockResolvedValueOnce(task);
-      taskRepo.findOne.mockResolvedValueOnce(validatedTask);
+      taskRepo.findOne.mockResolvedValue(task);
+      taskRepo.findOneOrFail.mockResolvedValue(validatedTask);
 
-      await service.approve('task-1');
+      await service.approve('task-1', 'acc-1');
 
-      // em.save is called at least twice: once for Transaction, once for NotificationIntent
-      const saveCalls = em.save.mock.calls;
-      const notifCall = saveCalls.find(([cls]) => cls === NotificationIntent);
+      const saveCalls = (em.save as jest.Mock).mock.calls;
+      const notifCall = saveCalls.find(
+        ([cls, data]) => cls === NotificationIntent && data?.fcmToken === 'child-fcm-token',
+      );
       expect(notifCall).toBeDefined();
-      expect(notifCall![1]).toMatchObject({ fcmToken: 'child-fcm-token' });
     });
 
-    it('throws ConflictException when task is still in created state', async () => {
-      const task = makeTask({ status: 'created' });
-      taskRepo.findOne.mockResolvedValue(task);
+    it('notifies other parents via FCM', async () => {
+      const task = makeTask({ status: 'pending_approval' });
+      const validatedTask = makeTask({ status: 'validated' });
 
-      await expect(service.approve('task-1')).rejects.toThrow(ConflictException);
+      taskRepo.findOne.mockResolvedValue(task);
+      taskRepo.findOneOrFail.mockResolvedValue(validatedTask);
+      familiesSvc.getFamilyParentTokens.mockResolvedValue(['other-parent-token']);
+
+      await service.approve('task-1', 'acc-1');
+
+      const saveCalls = (em.save as jest.Mock).mock.calls;
+      const notifCall = saveCalls.find(
+        ([cls, data]) => cls === NotificationIntent && data?.fcmToken === 'other-parent-token',
+      );
+      expect(notifCall).toBeDefined();
+      expect(familiesSvc.getFamilyParentTokens).toHaveBeenCalledWith(
+        'fam-1',
+        expect.objectContaining({ exclude: 'acc-1' }),
+      );
     });
 
-    it('throws ConflictException when task is already validated', async () => {
-      const task = makeTask({ status: 'validated' });
+    it('uses getDisplayName from DB (not JWT) for approverName', async () => {
+      const task = makeTask({ status: 'pending_approval' });
       taskRepo.findOne.mockResolvedValue(task);
+      taskRepo.findOneOrFail.mockResolvedValue(makeTask({ status: 'validated' }));
+      familiesSvc.getDisplayName.mockResolvedValue('Marie Lapasset');
 
-      await expect(service.approve('task-1')).rejects.toThrow(ConflictException);
+      await service.approve('task-1', 'acc-1');
+
+      expect(familiesSvc.getDisplayName).toHaveBeenCalledWith('acc-1');
+      expect(em._qb.set).toHaveBeenCalledWith(
+        expect.objectContaining({ approvedByName: 'Marie Lapasset' }),
+      );
+    });
+
+    it('throws ConflictException when task is not pending_approval', async () => {
+      taskRepo.findOne.mockResolvedValue(makeTask({ status: 'created' }));
+      await expect(service.approve('task-1', 'acc-1')).rejects.toThrow(ConflictException);
+    });
+
+    it('throws ConflictException when concurrent approve beats us (affected=0)', async () => {
+      taskRepo.findOne.mockResolvedValue(makeTask({ status: 'pending_approval' }));
+      em._qb.execute.mockResolvedValue({ affected: 0 });
+      await expect(service.approve('task-1', 'acc-1')).rejects.toThrow(ConflictException);
     });
   });
 
   // ── reject ───────────────────────────────────────────────────────────────────
 
   describe('reject', () => {
-    it('remet la tâche en created avec la raison de rejet, sans créer de transaction', async () => {
+    it('runs inside a transaction and resets task to created with rejection reason', async () => {
       const task = makeTask({ status: 'pending_approval' });
-      const resetTask = makeTask({ status: 'created', rejectionReason: 'Not done well', note: null as any, photoUrl: null as any, submittedAt: null as any });
+      const resetTask = makeTask({ status: 'created', rejectionReason: 'Not done well' });
 
-      taskRepo.findOne.mockResolvedValueOnce(task);
-      taskRepo.update.mockResolvedValue(undefined as any);
-      taskRepo.findOne.mockResolvedValueOnce(resetTask);
+      taskRepo.findOne.mockResolvedValue(task);
+      taskRepo.findOneOrFail.mockResolvedValue(resetTask);
 
-      const result = await service.reject('task-1', 'Not done well');
+      const result = await service.reject('task-1', 'acc-1', 'Not done well');
 
-      expect(taskRepo.update).toHaveBeenCalledWith(
-        'task-1',
-        expect.objectContaining({ status: 'created', rejectionReason: 'Not done well', note: null, photoUrl: null, submittedAt: null }),
+      expect(ds.transaction).toHaveBeenCalled();
+      expect(em._qb.set).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'created', rejectionReason: 'Not done well' }),
       );
       expect(result.status).toBe('created');
-      // No transaction should be created
-      expect(em.save).not.toHaveBeenCalled();
-      expect(txRepo.save).not.toHaveBeenCalled();
     });
 
     it('stores empty string as rejectionReason when no reason is given', async () => {
-      const task = makeTask({ status: 'pending_approval' });
-      const resetTask = makeTask({ status: 'created', rejectionReason: '' });
+      taskRepo.findOne.mockResolvedValue(makeTask({ status: 'pending_approval' }));
+      taskRepo.findOneOrFail.mockResolvedValue(makeTask({ status: 'created', rejectionReason: '' }));
 
-      taskRepo.findOne.mockResolvedValueOnce(task);
-      taskRepo.update.mockResolvedValue(undefined as any);
-      taskRepo.findOne.mockResolvedValueOnce(resetTask);
+      await service.reject('task-1', 'acc-1');
 
-      await service.reject('task-1');
-
-      expect(taskRepo.update).toHaveBeenCalledWith(
-        'task-1',
+      expect(em._qb.set).toHaveBeenCalledWith(
         expect.objectContaining({ rejectionReason: '' }),
       );
     });
 
-    it('throws ConflictException when task is still in created state', async () => {
-      const task = makeTask({ status: 'created' });
-      taskRepo.findOne.mockResolvedValue(task);
+    it('does not create a Transaction on reject', async () => {
+      taskRepo.findOne.mockResolvedValue(makeTask({ status: 'pending_approval' }));
+      taskRepo.findOneOrFail.mockResolvedValue(makeTask({ status: 'created' }));
 
-      await expect(service.reject('task-1', 'reason')).rejects.toThrow(ConflictException);
+      await service.reject('task-1', 'acc-1', 'reason');
+
+      const saveCalls = (em.save as jest.Mock).mock.calls;
+      expect(saveCalls.find(([cls]) => cls === Transaction)).toBeUndefined();
+    });
+
+    it('notifies other parents via FCM on reject', async () => {
+      taskRepo.findOne.mockResolvedValue(makeTask({ status: 'pending_approval' }));
+      taskRepo.findOneOrFail.mockResolvedValue(makeTask({ status: 'created' }));
+      familiesSvc.getFamilyParentTokens.mockResolvedValue(['other-parent-token']);
+
+      await service.reject('task-1', 'acc-1', 'reason');
+
+      const saveCalls = (em.save as jest.Mock).mock.calls;
+      const notifCall = saveCalls.find(
+        ([cls, data]) => cls === NotificationIntent && data?.fcmToken === 'other-parent-token',
+      );
+      expect(notifCall).toBeDefined();
+    });
+
+    it('throws ConflictException when task is not pending_approval', async () => {
+      taskRepo.findOne.mockResolvedValue(makeTask({ status: 'created' }));
+      await expect(service.reject('task-1', 'acc-1', 'reason')).rejects.toThrow(ConflictException);
     });
 
     it('throws ConflictException when task is already validated', async () => {
-      const task = makeTask({ status: 'validated' });
-      taskRepo.findOne.mockResolvedValue(task);
-
-      await expect(service.reject('task-1')).rejects.toThrow(ConflictException);
+      taskRepo.findOne.mockResolvedValue(makeTask({ status: 'validated' }));
+      await expect(service.reject('task-1', 'acc-1')).rejects.toThrow(ConflictException);
     });
 
-    it('throws ConflictException when task is already validated (cannot re-reject)', async () => {
-      const task = makeTask({ status: 'validated' });
-      taskRepo.findOne.mockResolvedValue(task);
-
-      await expect(service.reject('task-1')).rejects.toThrow(ConflictException);
-    });
-
-    it('does not wrap rejection in a transaction (uses repo.update directly)', async () => {
-      const task = makeTask({ status: 'pending_approval' });
-      const rejectedTask = makeTask({ status: 'rejected' });
-
-      taskRepo.findOne.mockResolvedValueOnce(task);
-      taskRepo.update.mockResolvedValue(undefined as any);
-      taskRepo.findOne.mockResolvedValueOnce(rejectedTask);
-
-      await service.reject('task-1', 'reason');
-
-      // Unlike approve/complete, reject does not use ds.transaction
-      expect(ds.transaction).not.toHaveBeenCalled();
+    it('throws ConflictException when concurrent action beats us (affected=0)', async () => {
+      taskRepo.findOne.mockResolvedValue(makeTask({ status: 'pending_approval' }));
+      em._qb.execute.mockResolvedValue({ affected: 0 });
+      await expect(service.reject('task-1', 'acc-1', 'reason')).rejects.toThrow(ConflictException);
     });
   });
 
@@ -418,9 +457,7 @@ describe('TasksService', () => {
 
     it('returns empty array when child has no tasks', async () => {
       taskRepo.find.mockResolvedValue([]);
-
       const result = await service.getForChild('child-1');
-
       expect(result).toEqual([]);
     });
   });

@@ -8,10 +8,11 @@ interface AuthUser {
   id: string;
   role: Role;
   email?: string;         // parent only
-  familyId?: string;      // child only
+  familyId?: string;      // both parent and child
   name?: string;
   avatar?: string;        // child only
   color?: string;         // child only
+  inviteCode?: string;    // parent only
 }
 
 interface AuthContextType {
@@ -19,6 +20,7 @@ interface AuthContextType {
   loading: boolean;
   loginParent: (email: string, password: string) => Promise<void>;
   loginChild: (childId: string, pin: string) => Promise<void>;
+  joinFamily: (name: string, email: string, password: string, inviteCode: string) => Promise<void>;
   switchToParent: () => Promise<boolean>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -38,7 +40,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser]       = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Restore session on app start
   useEffect(() => {
     (async () => {
       try {
@@ -48,13 +49,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (payload && payload.exp * 1000 > Date.now()) {
             const me = await authApi.me().catch(() => null);
             setUser({
-              id:       payload.sub,
-              role:     payload.role,
-              email:    payload.email ?? me?.email,
-              familyId: payload.familyId,
-              name:     me?.name,
-              avatar:   me?.avatar,
-              color:    (me as any)?.color,
+              id:         payload.sub,
+              role:       payload.role,
+              email:      payload.email ?? me?.email,
+              familyId:   payload.familyId ?? me?.familyId,
+              name:       me?.name,
+              avatar:     me?.avatar,
+              color:      (me as any)?.color,
+              inviteCode: (me as any)?.inviteCode,
             });
           } else {
             await clearToken();
@@ -72,11 +74,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { accessToken } = await authApi.login(email, password);
     await authApi.saveToken(accessToken);
     const payload = parseJwt(accessToken);
-    setUser({ id: payload.sub, role: 'parent', email: payload.email });
+    setUser({ id: payload.sub, role: 'parent', email: payload.email, familyId: payload.familyId });
   }
 
   async function loginChild(childId: string, pin: string) {
-    // Sauvegarde le token parent avant d'écraser avec le token enfant
     const parentToken = await getToken();
     if (parentToken) await saveParentToken(parentToken);
     const { accessToken } = await authApi.childPin(childId, pin);
@@ -84,6 +85,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const payload = parseJwt(accessToken);
     const me = await authApi.me().catch(() => null);
     setUser({ id: payload.sub, role: 'child', familyId: payload.familyId, name: me?.name, avatar: me?.avatar, color: (me as any)?.color });
+  }
+
+  async function joinFamily(name: string, email: string, password: string, inviteCode: string) {
+    await authApi.joinFamily(name, email, password, inviteCode);
   }
 
   async function switchToParent(): Promise<boolean> {
@@ -96,7 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     await saveToken(parentToken);
     await clearParentToken();
-    setUser({ id: payload.sub, role: 'parent', email: payload.email });
+    setUser({ id: payload.sub, role: 'parent', email: payload.email, familyId: payload.familyId });
     return true;
   }
 
@@ -108,14 +113,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function refreshUser() {
     try {
       const me = await authApi.me();
-      setUser(u => u ? { ...u, email: me.email, name: me.name, avatar: me.avatar, color: (me as any).color } : null);
+      setUser(u => u ? {
+        ...u,
+        email:      me.email,
+        familyId:   me.familyId ?? u.familyId,
+        name:       me.name,
+        avatar:     me.avatar,
+        color:      (me as any).color,
+        inviteCode: (me as any).inviteCode,
+      } : null);
     } catch {
       await logout();
     }
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, loginParent, loginChild, switchToParent, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, loginParent, loginChild, joinFamily, switchToParent, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

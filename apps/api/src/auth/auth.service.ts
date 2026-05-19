@@ -14,6 +14,7 @@ import { Strategy, ExtractJwt } from 'passport-jwt';
 import * as bcrypt          from 'bcrypt';
 import * as crypto          from 'crypto';
 import { Family }             from '../families/family.entity';
+import { ParentAccount }      from '../families/parent-account.entity';
 import { Child }              from '../children/child.entity';
 import { PinAttempt }         from '../children/pin-attempt.entity';
 import { EmailVerification }  from './entities/email-verification.entity';
@@ -55,6 +56,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 export class AuthService {
   constructor(
     @InjectRepository(Family)             private families:      Repository<Family>,
+    @InjectRepository(ParentAccount)      private accounts:      Repository<ParentAccount>,
     @InjectRepository(Child)              private children:      Repository<Child>,
     @InjectRepository(PinAttempt)         private pinAttempts:   Repository<PinAttempt>,
     @InjectRepository(EmailVerification)  private emailVerifs:   Repository<EmailVerification>,
@@ -66,6 +68,10 @@ export class AuthService {
 
   private generate6DigitCode(): string {
     return String(crypto.randomInt(100_000, 1_000_000)).padStart(6, '0');
+  }
+
+  private generateInviteCode(): string {
+    return crypto.randomBytes(4).toString('hex').toUpperCase();
   }
 
   private codeExpiry(): Date {
@@ -81,17 +87,30 @@ export class AuthService {
     );
   }
 
+  private parentJwt(account: ParentAccount & { family: Family }) {
+    return this.jwt.sign({
+      sub:      account.id,
+      familyId: account.family.id,
+      role:     'parent',
+      email:    account.email,
+      name:     account.name,
+    });
+  }
+
   // ── Registration & email verification ──────────────────────────────────────
 
   async register(name: string, email: string, password: string) {
     email = email.toLowerCase().trim();
-    const existing = await this.families.findOne({ where: { email } });
+    const existing = await this.accounts.findOne({ where: { email } });
     if (existing) throw new ConflictException('Cette adresse e-mail est déjà utilisée.');
 
     const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-    const family = this.families.create({ email, passwordHash });
-    // Store name in the email field temporarily — adjust if Family entity gains a `name` column
-    await this.families.save(family);
+    const family = await this.families.save(
+      this.families.create({ name, inviteCode: this.generateInviteCode() }),
+    );
+    await this.accounts.save(
+      this.accounts.create({ email, passwordHash, name, family }),
+    );
 
     const code = await this.createEmailVerificationCode(email);
     this.logCode('Email verification code', email, code);
@@ -112,18 +131,17 @@ export class AuthService {
 
     await this.emailVerifs.update(record.id, { usedAt: new Date() });
 
-    const family = await this.families.findOne({ where: { email } });
-    if (!family) throw new NotFoundException('Compte introuvable.');
+    const account = await this.accounts.findOne({ where: { email }, relations: ['family'] });
+    if (!account) throw new NotFoundException('Compte introuvable.');
 
-    const accessToken = this.jwt.sign({ sub: family.id, role: 'parent', email: family.email });
+    const accessToken = this.parentJwt(account as any);
     return { accessToken, message: 'E-mail vérifié avec succès.' };
   }
 
   async resendVerification(email: string) {
     email = email.toLowerCase().trim();
-    const family = await this.families.findOne({ where: { email } });
-    // Return the same generic message whether the family exists or not (no enumeration)
-    if (!family) {
+    const account = await this.accounts.findOne({ where: { email } });
+    if (!account) {
       return { message: 'Si ce compte existe, un nouveau code vous a été envoyé.' };
     }
 
@@ -137,9 +155,8 @@ export class AuthService {
 
   async forgotPassword(email: string) {
     email = email.toLowerCase().trim();
-    const family = await this.families.findOne({ where: { email } });
-    // Generic response to prevent account enumeration
-    if (family) {
+    const account = await this.accounts.findOne({ where: { email } });
+    if (account) {
       const code = await this.createPasswordResetCode(email);
       this.logCode('Password reset code', email, code);
     }
@@ -171,25 +188,25 @@ export class AuthService {
     if (record.usedAt)                  throw new BadRequestException('Code déjà utilisé.');
     if (record.expiresAt < new Date())  throw new BadRequestException('Code expiré. Demandez un nouveau code.');
 
-    const family = await this.families.findOne({ where: { email } });
-    if (!family) throw new NotFoundException('Compte introuvable.');
+    const account = await this.accounts.findOne({ where: { email } });
+    if (!account) throw new NotFoundException('Compte introuvable.');
 
     const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
-    await this.families.update(family.id, { passwordHash });
+    await this.accounts.update(account.id, { passwordHash });
     await this.pwdResets.update(record.id, { usedAt: new Date() });
 
     return { message: 'Mot de passe réinitialisé avec succès. Vous pouvez maintenant vous connecter.' };
   }
 
-  // ── Existing login methods ─────────────────────────────────────────────────
+  // ── Login ─────────────────────────────────────────────────────────────────
 
   async parentLogin(email: string, password: string) {
     email = email.toLowerCase().trim();
-    const family = await this.families.findOne({ where: { email } });
-    if (!family || !(await bcrypt.compare(password, family.passwordHash))) {
+    const account = await this.accounts.findOne({ where: { email }, relations: ['family'] });
+    if (!account || !(await bcrypt.compare(password, account.passwordHash))) {
       throw new UnauthorizedException('Identifiants invalides');
     }
-    const accessToken = this.jwt.sign({ sub: family.id, role: 'parent', email: family.email });
+    const accessToken = this.parentJwt(account as any);
     return { accessToken };
   }
 
@@ -197,7 +214,6 @@ export class AuthService {
     const child = await this.children.findOne({ where: { id: childId }, relations: ['family'] });
     if (!child) throw new UnauthorizedException();
 
-    // Check lockout (stored in DB — survives server restart)
     let attempt = await this.pinAttempts.findOne({ where: { child: { id: childId } } });
     if (attempt?.lockedUntil && attempt.lockedUntil > new Date()) {
       throw new BadRequestException('Trop de tentatives. Réessaie dans quelques minutes.');
@@ -213,7 +229,6 @@ export class AuthService {
       throw new UnauthorizedException('PIN incorrect');
     }
 
-    // Reset attempts on success
     if (attempt) await this.pinAttempts.update(attempt.id, { attemptCount: 0, lockedUntil: undefined as any });
 
     const accessToken = this.jwt.sign(
@@ -223,22 +238,48 @@ export class AuthService {
     return { accessToken };
   }
 
+  // ── Join family (second parent) ────────────────────────────────────────────
+
+  async joinFamily(name: string, email: string, password: string, inviteCode: string) {
+    email = email.toLowerCase().trim();
+
+    const existing = await this.accounts.findOne({ where: { email } });
+    if (existing) throw new ConflictException('Cette adresse e-mail est déjà utilisée.');
+
+    const family = await this.families.findOne({ where: { inviteCode } });
+    if (!family) throw new NotFoundException('Code d\'invitation invalide.');
+
+    const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+    const account = await this.accounts.save(
+      this.accounts.create({ email, passwordHash, name, family }),
+    );
+
+    const code = await this.createEmailVerificationCode(email);
+    this.logCode('Email verification code (join)', email, code);
+
+    return { message: 'Compte co-parent créé. Vérifiez votre e-mail pour confirmer.' };
+  }
+
   // ── /me ────────────────────────────────────────────────────────────────────
 
   async getMe(user: JwtPayload) {
     if (user.role === 'parent') {
-      const family = await this.families.findOne({ where: { id: user.sub }, relations: ['children'] });
-      if (!family) throw new UnauthorizedException();
+      const account = await this.accounts.findOne({
+        where: { id: user.sub },
+        relations: ['family', 'family.children'],
+      });
+      if (!account) throw new UnauthorizedException();
       return {
         role:      'parent',
-        id:        family.id,
-        email:     family.email,
-        timezone:  family.timezone,
-        children:  family.children.map(c => ({ id: c.id, name: c.name, avatar: c.avatar, color: c.color })),
+        id:        account.id,
+        familyId:  account.family.id,
+        email:     account.email,
+        timezone:  account.family.timezone,
+        inviteCode: account.family.inviteCode,
+        children:  account.family.children.map(c => ({ id: c.id, name: c.name, avatar: c.avatar, color: c.color })),
       };
     }
 
-    // child
     const child = await this.children.findOne({ where: { id: user.sub }, relations: ['family'] });
     if (!child) throw new UnauthorizedException();
     return {

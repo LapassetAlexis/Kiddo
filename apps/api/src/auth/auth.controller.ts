@@ -45,6 +45,13 @@ class ChildPinDto {
   @IsString() pin:     string;
 }
 
+class JoinFamilyDto {
+  @IsString()  @Length(1, 100) name:       string;
+  @IsEmail()                   email:      string;
+  @IsString()  @MinLength(8)   password:   string;
+  @IsString()                  inviteCode: string;
+}
+
 // ─── Controller ───────────────────────────────────────────────────────────────
 
 @Controller('auth')
@@ -102,6 +109,12 @@ export class AuthController {
   @HttpCode(200)
   childPin(@Body() dto: ChildPinDto) {
     return this.auth.childPin(dto.childId, dto.pin);
+  }
+
+  @Post('join-family')
+  @HttpCode(200)
+  joinFamily(@Body() dto: JoinFamilyDto) {
+    return this.auth.joinFamily(dto.name, dto.email, dto.password, dto.inviteCode);
   }
 
   // ── Me ──────────────────────────────────────────────────────────────────────

@@ -28,19 +28,18 @@ export class ChildrenController {
 
   @Get()
   findAll(@CurrentUser() user: JwtPayload) {
-    return this.svc.findAllForFamily(user.sub);
+    return this.svc.findAllForFamily(user.familyId!);
   }
 
   @Post()
   create(@Body() dto: CreateChildDto, @CurrentUser() user: JwtPayload) {
-    return this.svc.create(dto, user.sub);
+    return this.svc.create(dto, user.familyId!);
   }
 
   @Get(':id')
   @Roles('parent', 'child')
   findOne(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    const familyId = user.role === 'child' ? user.familyId! : user.sub;
-    return this.svc.findOneWithStats(id, familyId);
+    return this.svc.findOneWithStats(id, user.familyId!);
   }
 
   @Patch(':id')
@@ -49,13 +48,13 @@ export class ChildrenController {
     @Body() dto: UpdateChildDto,
     @CurrentUser() user: JwtPayload,
   ) {
-    return this.svc.update(id, user.sub, dto);
+    return this.svc.update(id, user.familyId!, dto);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    return this.svc.remove(id, user.sub);
+    return this.svc.remove(id, user.familyId!);
   }
 
   @Post(':id/reset-pin')
@@ -65,11 +64,11 @@ export class ChildrenController {
     @Body() dto: ResetPinDto,
     @CurrentUser() user: JwtPayload,
   ) {
-    return this.svc.resetPin(id, user.sub, dto.newPin);
+    return this.svc.resetPin(id, user.familyId!, dto.newPin);
   }
 
   @Get(':id/balance')
   getBalance(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    return this.svc.getBalance(id, user.sub);
+    return this.svc.getBalance(id, user.familyId!);
   }
 }

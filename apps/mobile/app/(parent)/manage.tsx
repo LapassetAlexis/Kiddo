@@ -259,7 +259,10 @@ export default function ManageScreen() {
                     <Text style={styles.historyEmoji}>{item.emoji}</Text>
                     <View style={styles.historyInfo}>
                       <Text style={styles.historyName}>{item.rewardName}</Text>
-                      <Text style={styles.historyMeta}>{item.childEmoji} {item.childName} · {item.time}</Text>
+                      <Text style={styles.historyMeta}>
+                        {item.childEmoji} {item.childName} · {item.time}
+                        {item.grantedByName ? ` · par ${item.grantedByName}` : ''}
+                      </Text>
                     </View>
                     <View style={styles.historyRight}>
                       <Text style={[styles.historyPts, item.status === 'refused' && { color: Colors.textFaint }]}>

@@ -17,6 +17,7 @@ interface HistoryTask {
   pts: number;
   status: TaskStatus;
   time: string;
+  approvedByName?: string;
 }
 
 interface Section {
@@ -56,6 +57,7 @@ function groupTasksByDate(tasks: Task[]): Section[] {
       pts: task.points,
       status: apiStatusToLocal(task.status),
       time: formatTime(dateRef),
+      approvedByName: task.approvedByName,
     };
     (groups[key] = groups[key] ?? []).push(entry);
   }
@@ -219,6 +221,7 @@ export default function TasksScreen() {
                   <Text style={styles.rowTask}>{item.taskName}</Text>
                   <Text style={styles.rowMeta}>
                     {item.childName} · {item.time}
+                    {item.approvedByName ? ` · par ${item.approvedByName}` : ''}
                   </Text>
                 </View>
 

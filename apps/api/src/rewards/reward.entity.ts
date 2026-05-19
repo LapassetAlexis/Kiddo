@@ -14,6 +14,7 @@ export class Reward {
   @Column({ default: 'unlimited' }) availability: RewardAvailability;
   @Column({ default: 'available' }) status: RewardStatus;
   @Column({ nullable: true, type: 'varchar', default: null }) claimedByChildId: string | null;
+  @Column({ nullable: true }) grantedByName: string;
   @ManyToOne(() => Family, { onDelete: 'CASCADE' }) family: Family;
   @CreateDateColumn() createdAt: Date;
 }
