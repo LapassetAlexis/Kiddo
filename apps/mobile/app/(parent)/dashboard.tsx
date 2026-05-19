@@ -94,7 +94,11 @@ export default function ParentDashboardScreen() {
               <Text style={styles.childReward}>{child.nextReward} ({Math.round(child.progress * 100)}%)</Text>
             </View>
           ))}
-          <TouchableOpacity style={styles.addChildCard}>
+          <TouchableOpacity
+            style={styles.addChildCard}
+            onPress={() => router.push('/(parent)/create-child')}
+            activeOpacity={0.7}
+          >
             <Text style={{ fontSize: 28, color: Colors.textFaint }}>＋</Text>
             <Text style={styles.addChildText}>Ajouter</Text>
           </TouchableOpacity>
