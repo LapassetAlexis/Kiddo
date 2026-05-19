@@ -101,9 +101,9 @@ export class RewardsController {
   @HttpCode(HttpStatus.OK)
   refuse(
     @Param('id') id: string,
-    @Body() dto: RedeemRewardDto,
     @CurrentUser() user: JwtPayload,
+    @Body() dto?: { childId?: string },
   ) {
-    return this.svc.refuse(id, user.sub, dto.childId);
+    return this.svc.refuse(id, user.sub, dto?.childId);
   }
 }

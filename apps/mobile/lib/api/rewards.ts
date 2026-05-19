@@ -11,6 +11,9 @@ export interface Reward {
   availability: RewardAvailability;
   status: RewardStatus;
   createdAt: string;
+  childId?: string;
+  childName?: string;
+  childEmoji?: string;
 }
 
 export const rewardsApi = {

@@ -13,6 +13,7 @@ export class Reward {
   @Column()                       cost: number;
   @Column({ default: 'unlimited' }) availability: RewardAvailability;
   @Column({ default: 'available' }) status: RewardStatus;
+  @Column({ nullable: true, type: 'varchar', default: null }) claimedByChildId: string | null;
   @ManyToOne(() => Family, { onDelete: 'CASCADE' }) family: Family;
   @CreateDateColumn() createdAt: Date;
 }

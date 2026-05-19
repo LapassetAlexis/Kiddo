@@ -218,7 +218,7 @@ describe('Rewards E2E', () => {
   // ── Child redeems reward ──────────────────────────────────────────────────────
 
   describe('POST /api/rewards/:id/redeem', () => {
-    it('allows child to redeem when they have sufficient balance, creates spend transaction', async () => {
+    it('allows child to redeem when they have sufficient balance, does NOT debit points at redeem time', async () => {
       await giveChildPoints(transactionRepo, child.id, 100);
 
       const createRes = await request(app.getHttpServer())
@@ -233,13 +233,13 @@ describe('Rewards E2E', () => {
         .send({ childId: child.id });
 
       expect(redeemRes.status).toBe(200);
+      expect(redeemRes.body.status).toBe('claimed');
 
-      // Verify spend transaction was created
-      const transactions = await transactionRepo.find({
+      // No spend transaction at redeem time — points debited only on grant
+      const spendTxs = await transactionRepo.find({
         where: { referenceId: rewardId, type: 'spend' },
       });
-      expect(transactions.length).toBe(1);
-      expect(transactions[0].amount).toBe(60);
+      expect(spendTxs.length).toBe(0);
     });
 
     it('returns 400 when child has insufficient balance', async () => {
@@ -310,7 +310,7 @@ describe('Rewards E2E', () => {
   // ── Parent grants reward ──────────────────────────────────────────────────────
 
   describe('POST /api/rewards/:id/grant', () => {
-    it('changes reward status to granted after it was claimed', async () => {
+    it('changes reward status to granted and debits points at grant time', async () => {
       await giveChildPoints(transactionRepo, child.id, 200);
 
       const createRes = await request(app.getHttpServer())
@@ -319,13 +319,16 @@ describe('Rewards E2E', () => {
         .send({ title: 'Sleep-over', emoji: '🛌', cost: 150, availability: 'once' });
       const rewardId: string = createRes.body.id;
 
-      // Child redeems
+      // Child redeems — no spend tx yet
       await request(app.getHttpServer())
         .post(`/api/rewards/${rewardId}/redeem`)
         .set('Authorization', `Bearer ${childToken}`)
         .send({ childId: child.id });
 
-      // Parent grants
+      const noSpendTxs = await transactionRepo.find({ where: { referenceId: rewardId, type: 'spend' } });
+      expect(noSpendTxs.length).toBe(0);
+
+      // Parent grants — spend tx created now
       const grantRes = await request(app.getHttpServer())
         .post(`/api/rewards/${rewardId}/grant`)
         .set('Authorization', `Bearer ${parentToken}`)
@@ -333,6 +336,11 @@ describe('Rewards E2E', () => {
 
       expect(grantRes.status).toBe(200);
       expect(grantRes.body.status).toBe('granted');
+
+      // Spend transaction created at grant time
+      const spendTxs = await transactionRepo.find({ where: { referenceId: rewardId, type: 'spend' } });
+      expect(spendTxs.length).toBe(1);
+      expect(spendTxs[0].amount).toBe(150);
     });
 
     it('returns 409 when trying to grant a reward that has not been claimed', async () => {
@@ -351,10 +359,10 @@ describe('Rewards E2E', () => {
     });
   });
 
-  // ── Parent refuses reward — points re-credited ────────────────────────────────
+  // ── Parent refuses reward — no debit, no refund needed ───────────────────────
 
   describe('POST /api/rewards/:id/refuse', () => {
-    it('re-credits points and resets reward to available when parent refuses', async () => {
+    it('resets reward to available without touching points (points were never debited)', async () => {
       await giveChildPoints(transactionRepo, child.id, 200);
 
       const createRes = await request(app.getHttpServer())
@@ -363,17 +371,17 @@ describe('Rewards E2E', () => {
         .send({ title: 'Weekend trip', emoji: '🚌', cost: 100, availability: 'once' });
       const rewardId: string = createRes.body.id;
 
-      // Child redeems
+      // Child redeems — balance unchanged (no spend tx)
       await request(app.getHttpServer())
         .post(`/api/rewards/${rewardId}/redeem`)
         .set('Authorization', `Bearer ${childToken}`)
         .send({ childId: child.id });
 
-      // Verify balance reduced after redemption (200 - 100 = 100)
       const txsAfterRedeem = await transactionRepo.find({ where: { child: { id: child.id } } });
-      const earnTotal = txsAfterRedeem.filter(t => t.type === 'earn').reduce((s, t) => s + t.amount, 0);
-      const spendTotal = txsAfterRedeem.filter(t => t.type === 'spend').reduce((s, t) => s + t.amount, 0);
-      expect(earnTotal - spendTotal).toBe(100);
+      const balanceAfterRedeem =
+        txsAfterRedeem.filter(t => t.type === 'earn').reduce((s, t) => s + t.amount, 0) -
+        txsAfterRedeem.filter(t => t.type === 'spend').reduce((s, t) => s + t.amount, 0);
+      expect(balanceAfterRedeem).toBe(200); // unchanged — points not debited yet
 
       // Parent refuses
       const refuseRes = await request(app.getHttpServer())
@@ -384,11 +392,12 @@ describe('Rewards E2E', () => {
       expect(refuseRes.status).toBe(200);
       expect(refuseRes.body.status).toBe('available');
 
-      // Verify points were re-credited (new earn transaction for 100)
+      // Balance still unchanged — no refund needed because no debit happened
       const txsAfterRefuse = await transactionRepo.find({ where: { child: { id: child.id } } });
-      const earnTotalAfter = txsAfterRefuse.filter(t => t.type === 'earn').reduce((s, t) => s + t.amount, 0);
-      const spendTotalAfter = txsAfterRefuse.filter(t => t.type === 'spend').reduce((s, t) => s + t.amount, 0);
-      expect(earnTotalAfter - spendTotalAfter).toBe(200); // back to original balance
+      const balanceAfterRefuse =
+        txsAfterRefuse.filter(t => t.type === 'earn').reduce((s, t) => s + t.amount, 0) -
+        txsAfterRefuse.filter(t => t.type === 'spend').reduce((s, t) => s + t.amount, 0);
+      expect(balanceAfterRefuse).toBe(200);
     });
 
     it('returns 409 when trying to refuse a reward that has not been claimed', async () => {

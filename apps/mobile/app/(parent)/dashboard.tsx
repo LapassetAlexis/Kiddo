@@ -100,8 +100,8 @@ export default function ParentDashboardScreen() {
     .filter(r => r.status === 'claimed')
     .map(r => ({
       id: r.id,
-      childName: '?',
-      childEmoji: '👶',
+      childName: r.childName ?? '?',
+      childEmoji: r.childEmoji ?? '👶',
       rewardName: r.title,
       emoji: r.emoji,
       pts: r.cost,
@@ -127,6 +127,7 @@ export default function ParentDashboardScreen() {
         { label: 'Accorder 🎉', style: 'default', onPress: async () => {
           try { await rewardsApi.grant(id); } catch {}
           rewardsRefresh();
+          refreshBalances(childrenData);
           showModal({ icon: '🎉', title: 'Récompense accordée !', message: `${r.childName} va être ravi·e !`, buttons: [{ label: 'Super !', style: 'default' }] });
         }},
         { label: 'Pas maintenant', style: 'cancel' },

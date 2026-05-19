@@ -43,7 +43,8 @@ export default function RewardsScreen() {
   if (rewardsError) return <ErrorScreen message={rewardsError} onRetry={refreshRewards} />;
 
   const myPts  = balanceData?.balance ?? 0;
-  const rawRewards: Reward[] = rewardsData ?? [];
+  // 'granted' once-rewards are done — no need to show them
+  const rawRewards: Reward[] = (rewardsData ?? []).filter(r => r.status !== 'granted');
 
   const rewards = rawRewards.map(r => ({
     ...r,
