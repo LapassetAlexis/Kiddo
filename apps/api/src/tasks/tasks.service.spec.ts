@@ -242,8 +242,8 @@ describe('TasksService', () => {
       await expect(service.complete('task-1')).rejects.toThrow(ConflictException);
     });
 
-    it('throws ConflictException when task is already rejected', async () => {
-      const task = makeTask({ status: 'rejected' });
+    it('throws ConflictException when task is pending_approval', async () => {
+      const task = makeTask({ status: 'pending_approval' });
       taskRepo.findOne.mockResolvedValue(task);
 
       await expect(service.complete('task-1')).rejects.toThrow(ConflictException);
@@ -326,21 +326,21 @@ describe('TasksService', () => {
   // ── reject ───────────────────────────────────────────────────────────────────
 
   describe('reject', () => {
-    it('changes status to rejected with a reason, creates no transaction', async () => {
+    it('remet la tâche en created avec la raison de rejet, sans créer de transaction', async () => {
       const task = makeTask({ status: 'pending_approval' });
-      const rejectedTask = makeTask({ status: 'rejected', rejectionReason: 'Not done well' });
+      const resetTask = makeTask({ status: 'created', rejectionReason: 'Not done well', note: null as any, photoUrl: null as any, submittedAt: null as any });
 
       taskRepo.findOne.mockResolvedValueOnce(task);
       taskRepo.update.mockResolvedValue(undefined as any);
-      taskRepo.findOne.mockResolvedValueOnce(rejectedTask);
+      taskRepo.findOne.mockResolvedValueOnce(resetTask);
 
       const result = await service.reject('task-1', 'Not done well');
 
       expect(taskRepo.update).toHaveBeenCalledWith(
         'task-1',
-        expect.objectContaining({ status: 'rejected', rejectionReason: 'Not done well' }),
+        expect.objectContaining({ status: 'created', rejectionReason: 'Not done well', note: null, photoUrl: null, submittedAt: null }),
       );
-      expect(result.status).toBe('rejected');
+      expect(result.status).toBe('created');
       // No transaction should be created
       expect(em.save).not.toHaveBeenCalled();
       expect(txRepo.save).not.toHaveBeenCalled();
@@ -348,11 +348,11 @@ describe('TasksService', () => {
 
     it('stores empty string as rejectionReason when no reason is given', async () => {
       const task = makeTask({ status: 'pending_approval' });
-      const rejectedTask = makeTask({ status: 'rejected', rejectionReason: '' });
+      const resetTask = makeTask({ status: 'created', rejectionReason: '' });
 
       taskRepo.findOne.mockResolvedValueOnce(task);
       taskRepo.update.mockResolvedValue(undefined as any);
-      taskRepo.findOne.mockResolvedValueOnce(rejectedTask);
+      taskRepo.findOne.mockResolvedValueOnce(resetTask);
 
       await service.reject('task-1');
 
@@ -376,8 +376,8 @@ describe('TasksService', () => {
       await expect(service.reject('task-1')).rejects.toThrow(ConflictException);
     });
 
-    it('throws ConflictException when task is already rejected', async () => {
-      const task = makeTask({ status: 'rejected' });
+    it('throws ConflictException when task is already validated (cannot re-reject)', async () => {
+      const task = makeTask({ status: 'validated' });
       taskRepo.findOne.mockResolvedValue(task);
 
       await expect(service.reject('task-1')).rejects.toThrow(ConflictException);

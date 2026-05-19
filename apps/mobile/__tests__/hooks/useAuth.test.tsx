@@ -76,6 +76,7 @@ describe('useAuth — loginChild', () => {
   it('appelle authApi.childPin et set user role=child', async () => {
     const token = buildJwt({ sub: 'child-1', role: 'child', familyId: 'family-1' });
     mockAuthChildPin.mockResolvedValueOnce({ accessToken: token });
+    mockAuthMe.mockResolvedValueOnce({ id: 'child-1', role: 'child', name: 'Lucas', avatar: '🦊', color: '#FFB300', familyId: 'family-1' });
 
     const { result } = renderHook(() => useAuth(), { wrapper });
     await act(async () => {
@@ -86,6 +87,8 @@ describe('useAuth — loginChild', () => {
     expect(result.current.user?.role).toBe('child');
     expect(result.current.user?.id).toBe('child-1');
     expect(result.current.user?.familyId).toBe('family-1');
+    expect(result.current.user?.name).toBe('Lucas');
+    expect(result.current.user?.avatar).toBe('🦊');
   });
 });
 
