@@ -27,7 +27,10 @@ export const authApi = {
   resetPassword: (email: string, code: string, newPassword: string) =>
     api.post<{ message: string }>('/auth/reset-password', { email, code, newPassword }, false),
 
-  me: () => api.get<{ id: string; role: string; email?: string; name?: string; avatar?: string; familyId?: string; children?: any[] }>('/auth/me'),
+  me: () => api.get<{ id: string; role: string; email?: string; name?: string; avatar?: string; familyId?: string; inviteCode?: string; children?: any[] }>('/auth/me'),
+
+  joinFamily: (name: string, email: string, password: string, inviteCode: string) =>
+    api.post<{ message: string }>('/auth/join-family', { name, email, password, inviteCode }, false),
 
   saveToken,
   clearToken,

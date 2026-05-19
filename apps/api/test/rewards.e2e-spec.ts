@@ -16,6 +16,7 @@ import { TransactionsModule } from '../src/transactions/transactions.module';
 import { NotificationsModule } from '../src/notifications/notifications.module';
 
 import { Family } from '../src/families/family.entity';
+import { ParentAccount } from '../src/families/parent-account.entity';
 import { Child } from '../src/children/child.entity';
 import { PinAttempt } from '../src/children/pin-attempt.entity';
 import { Task } from '../src/tasks/task.entity';
@@ -29,7 +30,7 @@ const TEST_DB_URL =
   process.env.DATABASE_URL_TEST ?? process.env.DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/kidpoints_test';
 
 const ALL_ENTITIES = [
-  Family, Child, PinAttempt,
+  Family, ParentAccount, Child, PinAttempt,
   Task, Reward, Transaction,
   NotificationIntent,
   EmailVerification, PasswordReset,
@@ -44,8 +45,8 @@ async function truncateAll(ds: DataSource): Promise<void> {
   await ds.query('SET session_replication_role = DEFAULT');
 }
 
-function mintParentToken(jwt: JwtService, familyId: string, email: string): string {
-  return jwt.sign({ sub: familyId, role: 'parent', email });
+function mintParentToken(jwt: JwtService, accountId: string, familyId: string, email: string): string {
+  return jwt.sign({ sub: accountId, familyId, role: 'parent', email });
 }
 
 function mintChildToken(jwt: JwtService, childId: string, familyId: string): string {
@@ -72,11 +73,13 @@ describe('Rewards E2E', () => {
   let ds: DataSource;
   let jwt: JwtService;
   let familyRepo: Repository<Family>;
+  let accountRepo: Repository<ParentAccount>;
   let childRepo: Repository<Child>;
   let rewardRepo: Repository<Reward>;
   let transactionRepo: Repository<Transaction>;
 
   let family: Family;
+  let account: ParentAccount;
   let child: Child;
   let parentToken: string;
   let childToken: string;
@@ -112,6 +115,7 @@ describe('Rewards E2E', () => {
     ds = module.get(DataSource);
     jwt = module.get(JwtService);
     familyRepo = module.get<Repository<Family>>(getRepositoryToken(Family));
+    accountRepo = module.get<Repository<ParentAccount>>(getRepositoryToken(ParentAccount));
     childRepo = module.get<Repository<Child>>(getRepositoryToken(Child));
     rewardRepo = module.get<Repository<Reward>>(getRepositoryToken(Reward));
     transactionRepo = module.get<Repository<Transaction>>(getRepositoryToken(Transaction));
@@ -125,11 +129,10 @@ describe('Rewards E2E', () => {
   beforeEach(async () => {
     await truncateAll(ds);
 
-    family = familyRepo.create({
-      email: 'rewards-parent@test.com',
-      passwordHash: await bcrypt.hash('pass', 4),
-    });
+    family = familyRepo.create({});
     await familyRepo.save(family);
+    account = accountRepo.create({ email: 'rewards-parent@test.com', passwordHash: await bcrypt.hash('pass', 4), family });
+    await accountRepo.save(account);
 
     child = childRepo.create({
       name: 'RewardKid',
@@ -139,7 +142,7 @@ describe('Rewards E2E', () => {
     });
     await childRepo.save(child);
 
-    parentToken = mintParentToken(jwt, family.id, family.email);
+    parentToken = mintParentToken(jwt, account.id, family.id, account.email);
     childToken = mintChildToken(jwt, child.id, family.id);
   });
 
@@ -468,12 +471,9 @@ describe('Rewards E2E', () => {
 
     it('returns 404 when trying to delete a reward from another family', async () => {
       // Create second family
-      const family2 = familyRepo.create({
-        email: 'other@test.com',
-        passwordHash: await bcrypt.hash('pass', 4),
-      });
-      await familyRepo.save(family2);
-      const parentToken2 = mintParentToken(jwt, family2.id, family2.email);
+      const family2 = await familyRepo.save(familyRepo.create({}));
+      const account2 = await accountRepo.save(accountRepo.create({ email: 'other@test.com', passwordHash: await bcrypt.hash('pass', 4), family: family2 }));
+      const parentToken2 = mintParentToken(jwt, account2.id, family2.id, account2.email);
 
       const createRes = await request(app.getHttpServer())
         .post('/api/rewards')

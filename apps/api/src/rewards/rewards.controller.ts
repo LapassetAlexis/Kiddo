@@ -29,14 +29,13 @@ export class RewardsController {
   @Get()
   @Roles('parent', 'child')
   findAll(@CurrentUser() user: JwtPayload) {
-    const familyId = user.role === 'child' ? user.familyId! : user.sub;
-    return this.svc.findAllForFamily(familyId);
+    return this.svc.findAllForFamily(user.familyId!);
   }
 
   @Post()
   @Roles('parent')
   create(@Body() dto: CreateRewardDto, @CurrentUser() user: JwtPayload) {
-    return this.svc.create(dto, user.sub);
+    return this.svc.create(dto, user.familyId!);
   }
 
   @Get('history')
@@ -45,7 +44,7 @@ export class RewardsController {
     @CurrentUser() user: JwtPayload,
     @Query('childId') childId?: string,
   ) {
-    return this.svc.getHistory(user.sub, childId);
+    return this.svc.getHistory(user.familyId!, childId);
   }
 
   @Patch(':id')
@@ -55,20 +54,16 @@ export class RewardsController {
     @Body() dto: UpdateRewardDto,
     @CurrentUser() user: JwtPayload,
   ) {
-    return this.svc.update(id, user.sub, dto);
+    return this.svc.update(id, user.familyId!, dto);
   }
 
   @Delete(':id')
   @Roles('parent')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    return this.svc.remove(id, user.sub);
+    return this.svc.remove(id, user.familyId!);
   }
 
-  /**
-   * Child redeems a reward. The JWT carries childId (sub) and familyId.
-   * Parent can also redeem on behalf of a child by providing childId in the body.
-   */
   @Post(':id/redeem')
   @Roles('child', 'parent')
   @HttpCode(HttpStatus.OK)
@@ -77,11 +72,8 @@ export class RewardsController {
     @Body() dto: RedeemRewardDto,
     @CurrentUser() user: JwtPayload,
   ) {
-    // For child tokens: sub = childId, familyId = familyId
-    // For parent tokens: sub = familyId, childId must be in body
     const childId  = user.role === 'child' ? user.sub : dto.childId;
-    const familyId = user.role === 'child' ? user.familyId! : user.sub;
-    return this.svc.redeem(id, childId, familyId);
+    return this.svc.redeem(id, childId, user.familyId!);
   }
 
   @Post(':id/grant')
@@ -92,8 +84,7 @@ export class RewardsController {
     @CurrentUser() user: JwtPayload,
     @Body() dto?: { childId?: string },
   ) {
-    // childId optionnel : le service le retrouve depuis la transaction si absent
-    return this.svc.grant(id, user.sub, dto?.childId);
+    return this.svc.grant(id, user.familyId!, dto?.childId);
   }
 
   @Post(':id/refuse')
@@ -104,6 +95,6 @@ export class RewardsController {
     @CurrentUser() user: JwtPayload,
     @Body() dto?: { childId?: string },
   ) {
-    return this.svc.refuse(id, user.sub, dto?.childId);
+    return this.svc.refuse(id, user.familyId!, dto?.childId);
   }
 }

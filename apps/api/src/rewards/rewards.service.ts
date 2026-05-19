@@ -11,6 +11,7 @@ import { Reward } from './reward.entity';
 import { Transaction } from '../transactions/transaction.entity';
 import { NotificationIntent } from '../notifications/notification-intent.entity';
 import { Child } from '../children/child.entity';
+import { FamiliesService } from '../families/families.service';
 import { CreateRewardDto } from './dto/create-reward.dto';
 import { UpdateRewardDto } from './dto/update-reward.dto';
 
@@ -22,6 +23,7 @@ export class RewardsService {
     @InjectRepository(NotificationIntent)  private notifs: Repository<NotificationIntent>,
     @InjectRepository(Child)              private children: Repository<Child>,
     private ds: DataSource,
+    private familiesSvc: FamiliesService,
   ) {}
 
   async findAllForFamily(familyId: string): Promise<any[]> {
@@ -159,12 +161,12 @@ export class RewardsService {
     // Mark as claimed — store who claimed it for use at grant/refuse time
     await this.rewards.update(rewardId, { status: 'claimed', claimedByChildId: childId });
 
-    // Notify parent (outbox pattern)
-    const parentToken = (reward.family as any)?.fcmToken as string | undefined;
-    if (parentToken) {
+    // Notify all parents (outbox pattern)
+    const parentTokens = await this.familiesSvc.getFamilyParentTokens(familyId);
+    for (const fcmToken of parentTokens) {
       await this.notifs.save(
         this.notifs.create({
-          fcmToken: parentToken,
+          fcmToken,
           payload: {
             title: `${child.name} veut : ${reward.title}`,
             body: `Coûte ${reward.cost} pts — à valider`,

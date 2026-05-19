@@ -6,9 +6,10 @@ import { TasksService }    from './tasks.service';
 import { Transaction }     from '../transactions/transaction.entity';
 import { NotificationIntent } from '../notifications/notification-intent.entity';
 import { Child }           from '../children/child.entity';
+import { FamiliesModule }  from '../families/families.module';
 
 @Module({
-  imports:     [TypeOrmModule.forFeature([Task, Transaction, NotificationIntent, Child])],
+  imports:     [TypeOrmModule.forFeature([Task, Transaction, NotificationIntent, Child]), FamiliesModule],
   controllers: [TasksController],
   providers:   [TasksService],
   exports:     [TasksService, TypeOrmModule],

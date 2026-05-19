@@ -5,6 +5,7 @@ import { Task }                from './task.entity';
 import { Transaction }         from '../transactions/transaction.entity';
 import { NotificationIntent }  from '../notifications/notification-intent.entity';
 import { Child }               from '../children/child.entity';
+import { FamiliesService }     from '../families/families.service';
 
 @Injectable()
 export class TasksService {
@@ -14,13 +15,13 @@ export class TasksService {
     @InjectRepository(NotificationIntent) private notifs: Repository<NotificationIntent>,
     @InjectRepository(Child)              private children: Repository<Child>,
     private ds: DataSource,
+    private familiesSvc: FamiliesService,
   ) {}
 
   getForChild(childId: string) {
     return this.tasks.find({ where: { child: { id: childId } }, relations: ['child'], order: { createdAt: 'DESC' } });
   }
 
-  // GET /api/tasks?childId=X&status=Y
   getAll(childId?: string, status?: string) {
     const where: Record<string, any> = {};
     if (childId) where.child = { id: childId };
@@ -28,7 +29,6 @@ export class TasksService {
     return this.tasks.find({ where, relations: ['child'], order: { createdAt: 'DESC' } });
   }
 
-  // GET /api/tasks/history — toutes les tâches de la famille (via enfants)
   getHistory(childId?: string) {
     return this.getAll(childId);
   }
@@ -43,13 +43,14 @@ export class TasksService {
     const task = await this.tasks.findOne({ where: { id }, relations: ['child', 'child.family'] }).then(t => { if (!t) throw new NotFoundException('Tâche introuvable'); return t; });
     if (task.status !== 'created') throw new ConflictException('Tâche déjà soumise');
 
+    const familyId = (task.child.family as any).id as string;
+    const parentTokens = await this.familiesSvc.getFamilyParentTokens(familyId);
+
     await this.ds.transaction(async em => {
       await em.update(Task, id, { status: 'pending_approval', submittedAt: new Date(), photoUrl, note });
-      // Outbox: notify parent via FCM (worker delivers async)
-      const parentToken = (task.child.family as any).fcmToken;
-      if (parentToken) {
+      for (const fcmToken of parentTokens) {
         await em.save(NotificationIntent, em.create(NotificationIntent, {
-          fcmToken: parentToken,
+          fcmToken,
           payload: { title: `${task.child.name} a fait : ${task.title}`, body: 'Tape pour valider ✓', data: { taskId: id } },
         }));
       }
@@ -63,9 +64,7 @@ export class TasksService {
 
     await this.ds.transaction(async em => {
       await em.update(Task, id, { status: 'validated', validatedAt: new Date() });
-      // Immutable ledger: insert transaction
       await em.save(Transaction, em.create(Transaction, { type: 'earn', amount: task.points, referenceId: id, child: task.child }));
-      // Notify child
       const childToken = task.child.fcmToken;
       if (childToken) {
         await em.save(NotificationIntent, em.create(NotificationIntent, {
@@ -80,7 +79,6 @@ export class TasksService {
   async reject(id: string, reason?: string) {
     const task = await this.tasks.findOne({ where: { id }, relations: ['child'] }).then(t => { if (!t) throw new NotFoundException('Tâche introuvable'); return t; });
     if (task.status !== 'pending_approval') throw new ConflictException();
-    // Remet la tâche en "à faire" — l'enfant peut la refaire
     await this.tasks.update(id, { status: 'created', rejectionReason: reason ?? '', submittedAt: null as any, photoUrl: null as any, note: null as any });
     return this.tasks.findOne({ where: { id } }).then(t => { if (!t) throw new NotFoundException('Tâche introuvable'); return t; });
   }

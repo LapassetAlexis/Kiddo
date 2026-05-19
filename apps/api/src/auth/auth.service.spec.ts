@@ -1,12 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
-import { UnauthorizedException, BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import { UnauthorizedException, BadRequestException, ConflictException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 
 import { AuthService } from './auth.service';
 import { Family } from '../families/family.entity';
+import { ParentAccount } from '../families/parent-account.entity';
 import { Child } from '../children/child.entity';
 import { PinAttempt } from '../children/pin-attempt.entity';
 import { EmailVerification } from './entities/email-verification.entity';
@@ -24,17 +25,29 @@ function mockRepo<T extends Record<string, any>>(): jest.Mocked<Repository<T>> {
     update: jest.fn(),
     delete: jest.fn(),
     upsert: jest.fn(),
+    count: jest.fn(),
   } as unknown as jest.Mocked<Repository<T>>;
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 async function hashPin(pin: string): Promise<string> {
-  return bcrypt.hash(pin, 4); // low cost for tests
+  return bcrypt.hash(pin, 4);
 }
 
 async function hashPassword(pw: string): Promise<string> {
   return bcrypt.hash(pw, 4);
+}
+
+function makeAccount(overrides: Partial<ParentAccount & { family: Family }> = {}): ParentAccount & { family: Family } {
+  return {
+    id: 'acc-1',
+    email: 'parent@example.com',
+    passwordHash: 'hashed',
+    family: { id: 'fam-1', timezone: 'Europe/Paris', children: [], parentAccounts: [], createdAt: new Date() } as Family,
+    createdAt: new Date(),
+    ...overrides,
+  } as any;
 }
 
 // ── Test suite ───────────────────────────────────────────────────────────────
@@ -42,6 +55,7 @@ async function hashPassword(pw: string): Promise<string> {
 describe('AuthService', () => {
   let service: AuthService;
   let familyRepo: jest.Mocked<Repository<Family>>;
+  let accountRepo: jest.Mocked<Repository<ParentAccount>>;
   let childRepo: jest.Mocked<Repository<Child>>;
   let pinAttemptRepo: jest.Mocked<Repository<PinAttempt>>;
   let emailVerifRepo: jest.Mocked<Repository<EmailVerification>>;
@@ -49,11 +63,12 @@ describe('AuthService', () => {
   let jwtService: jest.Mocked<Pick<JwtService, 'sign'>>;
 
   beforeEach(async () => {
-    familyRepo = mockRepo<Family>();
-    childRepo = mockRepo<Child>();
+    familyRepo    = mockRepo<Family>();
+    accountRepo   = mockRepo<ParentAccount>();
+    childRepo     = mockRepo<Child>();
     pinAttemptRepo = mockRepo<PinAttempt>();
     emailVerifRepo = mockRepo<EmailVerification>();
-    pwdResetRepo = mockRepo<PasswordReset>();
+    pwdResetRepo   = mockRepo<PasswordReset>();
 
     jwtService = { sign: jest.fn().mockReturnValue('signed-token') };
 
@@ -61,6 +76,7 @@ describe('AuthService', () => {
       providers: [
         AuthService,
         { provide: getRepositoryToken(Family),            useValue: familyRepo },
+        { provide: getRepositoryToken(ParentAccount),     useValue: accountRepo },
         { provide: getRepositoryToken(Child),             useValue: childRepo },
         { provide: getRepositoryToken(PinAttempt),        useValue: pinAttemptRepo },
         { provide: getRepositoryToken(EmailVerification), useValue: emailVerifRepo },
@@ -75,23 +91,26 @@ describe('AuthService', () => {
   // ── register ────────────────────────────────────────────────────────────────
 
   describe('register', () => {
-    it('creates a family and sends a verification code when email is new', async () => {
-      familyRepo.findOne.mockResolvedValue(null);
-      familyRepo.create.mockReturnValue({ id: 'fam-1', email: 'test@example.com' } as Family);
-      familyRepo.save.mockResolvedValue({ id: 'fam-1', email: 'test@example.com' } as Family);
+    it('creates a family + account and sends a verification code when email is new', async () => {
+      accountRepo.findOne.mockResolvedValue(null);
+      familyRepo.create.mockReturnValue({ id: 'fam-1' } as Family);
+      familyRepo.save.mockResolvedValue({ id: 'fam-1' } as Family);
+      accountRepo.create.mockReturnValue({ id: 'acc-1', email: 'test@example.com' } as ParentAccount);
+      accountRepo.save.mockResolvedValue({ id: 'acc-1' } as ParentAccount);
       emailVerifRepo.create.mockReturnValue({ id: 'ev-1', email: 'test@example.com', code: '123456' } as EmailVerification);
       emailVerifRepo.save.mockResolvedValue({} as EmailVerification);
 
       const result = await service.register('Alice', 'test@example.com', 'password123');
 
-      expect(familyRepo.findOne).toHaveBeenCalledWith({ where: { email: 'test@example.com' } });
+      expect(accountRepo.findOne).toHaveBeenCalledWith({ where: { email: 'test@example.com' } });
       expect(familyRepo.save).toHaveBeenCalled();
+      expect(accountRepo.save).toHaveBeenCalled();
       expect(emailVerifRepo.save).toHaveBeenCalled();
       expect(result).toHaveProperty('message');
     });
 
     it('throws ConflictException when email is already registered', async () => {
-      familyRepo.findOne.mockResolvedValue({ id: 'existing', email: 'test@example.com' } as Family);
+      accountRepo.findOne.mockResolvedValue({ id: 'acc-existing' } as ParentAccount);
 
       await expect(service.register('Alice', 'test@example.com', 'password123'))
         .rejects.toThrow(ConflictException);
@@ -103,26 +122,19 @@ describe('AuthService', () => {
   describe('parentLogin', () => {
     it('returns an access token when credentials are correct', async () => {
       const passwordHash = await hashPassword('correct-password');
-      const mockFamily: Family = {
-        id: 'fam-1',
-        email: 'parent@example.com',
-        passwordHash,
-        timezone: 'Europe/Paris',
-        children: [],
-        createdAt: new Date(),
-      };
-      familyRepo.findOne.mockResolvedValue(mockFamily);
+      const account = makeAccount({ passwordHash });
+      accountRepo.findOne.mockResolvedValue(account as any);
 
       const result = await service.parentLogin('parent@example.com', 'correct-password');
 
       expect(result).toEqual({ accessToken: 'signed-token' });
       expect(jwtService.sign).toHaveBeenCalledWith(
-        expect.objectContaining({ sub: 'fam-1', role: 'parent', email: 'parent@example.com' }),
+        expect.objectContaining({ sub: 'acc-1', familyId: 'fam-1', role: 'parent', email: 'parent@example.com' }),
       );
     });
 
-    it('throws UnauthorizedException when the family is not found', async () => {
-      familyRepo.findOne.mockResolvedValue(null);
+    it('throws UnauthorizedException when the account is not found', async () => {
+      accountRepo.findOne.mockResolvedValue(null);
 
       await expect(service.parentLogin('ghost@example.com', 'any-password'))
         .rejects.toThrow(UnauthorizedException);
@@ -130,15 +142,7 @@ describe('AuthService', () => {
 
     it('throws UnauthorizedException when the password is wrong', async () => {
       const passwordHash = await hashPassword('correct-password');
-      const mockFamily: Family = {
-        id: 'fam-1',
-        email: 'parent@example.com',
-        passwordHash,
-        timezone: 'Europe/Paris',
-        children: [],
-        createdAt: new Date(),
-      };
-      familyRepo.findOne.mockResolvedValue(mockFamily);
+      accountRepo.findOne.mockResolvedValue(makeAccount({ passwordHash }) as any);
 
       await expect(service.parentLogin('parent@example.com', 'wrong-password'))
         .rejects.toThrow(UnauthorizedException);
@@ -172,7 +176,7 @@ describe('AuthService', () => {
     it('returns an access token when PIN is correct and no lockout', async () => {
       const child = await makeChild();
       childRepo.findOne.mockResolvedValue(child);
-      pinAttemptRepo.findOne.mockResolvedValue(null); // no attempt record
+      pinAttemptRepo.findOne.mockResolvedValue(null);
 
       const result = await service.childPin(CHILD_ID, CORRECT_PIN);
 
@@ -231,7 +235,7 @@ describe('AuthService', () => {
       childRepo.findOne.mockResolvedValue(child);
       pinAttemptRepo.findOne.mockResolvedValue({
         id: 'pa-1',
-        attemptCount: 4, // This wrong attempt will be the 5th
+        attemptCount: 4,
         lockedUntil: undefined as any,
         child: child,
         updatedAt: new Date(),
@@ -244,7 +248,6 @@ describe('AuthService', () => {
       const upsertCall = pinAttemptRepo.upsert.mock.calls[0][0] as any;
       expect(upsertCall.attemptCount).toBe(5);
       expect(upsertCall.lockedUntil).toBeInstanceOf(Date);
-      // lockedUntil should be in the future
       expect(upsertCall.lockedUntil.getTime()).toBeGreaterThan(Date.now());
     });
 
@@ -254,7 +257,7 @@ describe('AuthService', () => {
       pinAttemptRepo.findOne.mockResolvedValue({
         id: 'pa-1',
         attemptCount: 5,
-        lockedUntil: new Date(Date.now() + 10 * 60 * 1000), // locked for 10 more minutes
+        lockedUntil: new Date(Date.now() + 10 * 60 * 1000),
         child: child,
         updatedAt: new Date(),
       } as PinAttempt);
@@ -308,18 +311,10 @@ describe('AuthService', () => {
         usedAt: null as any,
         createdAt: new Date(),
       };
-      const mockFamily: Family = {
-        id: 'fam-1',
-        email: 'user@example.com',
-        passwordHash: 'hash',
-        timezone: 'Europe/Paris',
-        children: [],
-        createdAt: new Date(),
-      };
 
       emailVerifRepo.findOne.mockResolvedValue(mockRecord);
       emailVerifRepo.update.mockResolvedValue(undefined as any);
-      familyRepo.findOne.mockResolvedValue(mockFamily);
+      accountRepo.findOne.mockResolvedValue(makeAccount({ email: 'user@example.com' }) as any);
 
       const result = await service.verifyEmail('user@example.com', '123456');
 
@@ -335,30 +330,28 @@ describe('AuthService', () => {
     });
 
     it('throws BadRequestException when code has already been used', async () => {
-      const mockRecord: EmailVerification = {
+      emailVerifRepo.findOne.mockResolvedValue({
         id: 'ev-1',
         email: 'user@example.com',
         code: '123456',
         expiresAt: new Date(Date.now() + 60_000),
-        usedAt: new Date(), // already used
+        usedAt: new Date(),
         createdAt: new Date(),
-      };
-      emailVerifRepo.findOne.mockResolvedValue(mockRecord);
+      } as EmailVerification);
 
       await expect(service.verifyEmail('user@example.com', '123456'))
         .rejects.toThrow(BadRequestException);
     });
 
     it('throws BadRequestException when code has expired', async () => {
-      const mockRecord: EmailVerification = {
+      emailVerifRepo.findOne.mockResolvedValue({
         id: 'ev-1',
         email: 'user@example.com',
         code: '123456',
-        expiresAt: new Date(Date.now() - 60_000), // expired
+        expiresAt: new Date(Date.now() - 60_000),
         usedAt: null as any,
         createdAt: new Date(),
-      };
-      emailVerifRepo.findOne.mockResolvedValue(mockRecord);
+      } as EmailVerification);
 
       await expect(service.verifyEmail('user@example.com', '123456'))
         .rejects.toThrow(BadRequestException);
@@ -368,8 +361,8 @@ describe('AuthService', () => {
   // ── forgotPassword ──────────────────────────────────────────────────────────
 
   describe('forgotPassword', () => {
-    it('creates a reset code when the family exists', async () => {
-      familyRepo.findOne.mockResolvedValue({ id: 'fam-1', email: 'user@example.com' } as Family);
+    it('creates a reset code when the account exists', async () => {
+      accountRepo.findOne.mockResolvedValue({ id: 'acc-1', email: 'user@example.com' } as ParentAccount);
       pwdResetRepo.create.mockReturnValue({ id: 'pr-1', email: 'user@example.com', code: '654321' } as PasswordReset);
       pwdResetRepo.save.mockResolvedValue({} as PasswordReset);
 
@@ -379,8 +372,8 @@ describe('AuthService', () => {
       expect(result).toHaveProperty('message');
     });
 
-    it('returns the same generic message when family does not exist (no enumeration)', async () => {
-      familyRepo.findOne.mockResolvedValue(null);
+    it('returns the same generic message when account does not exist (no enumeration)', async () => {
+      accountRepo.findOne.mockResolvedValue(null);
 
       const result = await service.forgotPassword('nobody@example.com');
 
@@ -401,24 +394,16 @@ describe('AuthService', () => {
         usedAt: null as any,
         createdAt: new Date(),
       };
-      const mockFamily: Family = {
-        id: 'fam-1',
-        email: 'user@example.com',
-        passwordHash: 'old-hash',
-        timezone: 'Europe/Paris',
-        children: [],
-        createdAt: new Date(),
-      };
 
       pwdResetRepo.findOne.mockResolvedValue(mockRecord);
-      familyRepo.findOne.mockResolvedValue(mockFamily);
-      familyRepo.update.mockResolvedValue(undefined as any);
+      accountRepo.findOne.mockResolvedValue({ id: 'acc-1', email: 'user@example.com' } as ParentAccount);
+      accountRepo.update.mockResolvedValue(undefined as any);
       pwdResetRepo.update.mockResolvedValue(undefined as any);
 
       const result = await service.resetPassword('user@example.com', '123456', 'NewPassword123');
 
-      expect(familyRepo.update).toHaveBeenCalledWith(
-        mockFamily.id,
+      expect(accountRepo.update).toHaveBeenCalledWith(
+        'acc-1',
         expect.objectContaining({ passwordHash: expect.any(String) }),
       );
       expect(pwdResetRepo.update).toHaveBeenCalledWith(mockRecord.id, { usedAt: expect.any(Date) });
@@ -437,23 +422,15 @@ describe('AuthService', () => {
 
   describe('getMe', () => {
     it('returns parent profile for a parent JWT payload', async () => {
-      const mockFamily: Family = {
-        id: 'fam-1',
-        email: 'parent@example.com',
-        passwordHash: 'hash',
-        timezone: 'Europe/Paris',
-        children: [
-          { id: 'child-1', name: 'Kid', avatar: '🐶' } as Child,
-        ],
-        createdAt: new Date(),
-      };
-      familyRepo.findOne.mockResolvedValue(mockFamily);
+      const account = makeAccount();
+      (account.family as any).children = [{ id: 'child-1', name: 'Kid', avatar: '🐶' }];
+      accountRepo.findOne.mockResolvedValue(account as any);
 
-      const result = await service.getMe({ sub: 'fam-1', role: 'parent', email: 'parent@example.com' });
+      const result = await service.getMe({ sub: 'acc-1', familyId: 'fam-1', role: 'parent', email: 'parent@example.com' });
 
       expect(result.role).toBe('parent');
-      expect(result.email).toBe('parent@example.com');
-      expect(result.children).toHaveLength(1);
+      expect((result as any).email).toBe('parent@example.com');
+      expect((result as any).children).toHaveLength(1);
     });
 
     it('returns child profile for a child JWT payload', async () => {
@@ -480,10 +457,10 @@ describe('AuthService', () => {
       expect((result as any).familyId).toBe('fam-1');
     });
 
-    it('throws UnauthorizedException when parent is not found', async () => {
-      familyRepo.findOne.mockResolvedValue(null);
+    it('throws UnauthorizedException when parent account is not found', async () => {
+      accountRepo.findOne.mockResolvedValue(null);
 
-      await expect(service.getMe({ sub: 'fam-x', role: 'parent' }))
+      await expect(service.getMe({ sub: 'acc-x', familyId: 'fam-x', role: 'parent' }))
         .rejects.toThrow(UnauthorizedException);
     });
 
