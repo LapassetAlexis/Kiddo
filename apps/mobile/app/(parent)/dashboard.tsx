@@ -28,15 +28,8 @@ function formatAgo(dateStr?: string): string {
 }
 
 export default function ParentDashboardScreen() {
-  const { user } = useAuth()
-
-  useFocusEffect(useCallback(() => {
-    childrenRefresh();
-    pendingRefresh();
-    rewardsRefresh();
-  }, []));
-;
-  const { data: profileData } = useApiData(() => familiesApi.getMe(), []);
+  const { user } = useAuth();
+  const { data: profileData, refresh: profileRefresh } = useApiData(() => familiesApi.getMe(), []);
   const parentName = formatName(profileData?.name, profileData?.email) || 'Bonjour';
   const [addModal, setAddModal]     = useState(false);
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
@@ -62,6 +55,14 @@ export default function ParentDashboardScreen() {
     error: rewardsError,
     refresh: rewardsRefresh,
   } = useApiData(() => rewardsApi.list(), []);
+
+  // Refresh toutes les données quand l'écran revient au premier plan
+  useFocusEffect(useCallback(() => {
+    profileRefresh();
+    childrenRefresh();
+    pendingRefresh();
+    rewardsRefresh();
+  }, []));
 
   const pending: PendingTask[] = (pendingData ?? []).map(task => ({
     id: task.id,

@@ -51,7 +51,7 @@ export default function EditProfileScreen() {
       showModal({
         icon: '✅', title: 'Profil mis à jour',
         message: 'Tes informations ont bien été enregistrées.',
-        buttons: [{ label: 'OK', style: 'default', onPress: () => router.navigate('/(parent)/settings') }],
+        buttons: [{ label: 'OK', style: 'default', onPress: () => router.back() }],
       });
     } catch (err) {
       const msg = err instanceof ApiError && err.status === 409 ? 'Cet email est déjà utilisé.' : 'Impossible de sauvegarder.';
@@ -78,7 +78,7 @@ export default function EditProfileScreen() {
     <SafeAreaView style={styles.root} edges={['top']}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={styles.navbar}>
-          <TouchableOpacity onPress={() => router.navigate('/(parent)/settings')}>
+          <TouchableOpacity onPress={() => router.back()}>
             <Text style={styles.backBtn}>←</Text>
           </TouchableOpacity>
           <Text style={styles.navTitle}>Mon profil</Text>

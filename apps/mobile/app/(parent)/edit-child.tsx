@@ -7,6 +7,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
+import { childrenApi } from '@/lib/api/children';
 
 const AVATARS = ['🦊','🐻','🐼','🐨','🦁','🐯','🐸','🐙','🦄','🐶','🐱','🐰'];
 
@@ -26,19 +27,29 @@ export default function EditChildScreen() {
   async function save() {
     if (!name.trim()) { showModal({ icon: '✏️', title: 'Prénom requis', message: 'Entre le prénom de l\'enfant.' }); return; }
     setLoading(true);
-    await new Promise(r => setTimeout(r, 600));
-    setLoading(false);
-    showModal({ icon: '✅', title: 'Profil mis à jour', message: `Le profil de ${name} a été enregistré.`, buttons: [{ label: 'OK', style: 'default', onPress: () => router.navigate('/(parent)/settings') }] });
+    try {
+      await childrenApi.update(childId, { name: name.trim(), avatar: emoji });
+      showModal({ icon: '✅', title: 'Profil mis à jour', message: `Le profil de ${name} a été enregistré.`, buttons: [{ label: 'OK', style: 'default', onPress: () => router.back() }] });
+    } catch {
+      showModal({ icon: '❌', title: 'Erreur', message: 'Impossible de sauvegarder. Réessaie.' });
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function resetPin() {
     if (newPin.length < 4) { showModal({ icon: '🔢', title: 'Code trop court', message: 'Le code doit faire 4 chiffres.' }); return; }
     if (newPin !== confirm) { showModal({ icon: '❌', title: 'Codes différents', message: 'Les deux codes ne correspondent pas.', buttons: [{ label: 'Réessayer', style: 'default', onPress: () => { setConfirm(''); } }] }); return; }
     setLoading(true);
-    await new Promise(r => setTimeout(r, 600));
-    setLoading(false);
-    setNewPin(''); setConfirm(''); setPinMode(false);
-    showModal({ icon: '✅', title: 'Code changé', message: `Le code secret de ${name} a été mis à jour.`, buttons: [{ label: 'OK', style: 'default' }] });
+    try {
+      await childrenApi.resetPin(childId, newPin);
+      setNewPin(''); setConfirm(''); setPinMode(false);
+      showModal({ icon: '✅', title: 'Code changé', message: `Le code secret de ${name} a été mis à jour.`, buttons: [{ label: 'OK', style: 'default' }] });
+    } catch {
+      showModal({ icon: '❌', title: 'Erreur', message: 'Impossible de changer le code. Réessaie.' });
+    } finally {
+      setLoading(false);
+    }
   }
 
   function confirmDelete() {
@@ -47,7 +58,7 @@ export default function EditChildScreen() {
       message: `Toutes les tâches, récompenses et points de ${name} seront définitivement supprimés.`,
       buttons: [
         { label: `Supprimer ${name}`, style: 'destructive', onPress: () => {
-          showModal({ icon: '✅', title: 'Profil supprimé', message: `Le profil de ${name} a été supprimé.`, buttons: [{ label: 'OK', style: 'default', onPress: () => router.navigate('/(parent)/settings') }] });
+          showModal({ icon: '✅', title: 'Profil supprimé', message: `Le profil de ${name} a été supprimé.`, buttons: [{ label: 'OK', style: 'default', onPress: () => router.back() }] });
         }},
         { label: 'Annuler', style: 'cancel' },
       ],
@@ -60,7 +71,7 @@ export default function EditChildScreen() {
     <SafeAreaView style={styles.root} edges={['top']}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={styles.navbar}>
-          <TouchableOpacity onPress={() => pinMode ? setPinMode(false) : router.navigate('/(parent)/settings')}>
+          <TouchableOpacity onPress={() => pinMode ? setPinMode(false) : router.back()}>
             <Text style={styles.backBtn}>←</Text>
           </TouchableOpacity>
           <Text style={styles.navTitle}>{pinMode ? 'Nouveau code' : `Modifier ${name}`}</Text>

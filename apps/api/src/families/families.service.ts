@@ -29,10 +29,11 @@ export class FamiliesService {
     const family = await this.repo.findOne({
       where: { id: familyId },
       relations: ['children'],
-      select: ['id', 'email', 'timezone', 'createdAt'],
     });
     if (!family) throw new NotFoundException();
-    return family;
+    // Ne pas exposer le hash du mot de passe
+    const { passwordHash, ...safe } = family as any;
+    return safe;
   }
 
   async updateProfile(familyId: string, dto: { name?: string; email?: string; timezone?: string }) {
