@@ -4,7 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Colors, Radii } from '@/constants/theme';
 
 export default function ChildPinScreen() {
-  const { name } = useLocalSearchParams<{ name: string }>();
+  const { name, fromParent } = useLocalSearchParams<{ name: string; fromParent?: string }>();
   const [pin, setPin] = useState('');
   const [error, setError] = useState(false);
 
@@ -25,7 +25,7 @@ export default function ChildPinScreen() {
     // TODO: POST /auth/child/pin
     await new Promise(r => setTimeout(r, 400));
     if (p === '1234') { // demo PIN
-      router.replace('/(child)/home');
+      router.replace({ pathname: '/(child)/home', params: { fromParent } });
     } else {
       setPin('');
       setError(true);

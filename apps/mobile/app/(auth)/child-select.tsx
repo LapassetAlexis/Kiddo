@@ -1,14 +1,15 @@
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 
-// Demo children — will come from API
 const CHILDREN = [
   { id: '1', name: 'Lucas', emoji: '🦊', pts: 120 },
   { id: '2', name: 'Emma',  emoji: '🐻', pts: 85  },
 ];
 
 export default function ChildSelectScreen() {
+  const { fromParent } = useLocalSearchParams<{ fromParent?: string }>();
+
   return (
     <View style={styles.root}>
       <View style={styles.header}>
@@ -21,7 +22,10 @@ export default function ChildSelectScreen() {
           <TouchableOpacity
             key={child.id}
             style={styles.card}
-            onPress={() => router.push({ pathname: '/(auth)/child-pin', params: { childId: child.id, name: child.name } })}
+            onPress={() => router.push({
+              pathname: '/(auth)/child-pin',
+              params: { childId: child.id, name: child.name, fromParent },
+            })}
             activeOpacity={0.8}
           >
             <Text style={styles.emoji}>{child.emoji}</Text>
@@ -31,8 +35,13 @@ export default function ChildSelectScreen() {
         ))}
       </ScrollView>
 
-      <TouchableOpacity style={styles.parentLink} onPress={() => router.back()}>
-        <Text style={styles.parentLinkText}>← Connexion parent</Text>
+      <TouchableOpacity
+        style={styles.parentLink}
+        onPress={() => fromParent === 'true' ? router.replace('/(parent)/dashboard') : router.back()}
+      >
+        <Text style={styles.parentLinkText}>
+          {fromParent === 'true' ? '← Retour tableau de bord' : '← Connexion parent'}
+        </Text>
       </TouchableOpacity>
     </View>
   );

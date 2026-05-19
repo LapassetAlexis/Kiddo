@@ -1,5 +1,6 @@
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Animated } from 'react-native';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Radii, Spacing, Typography } from '@/constants/theme';
 
@@ -13,6 +14,7 @@ const INITIAL_TASKS: Task[] = [
 ];
 
 export default function ChildHomeScreen() {
+  const { fromParent } = useLocalSearchParams<{ fromParent?: string }>();
   const [tasks, setTasks]   = useState<Task[]>(INITIAL_TASKS);
   const [points, setPoints] = useState(120);
   const [streak]            = useState(5);
@@ -55,7 +57,18 @@ export default function ChildHomeScreen() {
               <Text style={styles.greetingName}>Lucas 👋</Text>
             </View>
           </View>
-          <View style={styles.notifBtn}><Text style={{ fontSize: 18 }}>🔔</Text></View>
+          <View style={styles.headerRight}>
+            {fromParent === 'true' && (
+              <TouchableOpacity
+                style={styles.parentBtn}
+                onPress={() => router.replace('/(parent)/dashboard')}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.parentBtnText}>👨‍👩‍👧</Text>
+              </TouchableOpacity>
+            )}
+            <View style={styles.notifBtn}><Text style={{ fontSize: 18 }}>🔔</Text></View>
+          </View>
         </View>
 
         {/* Points hero */}
@@ -130,7 +143,10 @@ const styles = StyleSheet.create({
   root:   { flex: 1, backgroundColor: Colors.bgScreen },
   scroll: { paddingBottom: 20 },
 
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: Spacing.screen, paddingTop: 12 },
+  header:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: Spacing.screen, paddingTop: 12 },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  parentBtn:   { width: 44, height: 44, borderRadius: 14, backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
+  parentBtnText: { fontSize: 20 },
   avatarRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.gold, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.gold, shadowOpacity: 0.4, shadowRadius: 8 },
   avatarEmoji: { fontSize: 24 },

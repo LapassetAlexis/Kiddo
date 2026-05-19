@@ -1,5 +1,6 @@
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useState } from 'react';
+import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 
@@ -49,9 +50,18 @@ export default function ParentDashboardScreen() {
             <Text style={styles.sub}>Bonjour,</Text>
             <Text style={styles.title}>Marie 👋</Text>
           </View>
-          <TouchableOpacity style={styles.addBtn} activeOpacity={0.8}>
-            <Text style={styles.addBtnText}>+</Text>
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={styles.switchBtn}
+              onPress={() => router.push({ pathname: '/(auth)/child-select', params: { fromParent: 'true' } })}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.switchBtnText}>👶</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.addBtn} activeOpacity={0.8}>
+              <Text style={styles.addBtnText}>+</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Urgent banner */}
@@ -150,11 +160,14 @@ export default function ParentDashboardScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.bgScreen },
 
-  header:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: Spacing.screen, paddingTop: 12 },
-  sub:      { fontSize: 13, fontWeight: '600', color: Colors.textDim },
-  title:    { fontSize: 22, fontWeight: '900', color: Colors.textPrimary },
-  addBtn:   { width: 44, height: 44, backgroundColor: Colors.gold, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  addBtnText: { fontSize: 24, fontWeight: '900', color: '#1a1000', lineHeight: 28 },
+  header:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: Spacing.screen, paddingTop: 12 },
+  headerActions: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+  sub:           { fontSize: 13, fontWeight: '600', color: Colors.textDim },
+  title:         { fontSize: 22, fontWeight: '900', color: Colors.textPrimary },
+  switchBtn:     { width: 44, height: 44, backgroundColor: Colors.bgCard, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
+  switchBtnText: { fontSize: 22 },
+  addBtn:        { width: 44, height: 44, backgroundColor: Colors.gold, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  addBtnText:    { fontSize: 24, fontWeight: '900', color: '#1a1000', lineHeight: 28 },
 
   urgentBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: Spacing.screen, marginBottom: 14, backgroundColor: 'rgba(255,107,53,0.1)', borderWidth: 1, borderColor: 'rgba(255,107,53,0.22)', borderRadius: 16, padding: 12 },
   urgentCount:  { fontSize: 14, fontWeight: '900', color: Colors.orange },
