@@ -12,6 +12,7 @@ import { familiesApi } from '@/lib/api/families';
 import { formatName } from '@/lib/formatName';
 import { useApiData } from '@/lib/useApiData';
 import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
+import { ApiError } from '@/lib/api-client';
 import { useAuth } from '@/contexts/AuthContext';
 
 type PendingTask = { id: string; childName: string; childEmoji: string; childColor: string; taskName: string; pts: number; ago: string; note?: string; photoUrl?: string; };
@@ -122,13 +123,24 @@ export default function ParentDashboardScreen() {
     showModal({
       icon: r.emoji,
       title: `Accorder "${r.rewardName}" ?`,
-      message: `${r.childEmoji} ${r.childName} recevra sa récompense.\nLes ${r.pts} pts sont déjà débités.`,
+      message: `${r.childEmoji} ${r.childName} recevra sa récompense.\nLes ${r.pts} pts seront débités.`,
       buttons: [
         { label: 'Accorder 🎉', style: 'default', onPress: async () => {
-          try { await rewardsApi.grant(id); } catch {}
-          rewardsRefresh();
-          refreshBalances(childrenData);
-          showModal({ icon: '🎉', title: 'Récompense accordée !', message: `${r.childName} va être ravi·e !`, buttons: [{ label: 'Super !', style: 'default' }] });
+          try {
+            await rewardsApi.grant(id);
+            rewardsRefresh();
+            refreshBalances(childrenData);
+            showModal({ icon: '🎉', title: 'Récompense accordée !', message: `${r.childName} va être ravi·e !`, buttons: [{ label: 'Super !', style: 'default' }] });
+          } catch (err) {
+            rewardsRefresh();
+            const alreadyDone = err instanceof ApiError && err.status === 409;
+            showModal({
+              icon: alreadyDone ? 'ℹ️' : '❌',
+              title: alreadyDone ? 'Déjà traité' : 'Erreur',
+              message: alreadyDone ? 'L\'autre parent a déjà accordé cette récompense.' : 'Une erreur est survenue, réessaie.',
+              buttons: [{ label: 'OK', style: 'default' }],
+            });
+          }
         }},
         { label: 'Pas maintenant', style: 'cancel' },
       ],
@@ -141,12 +153,23 @@ export default function ParentDashboardScreen() {
     showModal({
       icon: '↩️',
       title: `Refuser "${r.rewardName}" ?`,
-      message: `Les ${r.pts} pts seront recrédités à ${r.childName}.`,
+      message: `La demande de ${r.childName} sera annulée.`,
       buttons: [
-        { label: 'Refuser et recréditer', style: 'destructive', onPress: async () => {
-          try { await rewardsApi.refuse(id); } catch {}
-          rewardsRefresh();
-          showModal({ icon: '✅', title: 'Points recrédités', message: `${r.pts} pts rendus à ${r.childName}.`, buttons: [{ label: 'OK', style: 'default' }] });
+        { label: 'Refuser', style: 'destructive', onPress: async () => {
+          try {
+            await rewardsApi.refuse(id);
+            rewardsRefresh();
+            showModal({ icon: '✅', title: 'Demande refusée', message: `La demande de "${r.rewardName}" a été annulée.`, buttons: [{ label: 'OK', style: 'default' }] });
+          } catch (err) {
+            rewardsRefresh();
+            const alreadyDone = err instanceof ApiError && err.status === 409;
+            showModal({
+              icon: alreadyDone ? 'ℹ️' : '❌',
+              title: alreadyDone ? 'Déjà traité' : 'Erreur',
+              message: alreadyDone ? 'L\'autre parent a déjà traité cette récompense.' : 'Une erreur est survenue, réessaie.',
+              buttons: [{ label: 'OK', style: 'default' }],
+            });
+          }
         }},
         { label: 'Annuler', style: 'cancel' },
       ],
@@ -160,15 +183,26 @@ export default function ParentDashboardScreen() {
 
   async function confirmApprove(task: PendingTask) {
     setReviewTask(null);
-    try { await tasksApi.approve(task.id); } catch {}
-    pendingRefresh();
-    refreshBalances(childrenData);
-    showModal({
-      icon: '✅',
-      title: 'Tâche validée !',
-      message: `${task.taskName} de ${task.childName} validée.\n+${task.pts} pts crédités.`,
-      buttons: [{ label: 'Super !', style: 'default' }],
-    });
+    try {
+      await tasksApi.approve(task.id);
+      pendingRefresh();
+      refreshBalances(childrenData);
+      showModal({
+        icon: '✅',
+        title: 'Tâche validée !',
+        message: `${task.taskName} de ${task.childName} validée.\n+${task.pts} pts crédités.`,
+        buttons: [{ label: 'Super !', style: 'default' }],
+      });
+    } catch (err) {
+      pendingRefresh();
+      const alreadyDone = err instanceof ApiError && err.status === 409;
+      showModal({
+        icon: alreadyDone ? 'ℹ️' : '❌',
+        title: alreadyDone ? 'Déjà validée' : 'Erreur',
+        message: alreadyDone ? 'L\'autre parent a déjà validé cette tâche.' : 'Une erreur est survenue, réessaie.',
+        buttons: [{ label: 'OK', style: 'default' }],
+      });
+    }
   }
 
   function confirmReject(task: PendingTask) {
@@ -179,9 +213,20 @@ export default function ParentDashboardScreen() {
       message: `${task.taskName} de ${task.childName} sera rejetée.`,
       buttons: [
         { label: 'Rejeter', style: 'destructive', onPress: async () => {
-          try { await tasksApi.reject(task.id); } catch {}
-          pendingRefresh();
-          todoRefresh();
+          try {
+            await tasksApi.reject(task.id);
+            pendingRefresh();
+            todoRefresh();
+          } catch (err) {
+            pendingRefresh();
+            const alreadyDone = err instanceof ApiError && err.status === 409;
+            showModal({
+              icon: alreadyDone ? 'ℹ️' : '❌',
+              title: alreadyDone ? 'Déjà traitée' : 'Erreur',
+              message: alreadyDone ? 'L\'autre parent a déjà traité cette tâche.' : 'Une erreur est survenue, réessaie.',
+              buttons: [{ label: 'OK', style: 'default' }],
+            });
+          }
         }},
         { label: 'Annuler', style: 'cancel' },
       ],

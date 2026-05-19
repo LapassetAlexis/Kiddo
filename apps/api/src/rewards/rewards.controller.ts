@@ -84,7 +84,7 @@ export class RewardsController {
     @CurrentUser() user: JwtPayload,
     @Body() dto?: { childId?: string },
   ) {
-    return this.svc.grant(id, user.familyId!, dto?.childId);
+    return this.svc.grant(id, user.familyId!, user.sub, dto?.childId);
   }
 
   @Post(':id/refuse')
@@ -95,6 +95,6 @@ export class RewardsController {
     @CurrentUser() user: JwtPayload,
     @Body() dto?: { childId?: string },
   ) {
-    return this.svc.refuse(id, user.familyId!, dto?.childId);
+    return this.svc.refuse(id, user.familyId!, user.sub, dto?.childId);
   }
 }

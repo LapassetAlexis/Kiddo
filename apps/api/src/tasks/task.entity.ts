@@ -20,4 +20,5 @@ export class Task {
   @UpdateDateColumn()             updatedAt: Date;
   @Column({ nullable: true })     submittedAt: Date;
   @Column({ nullable: true })     validatedAt: Date;
+  @Column({ nullable: true })     approvedByName: string;
 }

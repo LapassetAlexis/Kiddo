@@ -93,6 +93,7 @@ export class AuthService {
       familyId: account.family.id,
       role:     'parent',
       email:    account.email,
+      name:     account.name,
     });
   }
 
@@ -108,7 +109,7 @@ export class AuthService {
       this.families.create({ name, inviteCode: this.generateInviteCode() }),
     );
     await this.accounts.save(
-      this.accounts.create({ email, passwordHash, family }),
+      this.accounts.create({ email, passwordHash, name, family }),
     );
 
     const code = await this.createEmailVerificationCode(email);
@@ -250,7 +251,7 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
     const account = await this.accounts.save(
-      this.accounts.create({ email, passwordHash, family }),
+      this.accounts.create({ email, passwordHash, name, family }),
     );
 
     const code = await this.createEmailVerificationCode(email);

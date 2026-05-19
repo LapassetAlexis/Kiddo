@@ -130,19 +130,13 @@ export class RewardsService {
    * 4. Notify parent via outbox
    */
   async redeem(rewardId: string, childId: string, familyId: string): Promise<Reward> {
-    const reward = await this.rewards.findOne({
-      where: { id: rewardId, family: { id: familyId } },
-      relations: ['family'],
-    });
+    const reward = await this.rewards.findOne({ where: { id: rewardId, family: { id: familyId } } });
     if (!reward) throw new NotFoundException('Reward not found');
     if (reward.status !== 'available') throw new ConflictException('Cette récompense n\'est plus disponible');
 
-    const child = await this.children.findOne({
-      where: { id: childId, family: { id: familyId } },
-    });
+    const child = await this.children.findOne({ where: { id: childId, family: { id: familyId } } });
     if (!child) throw new ForbiddenException('Child not in this family');
 
-    // Pre-flight balance check (actual debit happens on parent grant)
     const balanceRow = await this.transactions
       .createQueryBuilder('tx')
       .select(
@@ -154,27 +148,31 @@ export class RewardsService {
       .getRawOne<{ balance: string }>();
 
     const balance = Number(balanceRow?.balance ?? 0);
-    if (balance < reward.cost) {
-      throw new BadRequestException('Pas assez de points');
-    }
+    if (balance < reward.cost) throw new BadRequestException('Pas assez de points');
 
-    // Mark as claimed — store who claimed it for use at grant/refuse time
-    await this.rewards.update(rewardId, { status: 'claimed', claimedByChildId: childId });
-
-    // Notify all parents (outbox pattern)
     const parentTokens = await this.familiesSvc.getFamilyParentTokens(familyId);
-    for (const fcmToken of parentTokens) {
-      await this.notifs.save(
-        this.notifs.create({
+
+    await this.ds.transaction(async em => {
+      // Atomic test-and-set : seul le premier enfant qui arrive gagne le claim
+      const result = await em.createQueryBuilder()
+        .update(Reward)
+        .set({ status: 'claimed', claimedByChildId: childId })
+        .where('id = :id AND status = :status', { id: rewardId, status: 'available' })
+        .execute();
+
+      if (!result.affected) throw new ConflictException('Cette récompense vient d\'être réclamée');
+
+      for (const fcmToken of parentTokens) {
+        await em.save(this.notifs.create({
           fcmToken,
           payload: {
             title: `${child.name} veut : ${reward.title}`,
             body: `Coûte ${reward.cost} pts — à valider`,
             data: { rewardId, childId },
           },
-        }),
-      );
-    }
+        }));
+      }
+    });
 
     return this.rewards.findOneOrFail({ where: { id: rewardId } });
   }
@@ -187,37 +185,37 @@ export class RewardsService {
    * 4. Mark reward as 'granted' (once) or back to 'available' (unlimited)
    * 5. Notify child
    */
-  async grant(rewardId: string, familyId: string, childId?: string): Promise<Reward> {
-    const reward = await this.assertOwnership(rewardId, familyId);
-    if (reward.status !== 'claimed') {
-      throw new ConflictException('La récompense n\'a pas encore été réclamée');
-    }
-
-    const resolvedChildId = reward.claimedByChildId ?? childId;
-    if (!resolvedChildId) throw new BadRequestException('Child ID manquant');
-
-    const child = await this.children.findOne({
-      where: { id: resolvedChildId, family: { id: familyId } },
-    });
-
-    // Balance check at grant time
-    const balanceRow = await this.transactions
-      .createQueryBuilder('tx')
-      .select(
-        `COALESCE(SUM(CASE WHEN tx.type = 'earn' THEN tx.amount ELSE 0 END), 0)` +
-        ` - COALESCE(SUM(CASE WHEN tx.type = 'spend' THEN tx.amount ELSE 0 END), 0)`,
-        'balance',
-      )
-      .where('tx.childId = :childId', { childId: resolvedChildId })
-      .getRawOne<{ balance: string }>();
-
-    const balance = Number(balanceRow?.balance ?? 0);
-    if (balance < reward.cost) {
-      throw new BadRequestException('L\'enfant n\'a plus assez de points');
-    }
+  async grant(rewardId: string, familyId: string, accountId: string, childId?: string): Promise<Reward> {
+    const granterName = await this.familiesSvc.getDisplayName(accountId);
+    const otherParentTokens = await this.familiesSvc.getFamilyParentTokens(familyId, { exclude: accountId });
 
     await this.ds.transaction(async em => {
-      // Debit points now that parent approved
+      const reward = await em.findOne(Reward, {
+        where: { id: rewardId, family: { id: familyId } },
+        lock: { mode: 'pessimistic_write' },
+        relations: ['family'],
+      });
+      if (!reward) throw new NotFoundException('Reward not found');
+      if (reward.status !== 'claimed') throw new ConflictException('Récompense déjà traitée par l\'autre parent');
+
+      const resolvedChildId = reward.claimedByChildId ?? childId;
+      if (!resolvedChildId) throw new BadRequestException('Child ID manquant');
+
+      const child = await em.findOne(Child, { where: { id: resolvedChildId, family: { id: familyId } } });
+
+      const balanceRow = await em
+        .createQueryBuilder(Transaction, 'tx')
+        .select(
+          `COALESCE(SUM(CASE WHEN tx.type = 'earn' THEN tx.amount ELSE 0 END), 0)` +
+          ` - COALESCE(SUM(CASE WHEN tx.type = 'spend' THEN tx.amount ELSE 0 END), 0)`,
+          'balance',
+        )
+        .where('tx.childId = :childId', { childId: resolvedChildId })
+        .getRawOne<{ balance: string }>();
+
+      const balance = Number(balanceRow?.balance ?? 0);
+      if (balance < reward.cost) throw new BadRequestException('L\'enfant n\'a plus assez de points');
+
       await em.save(
         Transaction,
         em.create(Transaction, {
@@ -229,22 +227,23 @@ export class RewardsService {
         }),
       );
 
-      // once → granted (done); unlimited → available (ready for next claim)
       const newStatus = reward.availability === 'once' ? 'granted' : 'available';
-      await em.update(Reward, rewardId, { status: newStatus, claimedByChildId: null });
+      await em.update(Reward, rewardId, { status: newStatus, claimedByChildId: null, grantedByName: granterName });
 
+      // Notif enfant
       if (child?.fcmToken) {
-        await em.save(
-          NotificationIntent,
-          em.create(NotificationIntent, {
-            fcmToken: child.fcmToken,
-            payload: {
-              title: '🎁 Récompense accordée !',
-              body: `Tu obtiens : ${reward.title}`,
-              data: { rewardId },
-            },
-          }),
-        );
+        await em.save(NotificationIntent, em.create(NotificationIntent, {
+          fcmToken: child.fcmToken,
+          payload: { title: '🎁 Récompense accordée !', body: `Tu obtiens : ${reward.title}`, data: { rewardId } },
+        }));
+      }
+
+      // Notif autre parent
+      for (const fcmToken of otherParentTokens) {
+        await em.save(NotificationIntent, em.create(NotificationIntent, {
+          fcmToken,
+          payload: { title: `🎁 ${granterName} a accordé`, body: `${child?.name ?? ''} : ${reward.title}`, data: { rewardId } },
+        }));
       }
     });
 
@@ -256,32 +255,42 @@ export class RewardsService {
    * Points were never debited, so no refund needed.
    * Just reset the reward to 'available'.
    */
-  async refuse(rewardId: string, familyId: string, childId?: string): Promise<Reward> {
-    const reward = await this.assertOwnership(rewardId, familyId);
-    if (reward.status !== 'claimed') {
-      throw new ConflictException('La récompense n\'a pas encore été réclamée');
-    }
+  async refuse(rewardId: string, familyId: string, accountId: string, childId?: string): Promise<Reward> {
+    const refuserName = await this.familiesSvc.getDisplayName(accountId);
+    const otherParentTokens = await this.familiesSvc.getFamilyParentTokens(familyId, { exclude: accountId });
 
-    const resolvedChildId = reward.claimedByChildId ?? childId;
-    const child = resolvedChildId
-      ? await this.children.findOne({ where: { id: resolvedChildId, family: { id: familyId } } })
-      : null;
+    await this.ds.transaction(async em => {
+      const reward = await em.findOne(Reward, {
+        where: { id: rewardId, family: { id: familyId } },
+        lock: { mode: 'pessimistic_write' },
+        relations: ['family'],
+      });
+      if (!reward) throw new NotFoundException('Reward not found');
+      if (reward.status !== 'claimed') throw new ConflictException('Récompense déjà traitée par l\'autre parent');
 
-    // Reset to available (no refund needed — points were never debited)
-    await this.rewards.update(rewardId, { status: 'available', claimedByChildId: null });
+      const resolvedChildId = reward.claimedByChildId ?? childId;
+      const child = resolvedChildId
+        ? await em.findOne(Child, { where: { id: resolvedChildId, family: { id: familyId } } })
+        : null;
 
-    if (child?.fcmToken) {
-      await this.notifs.save(
-        this.notifs.create({
+      await em.update(Reward, rewardId, { status: 'available', claimedByChildId: null });
+
+      // Notif enfant
+      if (child?.fcmToken) {
+        await em.save(NotificationIntent, em.create(NotificationIntent, {
           fcmToken: child.fcmToken,
-          payload: {
-            title: 'Récompense refusée',
-            body: `Ta demande de "${reward.title}" n'a pas été acceptée`,
-            data: { rewardId },
-          },
-        }),
-      );
-    }
+          payload: { title: 'Récompense refusée', body: `Ta demande de "${reward.title}" n'a pas été acceptée`, data: { rewardId } },
+        }));
+      }
+
+      // Notif autre parent
+      for (const fcmToken of otherParentTokens) {
+        await em.save(NotificationIntent, em.create(NotificationIntent, {
+          fcmToken,
+          payload: { title: `↩️ ${refuserName} a refusé`, body: reward.title, data: { rewardId } },
+        }));
+      }
+    });
 
     return this.rewards.findOneOrFail({ where: { id: rewardId } });
   }

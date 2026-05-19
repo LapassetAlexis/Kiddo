@@ -1,7 +1,7 @@
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, Switch,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, Switch, Share,
 } from 'react-native';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Radii, Spacing } from '@/constants/theme';
@@ -17,19 +17,55 @@ export default function SettingsScreen() {
   const [notifTask,   setNotifTask]   = useState(true);
   const [notifReward, setNotifReward] = useState(true);
   const [notifStreak, setNotifStreak] = useState(false);
+  const [savingNotif, setSavingNotif] = useState(false);
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
 
   const { data: profileData, refresh: profileRefresh } = useApiData(() => familiesApi.getMe(), []);
+  const { data: parentsData, refresh: parentsRefresh } = useApiData(() => familiesApi.listParents(), []);
   const { data: childrenData, loading: childrenLoading, error: childrenError, refresh: childrenRefresh } =
     useApiData(() => childrenApi.list(), []);
 
   useFocusEffect(
     useCallback(() => {
       profileRefresh();
+      parentsRefresh();
       childrenRefresh();
     }, [])
   );
+
+  useEffect(() => {
+    if (profileData) {
+      setNotifTask(profileData.notifTaskSubmitted ?? true);
+      setNotifReward(profileData.notifRewardClaimed ?? true);
+      setNotifStreak(profileData.notifStreakAlert ?? false);
+    }
+  }, [profileData]);
+
+  async function saveNotifPref(field: 'notifTaskSubmitted' | 'notifRewardClaimed' | 'notifStreakAlert', value: boolean) {
+    setSavingNotif(true);
+    try { await familiesApi.updateNotifPrefs({ [field]: value }); } catch {}
+    setSavingNotif(false);
+  }
+
+  async function regenerateCode() {
+    showModal({
+      icon: '🔑',
+      title: 'Nouveau code famille ?',
+      message: 'L\'ancien code ne fonctionnera plus. Les co-parents existants ne sont pas affectés.',
+      buttons: [
+        { label: 'Générer', style: 'destructive', onPress: async () => {
+          try {
+            await familiesApi.regenerateInviteCode();
+            profileRefresh();
+          } catch {
+            showModal({ icon: '❌', title: 'Erreur', message: 'Impossible de régénérer le code.', buttons: [{ label: 'OK', style: 'default' }] });
+          }
+        }},
+        { label: 'Annuler', style: 'cancel' },
+      ],
+    });
+  }
 
   function confirmLogout() {
     showModal({
@@ -123,6 +159,75 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Parents */}
+        <Text style={styles.sectionLabel}>Parents</Text>
+        <View style={styles.card}>
+          {(parentsData ?? []).map((parent, i) => {
+            const isSelf = parent.id === user?.id;
+            const displayName = formatName(parent.name, parent.email);
+            return (
+              <View key={parent.id}>
+                {i > 0 && <View style={styles.rowDivider} />}
+                <View style={styles.parentRow}>
+                  <View style={styles.parentAvatar}>
+                    <Text style={styles.parentAvatarText}>
+                      {displayName.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Text style={styles.parentName}>{displayName}</Text>
+                      {isSelf && (
+                        <View style={styles.selfBadge}>
+                          <Text style={styles.selfBadgeText}>Toi</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.parentEmail}>{parent.email}</Text>
+                  </View>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+
+        {/* Invitation */}
+        <Text style={styles.sectionLabel}>Invitation</Text>
+        <View style={styles.card}>
+          <View style={styles.inviteBlock}>
+            <Text style={styles.inviteTitle}>Inviter un co-parent</Text>
+            <Text style={styles.inviteDesc}>Partage ce code pour qu'un autre parent rejoigne ta famille avec les mêmes droits.</Text>
+            <View style={styles.codeBox}>
+              <Text style={styles.codeText}>{profileData?.inviteCode ?? '——————'}</Text>
+            </View>
+            <View style={styles.inviteBtns}>
+              <TouchableOpacity
+                style={styles.inviteBtn}
+                activeOpacity={0.7}
+                onPress={() => Share.share({ message: `Code famille KidPoints : ${profileData?.inviteCode}` })}
+              >
+                <Text style={styles.inviteBtnText}>Copier / Partager</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.inviteBtn, styles.inviteBtnSecondary]}
+                activeOpacity={0.7}
+                onPress={() => Share.share({
+                  message: `Rejoins ma famille sur KidPoints avec le code : ${profileData?.inviteCode}\n\nTélécharge l'app et va dans "Rejoindre une famille".`,
+                })}
+              >
+                <Text style={[styles.inviteBtnText, { color: Colors.textDim }]}>Envoyer le lien</Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              style={styles.regenerateBtn}
+              activeOpacity={0.7}
+              onPress={regenerateCode}
+            >
+              <Text style={styles.regenerateBtnText}>🔄  Générer un nouveau code</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {/* Notifications */}
         <Text style={styles.sectionLabel}>Notifications</Text>
         <View style={styles.card}>
@@ -130,21 +235,24 @@ export default function SettingsScreen() {
             label="Tâche soumise"
             desc="Quand un enfant marque une tâche comme faite"
             value={notifTask}
-            onToggle={setNotifTask}
+            onToggle={v => { setNotifTask(v); saveNotifPref('notifTaskSubmitted', v); }}
+            disabled={savingNotif}
           />
           <View style={styles.rowDivider} />
           <ToggleRow
             label="Récompense réclamée"
             desc="Quand un enfant réclame une récompense"
             value={notifReward}
-            onToggle={setNotifReward}
+            onToggle={v => { setNotifReward(v); saveNotifPref('notifRewardClaimed', v); }}
+            disabled={savingNotif}
           />
           <View style={styles.rowDivider} />
           <ToggleRow
             label="Série en danger 🔥"
             desc="Alerte si un enfant risque de perdre sa série en fin de journée"
             value={notifStreak}
-            onToggle={setNotifStreak}
+            onToggle={v => { setNotifStreak(v); saveNotifPref('notifStreakAlert', v); }}
+            disabled={savingNotif}
           />
         </View>
 
@@ -196,11 +304,11 @@ export default function SettingsScreen() {
   );
 }
 
-function ToggleRow({ label, desc, value, onToggle }: {
-  label: string; desc: string; value: boolean; onToggle: (v: boolean) => void;
+function ToggleRow({ label, desc, value, onToggle, disabled }: {
+  label: string; desc: string; value: boolean; onToggle: (v: boolean) => void; disabled?: boolean;
 }) {
   return (
-    <View style={styles.toggleRow}>
+    <View style={[styles.toggleRow, disabled && { opacity: 0.6 }]}>
       <View style={{ flex: 1, paddingRight: 12 }}>
         <Text style={styles.toggleLabel}>{label}</Text>
         <Text style={styles.toggleDesc}>{desc}</Text>
@@ -208,6 +316,7 @@ function ToggleRow({ label, desc, value, onToggle }: {
       <Switch
         value={value}
         onValueChange={onToggle}
+        disabled={disabled}
         trackColor={{ false: 'rgba(255,255,255,0.1)', true: 'rgba(255,184,0,0.4)' }}
         thumbColor={value ? Colors.gold : 'rgba(255,255,255,0.4)'}
       />
@@ -277,4 +386,27 @@ const styles = StyleSheet.create({
   linkRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 },
   linkText:  { fontSize: 14, fontWeight: '700', color: Colors.textPrimary },
   linkArrow: { fontSize: 20, color: Colors.textFaint, fontWeight: '300' },
+
+  parentsBlock:     { padding: 16, gap: 10 },
+  parentsTitle:     { fontSize: 12, fontWeight: '800', color: Colors.textFaint, textTransform: 'uppercase', letterSpacing: 0.8 },
+  parentDivider:    { height: 1, backgroundColor: 'rgba(255,255,255,0.05)', marginVertical: 4 },
+  parentRow:        { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 },
+  parentAvatar:     { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,184,0,0.1)', alignItems: 'center', justifyContent: 'center' },
+  parentAvatarText: { fontSize: 24, fontWeight: '900', color: Colors.gold },
+  parentName:       { fontSize: 15, fontWeight: '900', color: Colors.textPrimary },
+  parentEmail:      { fontSize: 12, fontWeight: '600', color: Colors.textFaint, marginTop: 2 },
+  selfBadge:        { backgroundColor: 'rgba(255,184,0,0.15)', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2, borderWidth: 1, borderColor: 'rgba(255,184,0,0.3)' },
+  selfBadgeText:    { fontSize: 10, fontWeight: '900', color: Colors.gold },
+
+  inviteBlock:      { padding: 16, gap: 10 },
+  inviteTitle:      { fontSize: 15, fontWeight: '900', color: Colors.textPrimary },
+  inviteDesc:       { fontSize: 12, fontWeight: '600', color: Colors.textFaint, lineHeight: 18 },
+  codeBox:          { backgroundColor: 'rgba(255,184,0,0.08)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,184,0,0.2)', paddingVertical: 14, alignItems: 'center' },
+  codeText:         { fontSize: 28, fontWeight: '900', color: Colors.gold, letterSpacing: 6 },
+  inviteBtns:       { flexDirection: 'row', gap: 8 },
+  inviteBtn:        { flex: 1, backgroundColor: Colors.gold, borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
+  inviteBtnSecondary: { backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: Colors.border },
+  inviteBtnText:    { fontSize: 13, fontWeight: '900', color: '#1a1000' },
+  regenerateBtn:    { alignItems: 'center', paddingVertical: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)', marginTop: 4 },
+  regenerateBtnText:{ fontSize: 12, fontWeight: '700', color: Colors.textFaint },
 });

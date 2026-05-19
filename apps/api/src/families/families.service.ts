@@ -2,8 +2,10 @@ import { Injectable, ConflictException, NotFoundException, UnauthorizedException
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { Family } from './family.entity';
 import { ParentAccount } from './parent-account.entity';
+import { formatName } from '../shared/format-name';
 
 @Injectable()
 export class FamiliesService {
@@ -25,13 +27,16 @@ export class FamiliesService {
     });
     if (!account) throw new NotFoundException();
     return {
-      id:         account.id,
-      email:      account.email,
-      familyId:   account.family.id,
-      name:       account.family.name,
-      timezone:   account.family.timezone,
-      inviteCode: account.family.inviteCode,
-      children:   account.family.children.map(c => ({ id: c.id, name: c.name, avatar: c.avatar, color: c.color })),
+      id:                 account.id,
+      email:              account.email,
+      familyId:           account.family.id,
+      name:               account.name,
+      timezone:           account.family.timezone,
+      inviteCode:         account.family.inviteCode,
+      notifTaskSubmitted: account.notifTaskSubmitted,
+      notifRewardClaimed: account.notifRewardClaimed,
+      notifStreakAlert:   account.notifStreakAlert,
+      children:           account.family.children.map(c => ({ id: c.id, name: c.name, avatar: c.avatar, color: c.color })),
     };
   }
 
@@ -44,13 +49,23 @@ export class FamiliesService {
       await this.accounts.update(accountId, { email: dto.email });
     }
 
-    if (dto.name !== undefined || dto.timezone !== undefined) {
-      const familyUpdate: Partial<Family> = {};
-      if (dto.name !== undefined) familyUpdate.name = dto.name;
-      if (dto.timezone) familyUpdate.timezone = dto.timezone;
-      await this.repo.update(account.family.id, familyUpdate);
+    if (dto.name !== undefined) {
+      await this.accounts.update(accountId, { name: dto.name });
     }
 
+    if (dto.timezone) {
+      await this.repo.update(account.family.id, { timezone: dto.timezone });
+    }
+
+    return this.getMe(accountId);
+  }
+
+  async updateNotifPrefs(accountId: string, dto: {
+    notifTaskSubmitted?: boolean;
+    notifRewardClaimed?: boolean;
+    notifStreakAlert?: boolean;
+  }) {
+    await this.accounts.update(accountId, dto);
     return this.getMe(accountId);
   }
 
@@ -64,25 +79,61 @@ export class FamiliesService {
   }
 
   async deleteAccount(accountId: string) {
-    const account = await this.accounts.findOneOrFail({ where: { id: accountId }, relations: ['family'] });
-    const familyId = account.family.id;
-    const siblingCount = await this.accounts.count({ where: { family: { id: familyId } } });
-    if (siblingCount <= 1) {
-      // Last parent — delete the whole family (cascades children/tasks/rewards)
-      await this.repo.delete(familyId);
-    } else {
-      // Co-parent leaving — only remove their account
-      await this.accounts.delete(accountId);
-    }
+    await this.repo.manager.transaction(async em => {
+      const account = await em.findOne(ParentAccount, {
+        where: { id: accountId },
+        lock: { mode: 'pessimistic_write' },
+        relations: ['family'],
+      });
+      if (!account) return;
+
+      const familyId = account.family.id;
+      const siblingCount = await em.count(ParentAccount, { where: { family: { id: familyId } } });
+
+      if (siblingCount <= 1) {
+        await em.delete(this.repo.target, familyId);
+      } else {
+        await em.delete(ParentAccount, accountId);
+      }
+    });
     return { message: 'Compte supprimé' };
+  }
+
+  async regenerateInviteCode(accountId: string) {
+    const account = await this.accounts.findOneOrFail({ where: { id: accountId }, relations: ['family'] });
+    const inviteCode = crypto.randomBytes(4).toString('hex').toUpperCase();
+    await this.repo.update(account.family.id, { inviteCode });
+    return this.getMe(accountId);
+  }
+
+  async listParents(familyId: string) {
+    const accounts = await this.accounts.find({ where: { family: { id: familyId } } });
+    return accounts.map(a => ({ id: a.id, name: a.name, email: a.email }));
+  }
+
+  async getDisplayName(accountId: string): Promise<string> {
+    const account = await this.accounts.findOne({ where: { id: accountId } });
+    return formatName(account?.name, account?.email);
   }
 
   async registerFcmToken(accountId: string, token: string) {
     await this.accounts.update(accountId, { fcmToken: token });
   }
 
-  async getFamilyParentTokens(familyId: string): Promise<string[]> {
+  async getFamilyParentTokens(
+    familyId: string,
+    opts: { exclude?: string; event?: 'task' | 'reward' | 'streak' } = {},
+  ): Promise<string[]> {
     const accounts = await this.accounts.find({ where: { family: { id: familyId } } });
-    return accounts.map(a => a.fcmToken).filter(Boolean) as string[];
+    return accounts
+      .filter(a => {
+        if (opts.exclude && a.id === opts.exclude) return false;
+        if (opts.event === 'task'   && !a.notifTaskSubmitted) return false;
+        if (opts.event === 'reward' && !a.notifRewardClaimed) return false;
+        if (opts.event === 'streak' && !a.notifStreakAlert)   return false;
+        return true;
+      })
+      .map(a => a.fcmToken)
+      .filter(Boolean) as string[];
   }
 }
