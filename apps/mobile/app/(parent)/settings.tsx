@@ -9,6 +9,7 @@ import AppModal, { useAppModal } from '@/components/ui/AppModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { childrenApi } from '@/lib/api/children';
 import { familiesApi } from '@/lib/api/families';
+import { formatName } from '@/lib/formatName';
 import { useApiData } from '@/lib/useApiData';
 import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
 
@@ -65,11 +66,11 @@ export default function SettingsScreen() {
         <View style={styles.card}>
           <View style={styles.profileRow}>
             <View style={styles.profileAvatar}>
-              <Text style={styles.profileAvatarText}>👩</Text>
+              <Text style={styles.profileAvatarText}>{(formatName(profileData?.name, profileData?.email) || '?').charAt(0).toUpperCase()}</Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.profileName}>Marie Dupont</Text>
-              <Text style={styles.profileEmail}>marie.dupont@gmail.com</Text>
+              <Text style={styles.profileName}>{formatName(profileData?.name, profileData?.email) || 'Mon profil'}</Text>
+              <Text style={styles.profileEmail}>{profileData?.email ?? ''}</Text>
             </View>
             <TouchableOpacity
               style={styles.editBtn}

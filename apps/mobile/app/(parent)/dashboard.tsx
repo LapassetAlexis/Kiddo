@@ -8,6 +8,7 @@ import { tasksApi } from '@/lib/api/tasks';
 import { rewardsApi } from '@/lib/api/rewards';
 import { childrenApi } from '@/lib/api/children';
 import { familiesApi } from '@/lib/api/families';
+import { formatName } from '@/lib/formatName';
 import { useApiData } from '@/lib/useApiData';
 import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,7 +29,7 @@ function formatAgo(dateStr?: string): string {
 export default function ParentDashboardScreen() {
   const { user } = useAuth();
   const { data: profileData } = useApiData(() => familiesApi.getMe(), []);
-  const parentName = profileData?.name ?? profileData?.email?.split('@')[0] ?? 'Bonjour';
+  const parentName = formatName(profileData?.name, profileData?.email) || 'Bonjour';
   const [addModal, setAddModal]     = useState(false);
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
   const slideAnim = useRef(new Animated.Value(300)).current;
