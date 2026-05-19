@@ -66,7 +66,13 @@ async function request<T>(
   const text = await res.text();
   const body = text ? JSON.parse(text) : null;
 
-  if (!res.ok) throw new ApiError(res.status, body);
+  if (!res.ok) {
+    // 401 : token expiré ou invalide → effacer le token
+    if (res.status === 401 && withAuth) {
+      await clearToken();
+    }
+    throw new ApiError(res.status, body);
+  }
   return body as T;
 }
 

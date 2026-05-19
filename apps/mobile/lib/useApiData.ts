@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { router } from 'expo-router';
 import { ApiError } from './api-client';
 
 interface ApiDataState<T> {
@@ -25,7 +26,16 @@ export function useApiData<T>(
     setError(null);
     fetcher()
       .then(d  => { if (!cancelled) { setData(d); setLoading(false); } })
-      .catch(e => { if (!cancelled) { setError(e instanceof ApiError ? e.message : 'Erreur de connexion'); setLoading(false); } });
+      .catch(e => {
+        if (cancelled) return;
+        // Session expirée → retour login automatique
+        if (e instanceof ApiError && e.status === 401) {
+          router.replace('/(auth)/login');
+          return;
+        }
+        setError(e instanceof ApiError ? e.message : 'Erreur de connexion');
+        setLoading(false);
+      });
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tick, ...deps]);
