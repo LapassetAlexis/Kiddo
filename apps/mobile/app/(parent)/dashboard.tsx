@@ -17,13 +17,16 @@ const INITIAL_PENDING: PendingTask[] = [
   { id: '2', childName: 'Emma',  childEmoji: '🐻', taskName: 'Mettre la table',    pts: 10, ago: 'il y a 3 min'  },
 ];
 
-const REWARD_REQUESTS = [
-  { id: '1', childName: 'Lucas', rewardName: 'Soirée TV', emoji: '📺', pts: 50 },
+type RewardRequest = { id: string; childName: string; childEmoji: string; rewardName: string; emoji: string; pts: number; };
+
+const INITIAL_REWARDS: RewardRequest[] = [
+  { id: '1', childName: 'Lucas', childEmoji: '🦊', rewardName: 'Soirée TV', emoji: '📺', pts: 50 },
 ];
 
 export default function ParentDashboardScreen() {
-  const [pending, setPending]     = useState<PendingTask[]>(INITIAL_PENDING);
-  const [addModal, setAddModal]   = useState(false);
+  const [pending, setPending]       = useState<PendingTask[]>(INITIAL_PENDING);
+  const [rewards, setRewards]       = useState<RewardRequest[]>(INITIAL_REWARDS);
+  const [addModal, setAddModal]     = useState(false);
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
   const slideAnim = useRef(new Animated.Value(300)).current;
 
@@ -34,6 +37,40 @@ export default function ParentDashboardScreen() {
 
   function closeAddModal() {
     Animated.timing(slideAnim, { toValue: 300, duration: 200, useNativeDriver: true }).start(() => setAddModal(false));
+  }
+
+  function grantReward(id: string) {
+    const r = rewards.find(x => x.id === id);
+    if (!r) return;
+    showModal({
+      icon: r.emoji,
+      title: `Accorder "${r.rewardName}" ?`,
+      message: `${r.childEmoji} ${r.childName} recevra sa récompense.\nLes ${r.pts} pts sont déjà débités.`,
+      buttons: [
+        { label: 'Accorder 🎉', style: 'default', onPress: () => {
+          setRewards(rs => rs.filter(x => x.id !== id));
+          showModal({ icon: '🎉', title: 'Récompense accordée !', message: `${r.childName} va être ravi·e !`, buttons: [{ label: 'Super !', style: 'default' }] });
+        }},
+        { label: 'Pas maintenant', style: 'cancel' },
+      ],
+    });
+  }
+
+  function refuseReward(id: string) {
+    const r = rewards.find(x => x.id === id);
+    if (!r) return;
+    showModal({
+      icon: '↩️',
+      title: `Refuser "${r.rewardName}" ?`,
+      message: `Les ${r.pts} pts seront recrédités à ${r.childName}.`,
+      buttons: [
+        { label: 'Refuser et recréditer', style: 'destructive', onPress: () => {
+          setRewards(rs => rs.filter(x => x.id !== id));
+          showModal({ icon: '✅', title: 'Points recrédités', message: `${r.pts} pts rendus à ${r.childName}.`, buttons: [{ label: 'OK', style: 'default' }] });
+        }},
+        { label: 'Annuler', style: 'cancel' },
+      ],
+    });
   }
 
   function goTo(path: '/(parent)/create-task' | '/(parent)/create-reward') {
@@ -168,21 +205,37 @@ export default function ParentDashboardScreen() {
         {/* Reward requests */}
         <View style={[styles.sectionHeader, { marginTop: 28 }]}>
           <Text style={styles.sectionTitle}>RÉCOMPENSES RÉCLAMÉES</Text>
+          {rewards.length > 0 && (
+            <Text style={styles.pendingCount}>{rewards.length}</Text>
+          )}
         </View>
-        <View style={styles.list}>
-          {REWARD_REQUESTS.map(r => (
-            <View key={r.id} style={[styles.pendingCard, { borderColor: 'rgba(255,184,0,0.15)' }]}>
-              <Text style={{ fontSize: 28 }}>{r.emoji}</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.pendingTask}>{r.rewardName}</Text>
-                <Text style={styles.pendingMeta}>{r.childName} · {r.pts} pts débités</Text>
+
+        {rewards.length === 0 ? (
+          <View style={styles.emptyPending}>
+            <Text style={{ fontSize: 28, marginBottom: 6 }}>🎁</Text>
+            <Text style={styles.emptyText}>Aucune récompense en attente</Text>
+          </View>
+        ) : (
+          <View style={styles.list}>
+            {rewards.map(r => (
+              <View key={r.id} style={[styles.pendingCard, { borderColor: 'rgba(255,184,0,0.18)' }]}>
+                <Text style={{ fontSize: 28 }}>{r.emoji}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.pendingTask}>{r.rewardName}</Text>
+                  <Text style={styles.pendingMeta}>
+                    {r.childEmoji} {r.childName} · {r.pts} pts débités
+                  </Text>
+                </View>
+                <TouchableOpacity style={styles.btnApprove} onPress={() => grantReward(r.id)} aria-label="Accorder">
+                  <Text style={{ color: Colors.green, fontSize: 17 }}>✓</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.btnReject} onPress={() => refuseReward(r.id)} aria-label="Refuser">
+                  <Text style={{ color: '#EF5350', fontSize: 17 }}>✕</Text>
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity style={styles.grantBtn}>
-                <Text style={styles.grantBtnText}>Accorder ✓</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
-        </View>
+            ))}
+          </View>
+        )}
 
         <View style={{ height: 20 }} />
       </ScrollView>
