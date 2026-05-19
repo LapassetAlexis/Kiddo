@@ -1,36 +1,75 @@
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, Animated, Pressable } from 'react-native';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
 import { tasksApi } from '@/lib/api/tasks';
 import { rewardsApi } from '@/lib/api/rewards';
-
-const CHILDREN = [
-  { id: '1', name: 'Lucas', emoji: '🦊', pts: 120, nextReward: 'Soirée TV',   progress: 0.70, pending: 1 },
-  { id: '2', name: 'Emma',  emoji: '🐻', pts: 85,  nextReward: 'Sortie parc', progress: 0.57, pending: 1 },
-];
+import { childrenApi } from '@/lib/api/children';
+import { useApiData } from '@/lib/useApiData';
+import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
+import { useAuth } from '@/contexts/AuthContext';
 
 type PendingTask = { id: string; childName: string; childEmoji: string; taskName: string; pts: number; ago: string; };
-
-const INITIAL_PENDING: PendingTask[] = [
-  { id: '1', childName: 'Lucas', childEmoji: '🦊', taskName: 'Ranger sa chambre', pts: 30, ago: 'il y a 12 min' },
-  { id: '2', childName: 'Emma',  childEmoji: '🐻', taskName: 'Mettre la table',    pts: 10, ago: 'il y a 3 min'  },
-];
-
 type RewardRequest = { id: string; childName: string; childEmoji: string; rewardName: string; emoji: string; pts: number; };
 
-const INITIAL_REWARDS: RewardRequest[] = [
-  { id: '1', childName: 'Lucas', childEmoji: '🦊', rewardName: 'Soirée TV', emoji: '📺', pts: 50 },
-];
+function formatAgo(dateStr?: string): string {
+  if (!dateStr) return '';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `il y a ${mins} min`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `il y a ${hrs}h`;
+  return `il y a ${Math.floor(hrs / 24)} j`;
+}
 
 export default function ParentDashboardScreen() {
-  const [pending, setPending]       = useState<PendingTask[]>(INITIAL_PENDING);
-  const [rewards, setRewards]       = useState<RewardRequest[]>(INITIAL_REWARDS);
+  const { user } = useAuth();
   const [addModal, setAddModal]     = useState(false);
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
   const slideAnim = useRef(new Animated.Value(300)).current;
+
+  const {
+    data: childrenData,
+    loading: childrenLoading,
+    error: childrenError,
+    refresh: childrenRefresh,
+  } = useApiData(() => childrenApi.list(), []);
+
+  const {
+    data: pendingData,
+    loading: pendingLoading,
+    error: pendingError,
+    refresh: pendingRefresh,
+  } = useApiData(() => tasksApi.list(undefined, 'pending_approval'), []);
+
+  const {
+    data: rewardsData,
+    loading: rewardsLoading,
+    error: rewardsError,
+    refresh: rewardsRefresh,
+  } = useApiData(() => rewardsApi.list(), []);
+
+  const pending: PendingTask[] = (pendingData ?? []).map(task => ({
+    id: task.id,
+    childName: task.child.name,
+    childEmoji: task.child.emoji,
+    taskName: task.title,
+    pts: task.points,
+    ago: formatAgo(task.submittedAt),
+  }));
+
+  const rewards: RewardRequest[] = (rewardsData ?? [])
+    .filter(r => r.status === 'claimed')
+    .map(r => ({
+      id: r.id,
+      childName: '?',
+      childEmoji: '👶',
+      rewardName: r.title,
+      emoji: r.emoji,
+      pts: r.cost,
+    }));
 
   function openAddModal() {
     setAddModal(true);
@@ -51,7 +90,7 @@ export default function ParentDashboardScreen() {
       buttons: [
         { label: 'Accorder 🎉', style: 'default', onPress: async () => {
           try { await rewardsApi.grant(id); } catch {}
-          setRewards(rs => rs.filter(x => x.id !== id));
+          rewardsRefresh();
           showModal({ icon: '🎉', title: 'Récompense accordée !', message: `${r.childName} va être ravi·e !`, buttons: [{ label: 'Super !', style: 'default' }] });
         }},
         { label: 'Pas maintenant', style: 'cancel' },
@@ -69,7 +108,7 @@ export default function ParentDashboardScreen() {
       buttons: [
         { label: 'Refuser et recréditer', style: 'destructive', onPress: async () => {
           try { await rewardsApi.refuse(id); } catch {}
-          setRewards(rs => rs.filter(x => x.id !== id));
+          rewardsRefresh();
           showModal({ icon: '✅', title: 'Points recrédités', message: `${r.pts} pts rendus à ${r.childName}.`, buttons: [{ label: 'OK', style: 'default' }] });
         }},
         { label: 'Annuler', style: 'cancel' },
@@ -85,7 +124,7 @@ export default function ParentDashboardScreen() {
   async function approve(id: string) {
     const task = pending.find(t => t.id === id);
     try { await tasksApi.approve(id); } catch {}
-    setPending(p => p.filter(t => t.id !== id));
+    pendingRefresh();
     showModal({
       icon: '✅',
       title: 'Tâche validée !',
@@ -103,12 +142,15 @@ export default function ParentDashboardScreen() {
       buttons: [
         { label: 'Rejeter', style: 'destructive', onPress: async () => {
           try { await tasksApi.reject(id); } catch {}
-          setPending(p => p.filter(t => t.id !== id));
+          pendingRefresh();
         }},
         { label: 'Annuler', style: 'cancel' },
       ],
     });
   }
+
+  if (childrenLoading && !childrenData) return <LoadingScreen />;
+  if (childrenError && !childrenData) return <ErrorScreen message={childrenError} onRetry={childrenRefresh} />;
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
@@ -154,18 +196,17 @@ export default function ParentDashboardScreen() {
           <Text style={styles.sectionTitle}>MES ENFANTS</Text>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.childScroll}>
-          {CHILDREN.map(child => (
-            <View key={child.id} style={[styles.childCard, child.pending > 0 && styles.childCardAlert]}>
-              {child.pending > 0 && <View style={styles.pendingDot} />}
-              <View style={[styles.childAvatar, child.id === '2' && styles.childAvatarBlue]}>
-                <Text style={{ fontSize: 26 }}>{child.emoji}</Text>
+          {(childrenData ?? []).map((child, idx) => (
+            <View key={child.id} style={[styles.childCard, styles.childCardAlert]}>
+              <View style={[styles.childAvatar, idx % 2 === 1 && styles.childAvatarBlue]}>
+                <Text style={{ fontSize: 26 }}>{child.avatar}</Text>
               </View>
               <Text style={styles.childName}>{child.name}</Text>
-              <Text style={styles.childPts}>⭐ {child.pts} pts</Text>
+              <Text style={styles.childPts}>⭐ — pts</Text>
               <View style={styles.childTrack}>
-                <View style={[styles.childFill, { width: `${Math.round(child.progress * 100)}%` }]} />
+                <View style={[styles.childFill, { width: '0%' }]} />
               </View>
-              <Text style={styles.childReward}>{child.nextReward} ({Math.round(child.progress * 100)}%)</Text>
+              <Text style={styles.childReward}>—</Text>
             </View>
           ))}
           <TouchableOpacity
@@ -184,7 +225,15 @@ export default function ParentDashboardScreen() {
           {pending.length > 0 && <Text style={styles.pendingCount}>{pending.length}</Text>}
         </View>
 
-        {pending.length === 0 ? (
+        {pendingLoading && !pendingData ? (
+          <View style={styles.emptyPending}>
+            <Text style={styles.emptyText}>Chargement…</Text>
+          </View>
+        ) : pendingError && !pendingData ? (
+          <View style={styles.emptyPending}>
+            <Text style={styles.emptyText}>{pendingError}</Text>
+          </View>
+        ) : pending.length === 0 ? (
           <View style={styles.emptyPending}>
             <Text style={{ fontSize: 32, marginBottom: 8 }}>✅</Text>
             <Text style={styles.emptyText}>Tout est validé !</Text>
@@ -218,7 +267,15 @@ export default function ParentDashboardScreen() {
           )}
         </View>
 
-        {rewards.length === 0 ? (
+        {rewardsLoading && !rewardsData ? (
+          <View style={styles.emptyPending}>
+            <Text style={styles.emptyText}>Chargement…</Text>
+          </View>
+        ) : rewardsError && !rewardsData ? (
+          <View style={styles.emptyPending}>
+            <Text style={styles.emptyText}>{rewardsError}</Text>
+          </View>
+        ) : rewards.length === 0 ? (
           <View style={styles.emptyPending}>
             <Text style={{ fontSize: 28, marginBottom: 6 }}>🎁</Text>
             <Text style={styles.emptyText}>Aucune récompense en attente</Text>

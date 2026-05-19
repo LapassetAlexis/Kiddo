@@ -2,60 +2,112 @@ import { View, Text, SectionList, TouchableOpacity, StyleSheet } from 'react-nat
 import { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Radii, Spacing } from '@/constants/theme';
+import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
+import { useAuth } from '@/contexts/AuthContext';
+import { useApiData } from '@/lib/useApiData';
+import { transactionsApi, Transaction } from '@/lib/api/transactions';
 
 type TxType = 'earn' | 'spend';
-interface Transaction { id: string; name: string; type: TxType; amount: number; meta: string; icon: string; }
 
-const ALL_SECTIONS = [
-  {
-    title: "Aujourd'hui",
-    data: [
-      { id: '1', name: 'Ranger sa chambre',   type: 'earn'  as TxType, amount: 30, icon: '✅', meta: 'validé par Papa · 14h23'    },
-      { id: '2', name: 'Faire la vaisselle',   type: 'earn'  as TxType, amount: 10, icon: '✅', meta: 'validé par Papa · 9h05'     },
-    ],
-  },
-  {
-    title: 'Hier',
-    data: [
-      { id: '3', name: 'Soirée TV réclamée',   type: 'spend' as TxType, amount: 50, icon: '📺', meta: 'accordée par Maman · 20h11' },
-      { id: '4', name: 'Faire ses devoirs',     type: 'earn'  as TxType, amount: 50, icon: '✅', meta: 'validé par Maman · 18h40'  },
-      { id: '5', name: 'Mettre la table',       type: 'earn'  as TxType, amount: 10, icon: '✅', meta: 'validé par Papa · 12h30'   },
-    ],
-  },
-  {
-    title: 'Il y a 2 jours',
-    data: [
-      { id: '6', name: 'Bonus série 7 jours 🔥',type: 'earn' as TxType, amount: 25, icon: '🏆', meta: 'récompense automatique · 23h59' },
-      { id: '7', name: 'Faire ses devoirs',     type: 'earn'  as TxType, amount: 50, icon: '✅', meta: 'validé par Papa · 19h02'   },
-      { id: '8', name: 'Choisir le dîner',      type: 'spend' as TxType, amount: 80, icon: '🍕', meta: 'accordée par Maman · 17h30' },
-      { id: '9', name: 'Passer l\'aspirateur',  type: 'earn'  as TxType, amount: 20, icon: '✅', meta: 'validé par Papa · 11h00'   },
-    ],
-  },
-  {
-    title: 'Il y a 3 jours',
-    data: [
-      { id: '10', name: 'Ranger sa chambre',    type: 'earn'  as TxType, amount: 30, icon: '✅', meta: 'validé par Maman · 17h15'  },
-      { id: '11', name: 'Sortir les poubelles', type: 'earn'  as TxType, amount: 15, icon: '✅', meta: 'validé par Papa · 9h30'    },
-    ],
-  },
-];
+interface UITransaction {
+  id: string;
+  name: string;
+  type: TxType;
+  amount: number;
+  meta: string;
+  icon: string;
+}
 
-const BALANCE     = 120;
-const NEXT_REWARD = 'Soirée TV';
-const NEXT_COST   = 100;
-const STREAK      = 5;
+interface UISection {
+  title: string;
+  data: UITransaction[];
+}
+
+function formatMeta(tx: Transaction): string {
+  const d = new Date(tx.createdAt);
+  const h = d.getHours().toString().padStart(2, '0');
+  const m = d.getMinutes().toString().padStart(2, '0');
+  return tx.note ? `${tx.note} · ${h}h${m}` : `${h}h${m}`;
+}
+
+function getSectionTitle(createdAt: string): string {
+  const now  = new Date();
+  const date = new Date(createdAt);
+  const diffMs   = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return "Aujourd'hui";
+  if (diffDays === 1) return 'Hier';
+  if (diffDays === 2) return 'Il y a 2 jours';
+  if (diffDays === 3) return 'Il y a 3 jours';
+  return `Il y a ${diffDays} jours`;
+}
+
+function groupTransactions(txList: Transaction[]): UISection[] {
+  const map = new Map<string, UITransaction[]>();
+
+  for (const tx of txList) {
+    const title = getSectionTitle(tx.createdAt);
+    const uiTx: UITransaction = {
+      id:     tx.id,
+      name:   tx.note ?? (tx.type === 'earn' ? 'Points gagnés' : 'Récompense'),
+      type:   tx.type,
+      amount: tx.amount,
+      meta:   formatMeta(tx),
+      icon:   tx.type === 'earn' ? '✅' : '🎁',
+    };
+    if (!map.has(title)) map.set(title, []);
+    map.get(title)!.push(uiTx);
+  }
+
+  return Array.from(map.entries()).map(([title, data]) => ({ title, data }));
+}
 
 type Filter = 'all' | 'earn' | 'spend';
 
 export default function HistoryScreen() {
+  const { user } = useAuth();
   const [filter, setFilter] = useState<Filter>('all');
 
-  const allTx    = ALL_SECTIONS.flatMap(s => s.data);
-  const earnedW  = allTx.filter(t => t.type === 'earn').reduce((s, t) => s + t.amount, 0);
-  const spentW   = allTx.filter(t => t.type === 'spend').reduce((s, t) => s + t.amount, 0);
+  const {
+    data: txResponse,
+    loading: txLoading,
+    error: txError,
+    refresh: refreshTx,
+  } = useApiData(() => transactionsApi.list(user?.id ?? ''), [user?.id]);
+
+  const {
+    data: balanceData,
+    loading: balanceLoading,
+    error: balanceError,
+    refresh: refreshBalance,
+  } = useApiData(() => transactionsApi.getBalance(user?.id ?? ''), [user?.id]);
+
+  const {
+    data: streakData,
+    loading: streakLoading,
+    error: streakError,
+    refresh: refreshStreak,
+  } = useApiData(() => transactionsApi.getStreak(user?.id ?? ''), [user?.id]);
+
+  if (txLoading || balanceLoading || streakLoading) return <LoadingScreen />;
+  if (txError)      return <ErrorScreen message={txError}      onRetry={refreshTx} />;
+  if (balanceError) return <ErrorScreen message={balanceError} onRetry={refreshBalance} />;
+  if (streakError)  return <ErrorScreen message={streakError}  onRetry={refreshStreak} />;
+
+  const allTx: Transaction[] = txResponse?.data ?? [];
+
+  const BALANCE     = balanceData?.balance ?? 0;
+  const STREAK      = streakData?.currentStreak ?? 0;
+  const NEXT_REWARD = 'Soirée TV';
+  const NEXT_COST   = 100;
+
+  const earnedW  = balanceData?.earnedThisWeek  ?? 0;
+  const spentW   = balanceData?.spentThisWeek   ?? 0;
   const progress = Math.min(1, BALANCE / NEXT_COST);
 
-  const filteredSections = ALL_SECTIONS.map(s => ({
+  const ALL_SECTIONS = groupTransactions(allTx);
+
+  const filteredSections: UISection[] = ALL_SECTIONS.map(s => ({
     ...s,
     data: s.data.filter(t => filter === 'all' || t.type === filter),
   })).filter(s => s.data.length > 0);
@@ -113,9 +165,9 @@ export default function HistoryScreen() {
             {/* Filtres */}
             <View style={styles.filterRow}>
               {([
-                { value: 'all'  as Filter, label: 'Tout'     },
-                { value: 'earn' as Filter, label: '✅ Gagné'  },
-                { value: 'spend'as Filter, label: '🎁 Dépensé'},
+                { value: 'all'   as Filter, label: 'Tout'      },
+                { value: 'earn'  as Filter, label: '✅ Gagné'   },
+                { value: 'spend' as Filter, label: '🎁 Dépensé' },
               ]).map(f => (
                 <TouchableOpacity
                   key={f.value}

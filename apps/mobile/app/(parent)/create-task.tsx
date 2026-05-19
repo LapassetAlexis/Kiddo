@@ -2,20 +2,18 @@ import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, KeyboardAvoidingView, Platform, Switch,
 } from 'react-native';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { tasksApi } from '@/lib/api/tasks';
+import { childrenApi } from '@/lib/api/children';
+import { useApiData } from '@/lib/useApiData';
+import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
 import { ApiError } from '@/lib/api-client';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 
 type Frequency = 'once' | 'daily' | 'weekly';
-
-const CHILDREN = [
-  { id: '1', name: 'Lucas', emoji: '🦊' },
-  { id: '2', name: 'Emma',  emoji: '🐻' },
-];
 
 const QUICK_TASKS = [
   { label: 'Faire ses devoirs',   pts: 50 },
@@ -41,9 +39,19 @@ export default function CreateTaskScreen() {
   const [points, setPoints]         = useState('');
   const [frequency, setFrequency]   = useState<Frequency>('daily');
   const [weekDay, setWeekDay]       = useState(0); // 0=Lun … 6=Dim
-  const [assignedIds, setAssignedIds] = useState<string[]>(CHILDREN.map(c => c.id));
+  const [assignedIds, setAssignedIds] = useState<string[]>([]);
   const [loading, setLoading]       = useState(false);
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
+
+  const { data: childrenData, loading: childrenLoading, error: childrenError, refresh: childrenRefresh } =
+    useApiData(() => childrenApi.list(), []);
+
+  // Once children load, select all by default
+  useEffect(() => {
+    if (childrenData) {
+      setAssignedIds(childrenData.map(c => c.id));
+    }
+  }, [childrenData]);
 
   function toggleChild(id: string) {
     setAssignedIds(prev =>
@@ -81,7 +89,7 @@ export default function CreateTaskScreen() {
           weekDay: frequency === 'weekly' ? weekDay : undefined,
         })
       ));
-      const names = CHILDREN.filter(c => assignedIds.includes(c.id)).map(c => c.name).join(' et ');
+      const names = (childrenData ?? []).filter(c => assignedIds.includes(c.id)).map(c => c.name).join(' et ');
       showModal({
         icon: '📋',
         title: 'Tâche créée !',
@@ -94,6 +102,11 @@ export default function CreateTaskScreen() {
       setLoading(false);
     }
   }
+
+  if (childrenLoading && !childrenData) return <LoadingScreen />;
+  if (childrenError && !childrenData) return <ErrorScreen message={childrenError} onRetry={childrenRefresh} />;
+
+  const children = childrenData ?? [];
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
@@ -224,7 +237,7 @@ export default function CreateTaskScreen() {
           {/* Assigner aux enfants */}
           <Text style={styles.sectionLabel}>Assigner à</Text>
           <View style={styles.childrenGroup}>
-            {CHILDREN.map(child => {
+            {children.map(child => {
               const selected = assignedIds.includes(child.id);
               return (
                 <TouchableOpacity
@@ -233,7 +246,7 @@ export default function CreateTaskScreen() {
                   onPress={() => toggleChild(child.id)}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.childEmoji}>{child.emoji}</Text>
+                  <Text style={styles.childEmoji}>{child.avatar}</Text>
                   <Text style={[styles.childName, selected && styles.childNameActive]}>
                     {child.name}
                   </Text>
@@ -262,7 +275,7 @@ export default function CreateTaskScreen() {
                 </Text>
               </Text>
               <Text style={styles.summaryLine}>
-                👶 {CHILDREN.filter(c => assignedIds.includes(c.id)).map(c => `${c.emoji} ${c.name}`).join('  ') || '—'}
+                👶 {children.filter(c => assignedIds.includes(c.id)).map(c => `${c.avatar} ${c.name}`).join('  ') || '—'}
               </Text>
             </View>
           ) : null}

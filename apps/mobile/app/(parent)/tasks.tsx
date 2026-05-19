@@ -3,6 +3,9 @@ import { useState } from 'react';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Radii, Spacing } from '@/constants/theme';
+import { tasksApi, Task } from '@/lib/api/tasks';
+import { useApiData } from '@/lib/useApiData';
+import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
 
 type TaskStatus = 'validated' | 'rejected' | 'pending';
 
@@ -21,32 +24,44 @@ interface Section {
   data: HistoryTask[];
 }
 
-const HISTORY: Section[] = [
-  {
-    title: "Aujourd'hui",
-    data: [
-      { id: '1', taskName: 'Ranger sa chambre',  childName: 'Lucas', childEmoji: '🦊', pts: 30, status: 'validated', time: '14h23' },
-      { id: '2', taskName: 'Mettre la table',     childName: 'Emma',  childEmoji: '🐻', pts: 10, status: 'validated', time: '12h05' },
-      { id: '3', taskName: 'Faire ses devoirs',   childName: 'Lucas', childEmoji: '🦊', pts: 50, status: 'pending',   time: '10h47' },
-    ],
-  },
-  {
-    title: 'Hier',
-    data: [
-      { id: '4', taskName: 'Faire la vaisselle',  childName: 'Emma',  childEmoji: '🐻', pts: 10, status: 'validated', time: '19h30' },
-      { id: '5', taskName: 'Ranger sa chambre',   childName: 'Lucas', childEmoji: '🦊', pts: 30, status: 'rejected',  time: '17h15' },
-      { id: '6', taskName: 'Sortir les poubelles',childName: 'Emma',  childEmoji: '🐻', pts: 15, status: 'validated', time: '09h00' },
-    ],
-  },
-  {
-    title: 'Il y a 2 jours',
-    data: [
-      { id: '7', taskName: 'Faire ses devoirs',   childName: 'Lucas', childEmoji: '🦊', pts: 50, status: 'validated', time: '18h45' },
-      { id: '8', taskName: 'Faire son lit',        childName: 'Emma',  childEmoji: '🐻', pts: 10, status: 'validated', time: '08h30' },
-      { id: '9', taskName: 'Passer l\'aspirateur', childName: 'Lucas', childEmoji: '🦊', pts: 20, status: 'validated', time: '11h00' },
-    ],
-  },
-];
+function formatTime(dateStr?: string): string {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return `${String(d.getHours()).padStart(2, '0')}h${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+function apiStatusToLocal(apiStatus: string): TaskStatus {
+  if (apiStatus === 'validated') return 'validated';
+  if (apiStatus === 'rejected') return 'rejected';
+  return 'pending';
+}
+
+function groupTasksByDate(tasks: Task[]): Section[] {
+  const today     = new Date(); today.setHours(0, 0, 0, 0);
+  const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
+  const groups: Record<string, HistoryTask[]> = {};
+
+  for (const task of tasks) {
+    const dateRef = task.validatedAt ?? task.submittedAt ?? task.createdAt;
+    const d = new Date(dateRef); d.setHours(0, 0, 0, 0);
+    const key =
+      d >= today     ? "Aujourd'hui" :
+      d >= yesterday ? 'Hier' :
+      `il y a ${Math.floor((today.getTime() - d.getTime()) / 86400000)} jours`;
+    const entry: HistoryTask = {
+      id: task.id,
+      taskName: task.title,
+      childName: task.child.name,
+      childEmoji: task.child.emoji,
+      pts: task.points,
+      status: apiStatusToLocal(task.status),
+      time: formatTime(dateRef),
+    };
+    (groups[key] = groups[key] ?? []).push(entry);
+  }
+
+  return Object.entries(groups).map(([title, data]) => ({ title, data }));
+}
 
 const STATUS_CONFIG = {
   validated: { label: 'Validée',    color: Colors.green,  bg: 'rgba(76,175,80,0.12)',   border: 'rgba(76,175,80,0.22)',   icon: '✓' },
@@ -67,26 +82,39 @@ export default function TasksScreen() {
   const [filter, setFilter] = useState<Filter>('all');
   const [childFilter, setChildFilter] = useState<string>('all');
 
+  const { data: historyData, loading, error, refresh } = useApiData(
+    () => tasksApi.history(),
+    [],
+  );
+
+  const allTasks = historyData ?? [];
+  const allSections = groupTasksByDate(allTasks);
+
+  // Build child filter list from loaded data
+  const uniqueChildren = Array.from(
+    new Map(allTasks.map(t => [t.child.id, { id: t.child.id, name: t.child.name, emoji: t.child.emoji }])).values()
+  );
   const children = [
-    { id: 'all',  name: 'Tous',  emoji: '👨‍👩‍👧' },
-    { id: 'lucas', name: 'Lucas', emoji: '🦊'      },
-    { id: 'emma',  name: 'Emma',  emoji: '🐻'      },
+    { id: 'all', name: 'Tous', emoji: '👨‍👩‍👧' },
+    ...uniqueChildren,
   ];
 
-  const filteredSections: Section[] = HISTORY.map(section => ({
+  const filteredSections: Section[] = allSections.map(section => ({
     ...section,
     data: section.data.filter(t => {
       const statusOk = filter === 'all' || t.status === filter;
-      const childOk  = childFilter === 'all' || t.childName.toLowerCase() === childFilter;
+      const childOk  = childFilter === 'all' || t.childName.toLowerCase() === childFilter.toLowerCase() || t.childName === childFilter;
       return statusOk && childOk;
     }),
   })).filter(s => s.data.length > 0);
 
   // Stats
-  const allTasks = HISTORY.flatMap(s => s.data);
   const totalValidated = allTasks.filter(t => t.status === 'validated').length;
-  const totalPts       = allTasks.filter(t => t.status === 'validated').reduce((sum, t) => sum + t.pts, 0);
-  const totalPending   = allTasks.filter(t => t.status === 'pending').length;
+  const totalPts       = allTasks.filter(t => t.status === 'validated').reduce((sum, t) => sum + t.points, 0);
+  const totalPending   = allTasks.filter(t => t.status === 'pending_approval' || t.status === 'created').length;
+
+  if (loading && !historyData) return <LoadingScreen />;
+  if (error && !historyData) return <ErrorScreen message={error} onRetry={refresh} />;
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>

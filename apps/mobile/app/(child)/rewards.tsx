@@ -3,60 +3,89 @@ import { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
+import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
+import { useAuth } from '@/contexts/AuthContext';
+import { useApiData } from '@/lib/useApiData';
+import { rewardsApi, Reward } from '@/lib/api/rewards';
+import { transactionsApi } from '@/lib/api/transactions';
 
-type RewardStatus = 'available' | 'locked' | 'pending';
-interface Reward { id: string; name: string; emoji: string; cost: number; status: RewardStatus; }
+type UIRewardStatus = 'available' | 'locked' | 'pending';
 
-const MY_PTS = 120;
-
-const REWARDS: Reward[] = [
-  { id: '1', name: 'Soirée TV',        emoji: '📺', cost: 50,  status: 'available' },
-  { id: '2', name: 'Choisir le dîner', emoji: '🍕', cost: 80,  status: 'available' },
-  { id: '3', name: '1h de jeu vidéo',  emoji: '🎮', cost: 60,  status: 'pending'   },
-  { id: '4', name: 'Sortie au parc',   emoji: '🌳', cost: 100, status: 'locked'    },
-  { id: '5', name: 'Cinéma',           emoji: '🎬', cost: 120, status: 'locked'    },
-  { id: '6', name: 'Nuit chez un ami', emoji: '🏕️', cost: 150, status: 'locked'    },
-  { id: '7', name: 'Dessert spécial',  emoji: '🍰', cost: 40,  status: 'available' },
-  { id: '8', name: 'Choisir le film',  emoji: '🎥', cost: 30,  status: 'locked'    },
-];
+function getUIStatus(reward: Reward, balance: number): UIRewardStatus {
+  if (reward.status === 'claimed') return 'pending';
+  if (reward.status === 'available' && reward.cost <= balance) return 'available';
+  return 'locked';
+}
 
 type Filter = 'all' | 'available' | 'locked';
 
 export default function RewardsScreen() {
-  const [filter, setFilter]         = useState<Filter>('all');
-  const [claimed, setClaimed]       = useState<Set<string>>(new Set());
+  const { user } = useAuth();
+  const [filter, setFilter] = useState<Filter>('all');
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
 
-  const rewards = REWARDS.map(r => ({
+  const {
+    data: balanceData,
+    loading: balanceLoading,
+    error: balanceError,
+    refresh: refreshBalance,
+  } = useApiData(() => transactionsApi.getBalance(user?.id ?? ''), [user?.id]);
+
+  const {
+    data: rewardsData,
+    loading: rewardsLoading,
+    error: rewardsError,
+    refresh: refreshRewards,
+  } = useApiData(() => rewardsApi.list(), []);
+
+  if (balanceLoading || rewardsLoading) return <LoadingScreen />;
+  if (balanceError) return <ErrorScreen message={balanceError} onRetry={refreshBalance} />;
+  if (rewardsError) return <ErrorScreen message={rewardsError} onRetry={refreshRewards} />;
+
+  const myPts  = balanceData?.balance ?? 0;
+  const rawRewards: Reward[] = rewardsData ?? [];
+
+  const rewards = rawRewards.map(r => ({
     ...r,
-    status: claimed.has(r.id) ? 'pending' as RewardStatus : r.status,
+    uiStatus: getUIStatus(r, myPts),
   }));
 
-  const available = rewards.filter(r => r.status === 'available');
-  const pending   = rewards.filter(r => r.status === 'pending');
-  const locked    = rewards.filter(r => r.status === 'locked');
+  const available = rewards.filter(r => r.uiStatus === 'available');
+  const pending   = rewards.filter(r => r.uiStatus === 'pending');
+  const locked    = rewards.filter(r => r.uiStatus === 'locked');
 
   const displayed = filter === 'all' ? rewards
     : filter === 'available' ? [...available, ...pending]
     : locked;
 
-  function claim(r: Reward) {
-    if (r.status !== 'available') return;
+  function claim(r: typeof rewards[0]) {
+    if (r.uiStatus !== 'available') return;
     showModal({
       icon: r.emoji,
-      title: `Réclamer "${r.name}" ?`,
+      title: `Réclamer "${r.title}" ?`,
       message: `Cela coûte ${r.cost} pts.\nPapa / Maman va recevoir ta demande et devra l'approuver.`,
       buttons: [
         {
           label: 'Réclamer 🎉', style: 'default',
-          onPress: () => {
-            setClaimed(s => new Set([...s, r.id]));
-            showModal({
-              icon: '⏳',
-              title: 'Demande envoyée !',
-              message: `Papa / Maman va valider ta récompense "${r.name}" très bientôt.`,
-              buttons: [{ label: 'Super !', style: 'default' }],
-            });
+          onPress: async () => {
+            try {
+              await rewardsApi.redeem(r.id, user?.id);
+              refreshRewards();
+              refreshBalance();
+              showModal({
+                icon: '⏳',
+                title: 'Demande envoyée !',
+                message: `Papa / Maman va valider ta récompense "${r.title}" très bientôt.`,
+                buttons: [{ label: 'Super !', style: 'default' }],
+              });
+            } catch (e: any) {
+              showModal({
+                icon: '😕',
+                title: 'Erreur',
+                message: e?.message ?? 'Une erreur est survenue.',
+                buttons: [{ label: 'OK', style: 'cancel' }],
+              });
+            }
           },
         },
         { label: 'Annuler', style: 'cancel' },
@@ -71,7 +100,7 @@ export default function RewardsScreen() {
         <Text style={styles.title}>Récompenses 🎁</Text>
         <View style={styles.ptsPill}>
           <Text style={{ fontSize: 14 }}>⭐</Text>
-          <Text style={styles.ptsPillText}>{MY_PTS} pts</Text>
+          <Text style={styles.ptsPillText}>{myPts} pts</Text>
         </View>
       </View>
 
@@ -93,9 +122,9 @@ export default function RewardsScreen() {
         {/* Filtres */}
         <View style={styles.filterRow}>
           {([
-            { value: 'all'      as Filter, label: 'Toutes', count: rewards.length },
-            { value: 'available'as Filter, label: '🔓 Dispo', count: available.length + pending.length },
-            { value: 'locked'   as Filter, label: '🔒 Bientôt', count: locked.length },
+            { value: 'all'       as Filter, label: 'Toutes',    count: rewards.length },
+            { value: 'available' as Filter, label: '🔓 Dispo',  count: available.length + pending.length },
+            { value: 'locked'    as Filter, label: '🔒 Bientôt',count: locked.length },
           ]).map(f => (
             <TouchableOpacity
               key={f.value}
@@ -118,11 +147,11 @@ export default function RewardsScreen() {
         {/* Grille */}
         <View style={styles.grid}>
           {displayed.map(r => {
-            const progress  = Math.min(1, MY_PTS / r.cost);
-            const missing   = r.cost - MY_PTS;
-            const isAvail   = r.status === 'available';
-            const isPending = r.status === 'pending';
-            const isLocked  = r.status === 'locked';
+            const progress  = Math.min(1, myPts / r.cost);
+            const missing   = r.cost - myPts;
+            const isAvail   = r.uiStatus === 'available';
+            const isPending = r.uiStatus === 'pending';
+            const isLocked  = r.uiStatus === 'locked';
 
             return (
               <TouchableOpacity
@@ -153,7 +182,7 @@ export default function RewardsScreen() {
 
                 {/* Nom */}
                 <Text style={[styles.cardName, isLocked && { color: Colors.textDim }]}>
-                  {r.name}
+                  {r.title}
                 </Text>
 
                 {/* Coût */}

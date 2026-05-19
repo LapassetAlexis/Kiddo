@@ -7,11 +7,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
 import { useAuth } from '@/contexts/AuthContext';
-
-const CHILDREN = [
-  { id: '1', name: 'Lucas', emoji: '🦊', pts: 120 },
-  { id: '2', name: 'Emma',  emoji: '🐻', pts: 85  },
-];
+import { childrenApi } from '@/lib/api/children';
+import { useApiData } from '@/lib/useApiData';
+import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
 
 export default function SettingsScreen() {
   const [notifTask,   setNotifTask]   = useState(true);
@@ -19,6 +17,9 @@ export default function SettingsScreen() {
   const [notifStreak, setNotifStreak] = useState(false);
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
   const { logout } = useAuth();
+
+  const { data: childrenData, loading: childrenLoading, error: childrenError, refresh: childrenRefresh } =
+    useApiData(() => childrenApi.list(), []);
 
   function confirmLogout() {
     showModal({
@@ -45,6 +46,9 @@ export default function SettingsScreen() {
       ],
     });
   }
+
+  if (childrenLoading && !childrenData) return <LoadingScreen />;
+  if (childrenError && !childrenData) return <ErrorScreen message={childrenError} onRetry={childrenRefresh} />;
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
@@ -78,20 +82,20 @@ export default function SettingsScreen() {
         {/* Enfants */}
         <Text style={styles.sectionLabel}>Mes enfants</Text>
         <View style={styles.card}>
-          {CHILDREN.map((child, i) => (
+          {(childrenData ?? []).map((child, i) => (
             <View key={child.id}>
               {i > 0 && <View style={styles.rowDivider} />}
               <View style={styles.childRow}>
                 <View style={styles.childAvatar}>
-                  <Text style={{ fontSize: 22 }}>{child.emoji}</Text>
+                  <Text style={{ fontSize: 22 }}>{child.avatar}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.childName}>{child.name}</Text>
-                  <Text style={styles.childPts}>⭐ {child.pts} pts</Text>
+                  <Text style={styles.childPts}>⭐ — pts</Text>
                 </View>
                 <TouchableOpacity
                   style={styles.editBtn}
-                  onPress={() => router.push({ pathname: '/(parent)/edit-child', params: { childId: child.id, childName: child.name, childEmoji: child.emoji } })}
+                  onPress={() => router.push({ pathname: '/(parent)/edit-child', params: { childId: child.id, childName: child.name, childEmoji: child.avatar } })}
                   activeOpacity={0.7}
                 >
                   <Text style={styles.editBtnText}>Modifier</Text>

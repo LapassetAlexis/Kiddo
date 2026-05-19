@@ -3,46 +3,56 @@ import { useState } from 'react';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Radii, Spacing } from '@/constants/theme';
+import { rewardsApi } from '@/lib/api/rewards';
+import { useApiData } from '@/lib/useApiData';
+import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
 
 type Availability = 'unlimited' | 'once';
 type HistoryStatus = 'granted' | 'refused';
 
-interface Reward { id: string; emoji: string; title: string; cost: number; availability: Availability; }
 interface HistoryEntry {
   id: string; emoji: string; rewardName: string;
   childName: string; childEmoji: string;
-  pts: number; status: HistoryStatus; date: string; time: string;
+  pts: number; status: HistoryStatus; time: string;
 }
 
-const REWARDS: Reward[] = [
-  { id: '1', emoji: '📺', title: 'Soirée TV',        cost: 50,  availability: 'unlimited' },
-  { id: '2', emoji: '🍕', title: 'Choisir le dîner', cost: 80,  availability: 'unlimited' },
-  { id: '3', emoji: '🌳', title: 'Sortie au parc',   cost: 100, availability: 'once'      },
-  { id: '4', emoji: '🎮', title: '1h de jeu vidéo',  cost: 60,  availability: 'unlimited' },
-];
+interface HistorySection {
+  title: string;
+  data: HistoryEntry[];
+}
 
-const HISTORY_SECTIONS = [
-  {
-    title: "Aujourd'hui",
-    data: [
-      { id: 'h1', emoji: '📺', rewardName: 'Soirée TV',       childName: 'Lucas', childEmoji: '🦊', pts: 50,  status: 'granted' as HistoryStatus, date: "Aujourd'hui", time: '20h15' },
-    ],
-  },
-  {
-    title: 'Hier',
-    data: [
-      { id: 'h2', emoji: '🍕', rewardName: 'Choisir le dîner', childName: 'Emma',  childEmoji: '🐻', pts: 80,  status: 'granted' as HistoryStatus, date: 'Hier', time: '18h30' },
-      { id: 'h3', emoji: '🌳', rewardName: 'Sortie au parc',   childName: 'Lucas', childEmoji: '🦊', pts: 100, status: 'refused' as HistoryStatus, date: 'Hier', time: '10h00' },
-    ],
-  },
-  {
-    title: 'Il y a 3 jours',
-    data: [
-      { id: 'h4', emoji: '🎮', rewardName: '1h de jeu vidéo',  childName: 'Lucas', childEmoji: '🦊', pts: 60,  status: 'granted' as HistoryStatus, date: 'Il y a 3 jours', time: '16h45' },
-      { id: 'h5', emoji: '🍕', rewardName: 'Choisir le dîner', childName: 'Emma',  childEmoji: '🐻', pts: 80,  status: 'granted' as HistoryStatus, date: 'Il y a 3 jours', time: '19h00' },
-    ],
-  },
-];
+function formatTime(dateStr?: string): string {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return `${String(d.getHours()).padStart(2, '0')}h${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+function groupHistoryByDate(items: any[]): HistorySection[] {
+  const today     = new Date(); today.setHours(0, 0, 0, 0);
+  const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
+  const groups: Record<string, HistoryEntry[]> = {};
+
+  for (const item of items) {
+    const d = new Date(item.createdAt); d.setHours(0, 0, 0, 0);
+    const key =
+      d >= today     ? "Aujourd'hui" :
+      d >= yesterday ? 'Hier' :
+      `il y a ${Math.floor((today.getTime() - d.getTime()) / 86400000)} jours`;
+    const entry: HistoryEntry = {
+      id:        item.id,
+      emoji:     item.emoji ?? '🎁',
+      rewardName:item.title ?? item.rewardName ?? '—',
+      childName: item.childName ?? item.child?.name ?? '—',
+      childEmoji:item.childEmoji ?? item.child?.avatar ?? '👶',
+      pts:       item.pts ?? item.cost ?? 0,
+      status:    (item.status === 'refused' ? 'refused' : 'granted') as HistoryStatus,
+      time:      formatTime(item.createdAt),
+    };
+    (groups[key] = groups[key] ?? []).push(entry);
+  }
+
+  return Object.entries(groups).map(([title, data]) => ({ title, data }));
+}
 
 const STATUS_CONFIG = {
   granted: { label: 'Accordée', color: Colors.green,  bg: 'rgba(76,175,80,0.12)', border: 'rgba(76,175,80,0.22)', icon: '✓' },
@@ -56,24 +66,53 @@ export default function ManageScreen() {
   const [childFilter, setChildFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState<'all' | HistoryStatus>('all');
 
+  const {
+    data: catalogueData,
+    loading: catalogueLoading,
+    error: catalogueError,
+    refresh: catalogueRefresh,
+  } = useApiData(() => rewardsApi.list(), []);
+
+  const {
+    data: historyRaw,
+    loading: historyLoading,
+    error: historyError,
+    refresh: historyRefresh,
+  } = useApiData(() => rewardsApi.history(), []);
+
+  const rewards = (catalogueData ?? []).filter(r => r.status === 'available');
+  const historySections: HistorySection[] = groupHistoryByDate(historyRaw ?? []);
+
+  // Build child list from history
+  const uniqueChildren = Array.from(
+    new Map(
+      (historyRaw ?? [])
+        .filter(h => h.child?.id)
+        .map((h: any) => [h.child.id, { id: h.child.id, name: h.child.name, emoji: h.child.avatar ?? '👶' }])
+    ).values()
+  );
   const children = [
-    { id: 'all',   name: 'Tous',  emoji: '👨‍👩‍👧' },
-    { id: 'lucas', name: 'Lucas', emoji: '🦊' },
-    { id: 'emma',  name: 'Emma',  emoji: '🐻' },
+    { id: 'all', name: 'Tous', emoji: '👨‍👩‍👧' },
+    ...uniqueChildren,
   ];
 
-  const filteredHistory = HISTORY_SECTIONS.map(s => ({
+  const filteredHistory = historySections.map(s => ({
     ...s,
     data: s.data.filter(h => {
-      const childOk  = childFilter === 'all' || h.childName.toLowerCase() === childFilter;
+      const childOk  = childFilter === 'all' || h.childName.toLowerCase() === childFilter.toLowerCase();
       const statusOk = statusFilter === 'all' || h.status === statusFilter;
       return childOk && statusOk;
     }),
   })).filter(s => s.data.length > 0);
 
-  const allHistory  = HISTORY_SECTIONS.flatMap(s => s.data);
+  const allHistory   = historySections.flatMap(s => s.data);
   const totalGranted = allHistory.filter(h => h.status === 'granted').length;
   const totalPts     = allHistory.filter(h => h.status === 'granted').reduce((s, h) => s + h.pts, 0);
+
+  if (tab === 'catalogue' && catalogueLoading && !catalogueData) return <LoadingScreen />;
+  if (tab === 'catalogue' && catalogueError && !catalogueData) return <ErrorScreen message={catalogueError} onRetry={catalogueRefresh} />;
+  if (tab === 'historique' && historyLoading && !historyRaw) return <LoadingScreen />;
+  if (tab === 'historique' && historyError && !historyRaw) return <ErrorScreen message={historyError} onRetry={historyRefresh} />;
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
@@ -106,7 +145,7 @@ export default function ManageScreen() {
 
       {/* ── Catalogue ── */}
       {tab === 'catalogue' && (
-        REWARDS.length === 0 ? (
+        rewards.length === 0 ? (
           <View style={styles.empty}>
             <Text style={styles.emptyEmoji}>🎁</Text>
             <Text style={styles.emptyTitle}>Aucune récompense</Text>
@@ -117,7 +156,7 @@ export default function ManageScreen() {
           </View>
         ) : (
           <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
-            {REWARDS.map(r => (
+            {rewards.map(r => (
               <View key={r.id} style={styles.card}>
                 <Text style={styles.cardEmoji}>{r.emoji}</Text>
                 <View style={styles.cardInfo}>

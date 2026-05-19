@@ -1,37 +1,70 @@
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
-import { useState } from 'react';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
-
-// Données enfant (viendront de l'API)
-const CHILD = {
-  name:   'Lucas',
-  emoji:  '🦊',
-  pts:    120,
-  streak: 5,
-  joined: 'mars 2026',
-};
-
-const STATS = [
-  { label: 'Tâches faites',    value: '34',   icon: '✅', color: Colors.green  },
-  { label: 'Récompenses',      value: '8',    icon: '🎁', color: Colors.gold   },
-  { label: 'Record de série',  value: '12j',  icon: '🔥', color: Colors.orange },
-  { label: 'Points gagnés',    value: '1 240',icon: '⭐', color: Colors.gold   },
-];
+import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
+import { useAuth } from '@/contexts/AuthContext';
+import { useApiData } from '@/lib/useApiData';
+import { childrenApi } from '@/lib/api/children';
+import { transactionsApi } from '@/lib/api/transactions';
 
 const BADGES = [
-  { id: '1', emoji: '🏆', label: 'Première tâche',    unlocked: true  },
-  { id: '2', emoji: '🔥', label: 'Série de 7 jours',  unlocked: true  },
-  { id: '3', emoji: '⭐', label: '100 points gagnés', unlocked: true  },
-  { id: '4', emoji: '🎯', label: '10 tâches en 1 sem',unlocked: false },
-  { id: '5', emoji: '💎', label: 'Série de 30 jours', unlocked: false },
+  { id: '1', emoji: '🏆', label: 'Première tâche',     unlocked: true  },
+  { id: '2', emoji: '🔥', label: 'Série de 7 jours',   unlocked: true  },
+  { id: '3', emoji: '⭐', label: '100 points gagnés',  unlocked: true  },
+  { id: '4', emoji: '🎯', label: '10 tâches en 1 sem', unlocked: false },
+  { id: '5', emoji: '💎', label: 'Série de 30 jours',  unlocked: false },
   { id: '6', emoji: '🚀', label: '500 points dépensés',unlocked: false },
 ];
 
 export default function ChildProfileScreen() {
+  const { user } = useAuth();
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
+
+  const {
+    data: statsData,
+    loading: statsLoading,
+    error: statsError,
+    refresh: refreshStats,
+  } = useApiData(() => childrenApi.get(user?.id ?? ''), [user?.id]);
+
+  const {
+    data: balanceData,
+    loading: balanceLoading,
+    error: balanceError,
+    refresh: refreshBalance,
+  } = useApiData(() => transactionsApi.getBalance(user?.id ?? ''), [user?.id]);
+
+  const {
+    data: streakData,
+    loading: streakLoading,
+    error: streakError,
+    refresh: refreshStreak,
+  } = useApiData(() => transactionsApi.getStreak(user?.id ?? ''), [user?.id]);
+
+  if (statsLoading || balanceLoading || streakLoading) return <LoadingScreen />;
+  if (statsError)   return <ErrorScreen message={statsError}   onRetry={refreshStats} />;
+  if (balanceError) return <ErrorScreen message={balanceError} onRetry={refreshBalance} />;
+  if (streakError)  return <ErrorScreen message={streakError}  onRetry={refreshStreak} />;
+
+  const childInfo    = statsData?.child;
+  const childName    = childInfo?.name ?? user?.name ?? 'Lucas';
+  const childEmoji   = childInfo?.avatar ?? '🦊';
+  const currentPts   = balanceData?.balance ?? 0;
+  const currentStreak= streakData?.currentStreak ?? 0;
+  const earnedTotal  = balanceData?.earnedTotal ?? 0;
+
+  const joinedDate = childInfo?.createdAt
+    ? new Date(childInfo.createdAt).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+    : '';
+
+  const STATS = [
+    { label: 'Tâches faites',   value: String(statsData?.tasksCompleted ?? 0),   icon: '✅', color: Colors.green  },
+    { label: 'Récompenses',     value: String(statsData?.rewardsClaimed ?? 0),   icon: '🎁', color: Colors.gold   },
+    { label: 'Record de série', value: `${streakData?.longestStreak ?? 0}j`,     icon: '🔥', color: Colors.orange },
+    { label: 'Points gagnés',   value: earnedTotal.toLocaleString('fr-FR'),      icon: '⭐', color: Colors.gold   },
+  ];
 
   function changePin() {
     showModal({
@@ -61,17 +94,17 @@ export default function ChildProfileScreen() {
         {/* Avatar + nom */}
         <View style={styles.heroSection}>
           <View style={styles.avatarWrap}>
-            <Text style={styles.avatarEmoji}>{CHILD.emoji}</Text>
+            <Text style={styles.avatarEmoji}>{childEmoji}</Text>
             <View style={styles.streakBadge}>
-              <Text style={styles.streakBadgeText}>🔥 {CHILD.streak}</Text>
+              <Text style={styles.streakBadgeText}>🔥 {currentStreak}</Text>
             </View>
           </View>
-          <Text style={styles.childName}>{CHILD.name}</Text>
-          <Text style={styles.childSince}>Membre depuis {CHILD.joined}</Text>
+          <Text style={styles.childName}>{childName}</Text>
+          {joinedDate ? <Text style={styles.childSince}>Membre depuis {joinedDate}</Text> : null}
 
           {/* Balance */}
           <View style={styles.balancePill}>
-            <Text style={styles.balancePillText}>⭐ {CHILD.pts} pts</Text>
+            <Text style={styles.balancePillText}>⭐ {currentPts} pts</Text>
           </View>
         </View>
 

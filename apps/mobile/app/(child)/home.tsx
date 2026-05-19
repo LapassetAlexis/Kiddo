@@ -4,23 +4,61 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Radii, Spacing, Typography } from '@/constants/theme';
 import TaskCompleteSheet from '@/components/ui/TaskCompleteSheet';
+import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
+import { useAuth } from '@/contexts/AuthContext';
+import { useApiData } from '@/lib/useApiData';
+import { tasksApi, Task } from '@/lib/api/tasks';
+import { transactionsApi } from '@/lib/api/transactions';
 
 type TaskState = 'todo' | 'pending' | 'done';
-interface Task { id: string; name: string; pts: number; state: TaskState; }
+interface UITask { id: string; name: string; pts: number; state: TaskState; }
 
-const INITIAL_TASKS: Task[] = [
-  { id: '1', name: 'Faire la vaisselle',  pts: 10, state: 'done'    },
-  { id: '2', name: 'Ranger sa chambre',   pts: 30, state: 'pending' },
-  { id: '3', name: 'Faire ses devoirs',   pts: 50, state: 'todo'    },
-];
+function apiStatusToState(status: string): TaskState {
+  if (status === 'validated') return 'done';
+  if (status === 'pending_approval') return 'pending';
+  return 'todo';
+}
+
+function taskToUI(task: Task): UITask {
+  return {
+    id:    task.id,
+    name:  task.title,
+    pts:   task.points,
+    state: apiStatusToState(task.status),
+  };
+}
 
 export default function ChildHomeScreen() {
   const { fromParent } = useLocalSearchParams<{ fromParent?: string }>();
-  const [tasks, setTasks]       = useState<Task[]>(INITIAL_TASKS);
-  const [points, setPoints]     = useState(120);
-  const [streak]                = useState(5);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const ptsAnim                 = useRef(new Animated.Value(1)).current;
+  const { user } = useAuth();
+
+  const {
+    data: tasksData,
+    loading: tasksLoading,
+    error: tasksError,
+    refresh: refreshTasks,
+  } = useApiData(() => tasksApi.list(user?.id), [user?.id]);
+
+  const {
+    data: balanceData,
+    loading: balanceLoading,
+    error: balanceError,
+    refresh: refreshBalance,
+  } = useApiData(() => transactionsApi.getBalance(user?.id ?? ''), [user?.id]);
+
+  const {
+    data: streakData,
+    loading: streakLoading,
+    error: streakError,
+    refresh: refreshStreak,
+  } = useApiData(() => transactionsApi.getStreak(user?.id ?? ''), [user?.id]);
+
+  const [selectedTask, setSelectedTask] = useState<UITask | null>(null);
+  const ptsAnim = useRef(new Animated.Value(1)).current;
+
+  const tasks: UITask[] = (tasksData ?? []).map(taskToUI);
+  const points   = balanceData?.balance ?? 0;
+  const streak   = streakData?.currentStreak ?? 0;
 
   const nextRewardName = 'Soirée TV';
   const nextRewardCost = 100;
@@ -34,19 +72,25 @@ export default function ChildHomeScreen() {
     ]).start();
   }
 
-  function submitTask(id: string, _note: string) {
-    // Passe en "en attente de validation parent"
-    setTasks(ts => ts.map(t => t.id === id && t.state === 'todo' ? { ...t, state: 'pending' } : t));
-    // TODO: POST /tasks/:id/complete { note }
-    // Simulation : le parent valide après 4s
-    setTimeout(() => {
-      setTasks(ts => {
-        const task = ts.find(t => t.id === id);
-        if (task) setPoints(p => { bumpPts(); return p + task.pts; });
-        return ts.map(t => t.id === id && t.state === 'pending' ? { ...t, state: 'done' } : t);
-      });
-    }, 4000);
+  async function submitTask(id: string, note: string, photoUri?: string) {
+    // Optimistically mark as pending
+    setSelectedTask(null);
+    try {
+      await tasksApi.complete(id, note, photoUri);
+    } catch {
+      // error handled silently; refresh will restore server state
+    } finally {
+      refreshTasks();
+      refreshBalance();
+      refreshStreak();
+      bumpPts();
+    }
   }
+
+  if (tasksLoading || balanceLoading || streakLoading) return <LoadingScreen />;
+  if (tasksError)   return <ErrorScreen message={tasksError}   onRetry={refreshTasks} />;
+  if (balanceError) return <ErrorScreen message={balanceError} onRetry={refreshBalance} />;
+  if (streakError)  return <ErrorScreen message={streakError}  onRetry={refreshStreak} />;
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
@@ -58,7 +102,7 @@ export default function ChildHomeScreen() {
             <View style={styles.avatar}><Text style={styles.avatarEmoji}>🦊</Text></View>
             <View>
               <Text style={styles.greetingSub}>Bonjour,</Text>
-              <Text style={styles.greetingName}>Lucas 👋</Text>
+              <Text style={styles.greetingName}>{user?.name ?? 'Lucas'} 👋</Text>
             </View>
           </View>
           <View style={styles.headerRight}>
@@ -142,7 +186,7 @@ export default function ChildHomeScreen() {
 
       <TaskCompleteSheet
         task={selectedTask}
-        onConfirm={(id, note) => { setSelectedTask(null); submitTask(id, note); }}
+        onConfirm={(id, note) => submitTask(id, note)}
         onClose={() => setSelectedTask(null)}
       />
     </SafeAreaView>

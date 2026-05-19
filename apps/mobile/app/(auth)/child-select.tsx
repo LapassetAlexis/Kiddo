@@ -1,14 +1,25 @@
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors, Radii, Spacing } from '@/constants/theme';
-
-const CHILDREN = [
-  { id: '1', name: 'Lucas', emoji: '🦊', pts: 120 },
-  { id: '2', name: 'Emma',  emoji: '🐻', pts: 85  },
-];
+import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
+import { useAuth } from '@/contexts/AuthContext';
+import { useApiData } from '@/lib/useApiData';
+import { childrenApi, Child } from '@/lib/api/children';
 
 export default function ChildSelectScreen() {
   const { fromParent } = useLocalSearchParams<{ fromParent?: string }>();
+
+  const {
+    data: childrenData,
+    loading,
+    error,
+    refresh,
+  } = useApiData(() => childrenApi.list(), []);
+
+  if (loading) return <LoadingScreen />;
+  if (error)   return <ErrorScreen message={error} onRetry={refresh} />;
+
+  const children: Child[] = childrenData ?? [];
 
   return (
     <View style={styles.root}>
@@ -18,7 +29,7 @@ export default function ChildSelectScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.grid}>
-        {CHILDREN.map(child => (
+        {children.map(child => (
           <TouchableOpacity
             key={child.id}
             style={styles.card}
@@ -28,9 +39,8 @@ export default function ChildSelectScreen() {
             })}
             activeOpacity={0.8}
           >
-            <Text style={styles.emoji}>{child.emoji}</Text>
+            <Text style={styles.emoji}>{child.avatar}</Text>
             <Text style={styles.name}>{child.name}</Text>
-            <Text style={styles.pts}>⭐ {child.pts} pts</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -92,11 +102,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '900',
     color: Colors.textPrimary,
-  },
-  pts: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: Colors.gold,
   },
   parentLink: {
     alignItems: 'center',
