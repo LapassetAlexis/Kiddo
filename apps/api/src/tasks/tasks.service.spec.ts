@@ -64,6 +64,7 @@ function makeChild(overrides: Partial<Child> = {}): Child {
     id: 'child-1',
     name: 'Alice',
     avatar: '🐶',
+    color: '#FFB300',
     pinHash: 'hash',
     fcmToken: null as any,
     family: makeFamily(),
