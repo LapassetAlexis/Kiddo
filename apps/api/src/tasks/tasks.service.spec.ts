@@ -409,6 +409,7 @@ describe('TasksService', () => {
 
       expect(taskRepo.find).toHaveBeenCalledWith({
         where: { child: { id: 'child-1' } },
+        relations: ['child'],
         order: { createdAt: 'DESC' },
       });
       expect(result).toHaveLength(2);

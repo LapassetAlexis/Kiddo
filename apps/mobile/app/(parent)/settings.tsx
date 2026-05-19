@@ -101,7 +101,7 @@ export default function SettingsScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.childName}>{child.name}</Text>
-                  <Text style={styles.childPts}>⭐ — pts</Text>
+                  <Text style={styles.childPts}>⭐ 0 pts</Text>
                 </View>
                 <TouchableOpacity
                   style={styles.editBtn}

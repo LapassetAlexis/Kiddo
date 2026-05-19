@@ -27,9 +27,12 @@ export default function EditProfileScreen() {
   useEffect(() => {
     familiesApi.getMe()
       .then(p => {
-        const parts = (p.name ?? '').trim().split(' ');
-        setFirstName(parts[0] ?? '');
-        setLastName(parts.slice(1).join(' ') ?? '');
+        // Si name est null (anciens comptes), déduire depuis l'email
+        const rawName = p.name?.trim() || p.email?.split('@')[0]?.replace(/[._-]/g, ' ') || '';
+        const parts = rawName.split(' ').filter(Boolean);
+        const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+        setFirstName(parts[0] ? cap(parts[0]) : '');
+        setLastName(parts.slice(1).map(cap).join(' '));
         setEmail(p.email ?? '');
       })
       .catch(() => {});

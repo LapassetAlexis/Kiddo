@@ -15,3 +15,9 @@ jest.mock('expo-image-picker', () => ({
 
 // expo-status-bar
 jest.mock('expo-status-bar', () => ({ StatusBar: 'StatusBar' }));
+
+// expo-constants (utilisé dans api-client pour détecter l'IP de Metro)
+jest.mock('expo-constants', () => ({
+  default: { expoConfig: { hostUri: 'localhost:8081' } },
+  expoConfig: { hostUri: 'localhost:8081' },
+}));
