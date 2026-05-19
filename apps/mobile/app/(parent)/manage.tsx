@@ -1,6 +1,6 @@
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SectionList } from 'react-native';
-import { useState } from 'react';
-import { router } from 'expo-router';
+import { useState, useCallback } from 'react';
+import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 import { rewardsApi } from '@/lib/api/rewards';
@@ -22,6 +22,13 @@ interface HistorySection {
 }
 
 function formatTime(dateStr?: string): string {
+  useFocusEffect(
+    useCallback(() => {
+    catalogueRefresh();
+    historyRefresh();
+    }, [])
+  );
+
   if (!dateStr) return '';
   const d = new Date(dateStr);
   return `${String(d.getHours()).padStart(2, '0')}h${String(d.getMinutes()).padStart(2, '0')}`;

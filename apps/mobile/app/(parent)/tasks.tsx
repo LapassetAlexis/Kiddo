@@ -1,6 +1,6 @@
 import { View, Text, SectionList, TouchableOpacity, StyleSheet } from 'react-native';
-import { useState } from 'react';
-import { router } from 'expo-router';
+import { useState, useCallback } from 'react';
+import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 import { tasksApi, Task } from '@/lib/api/tasks';
@@ -25,6 +25,12 @@ interface Section {
 }
 
 function formatTime(dateStr?: string): string {
+  useFocusEffect(
+    useCallback(() => {
+    refresh();
+    }, [])
+  );
+
   if (!dateStr) return '';
   const d = new Date(dateStr);
   return `${String(d.getHours()).padStart(2, '0')}h${String(d.getMinutes()).padStart(2, '0')}`;

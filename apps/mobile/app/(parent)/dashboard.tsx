@@ -1,6 +1,6 @@
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, Animated, Pressable } from 'react-native';
-import { useState, useRef, useEffect } from 'react';
-import { router } from 'expo-router';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
@@ -17,6 +17,14 @@ type PendingTask = { id: string; childName: string; childEmoji: string; taskName
 type RewardRequest = { id: string; childName: string; childEmoji: string; rewardName: string; emoji: string; pts: number; };
 
 function formatAgo(dateStr?: string): string {
+  useFocusEffect(
+    useCallback(() => {
+    childrenRefresh();
+    pendingRefresh();
+    rewardsRefresh();
+    }, [])
+  );
+
   if (!dateStr) return '';
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);

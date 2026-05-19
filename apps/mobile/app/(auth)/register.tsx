@@ -11,7 +11,8 @@ import AppModal, { useAppModal } from '@/components/ui/AppModal';
 
 export default function RegisterScreen() {
   const [step, setStep]           = useState<1 | 2 | 3>(1);
-  const [name, setName]           = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName,  setLastName]  = useState('');
   const [email, setEmail]         = useState('');
   const [password, setPassword]   = useState('');
   const [confirm, setConfirm]     = useState('');
@@ -23,7 +24,7 @@ export default function RegisterScreen() {
 
   // ── Étape 1 : infos ──────────────────────────────────────────────────────
   function nextStep() {
-    if (!name.trim()) {
+    if (!firstName.trim()) {
       showModal({ icon: '✏️', title: 'Prénom requis', message: 'Entre ton prénom.' }); return;
     }
     if (!email.trim() || !email.includes('@')) {
@@ -46,7 +47,8 @@ export default function RegisterScreen() {
 
     setLoading(true);
     try {
-      await authApi.register(name.trim(), email.trim().toLowerCase(), password);
+      const fullName = [firstName.trim(), lastName.trim()].filter(Boolean).join(' ');
+      await authApi.register(fullName, email.trim().toLowerCase(), password);
       setCode('');
       setStep(3);
     } catch (err) {
@@ -68,7 +70,7 @@ export default function RegisterScreen() {
       showModal({
         icon: '🎉',
         title: 'Email confirmé !',
-        message: `Bienvenue ${name} ! Tu peux maintenant ajouter tes enfants et créer leurs premières tâches.`,
+        message: `Bienvenue ${firstName} ! Tu peux maintenant ajouter tes enfants et créer leurs premières tâches.`,
         buttons: [{ label: 'Commencer →', style: 'default', onPress: () => router.replace('/(parent)/dashboard') }],
       });
     } catch {
@@ -112,13 +114,25 @@ export default function RegisterScreen() {
         {step === 1 && (
           <View style={styles.form}>
             <View style={styles.fieldWrap}>
-              <Text style={styles.fieldLabel}>Ton prénom</Text>
+              <Text style={styles.fieldLabel}>Prénom</Text>
               <TextInput
                 style={styles.input}
                 placeholder="Marie"
                 placeholderTextColor={Colors.textFaint}
-                value={name}
-                onChangeText={setName}
+                value={firstName}
+                onChangeText={setFirstName}
+                autoCapitalize="words"
+                returnKeyType="next"
+              />
+            </View>
+            <View style={styles.fieldWrap}>
+              <Text style={styles.fieldLabel}>Nom</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Dupont"
+                placeholderTextColor={Colors.textFaint}
+                value={lastName}
+                onChangeText={setLastName}
                 autoCapitalize="words"
                 returnKeyType="next"
               />
