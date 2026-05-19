@@ -48,7 +48,7 @@ export default function ChildProfileScreen() {
       title: 'Espace parent',
       message: 'Papa ou maman devra entrer son mot de passe.',
       buttons: [
-        { label: 'Continuer', style: 'default', onPress: () => router.replace('/(auth)/login') },
+        { label: 'Continuer', style: 'default', onPress: () => router.replace('/(parent)/dashboard') },
         { label: 'Annuler', style: 'cancel' },
       ],
     });

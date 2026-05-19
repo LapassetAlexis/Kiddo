@@ -59,7 +59,7 @@ export default function CreateChildScreen() {
       icon: avatar,
       title: `${name} ajouté·e !`,
       message: 'Le profil est créé. Tu peux maintenant lui assigner des tâches.',
-      buttons: [{ label: 'Aller au tableau de bord', style: 'default', onPress: () => router.replace('/(parent)/dashboard') }],
+      buttons: [{ label: 'OK', style: 'default', onPress: () => router.back() }],
     });
   }
 

@@ -63,7 +63,11 @@ export default function SettingsScreen() {
               <Text style={styles.profileName}>Marie Dupont</Text>
               <Text style={styles.profileEmail}>marie.dupont@gmail.com</Text>
             </View>
-            <TouchableOpacity style={styles.editBtn} activeOpacity={0.7}>
+            <TouchableOpacity
+              style={styles.editBtn}
+              onPress={() => router.push('/(parent)/edit-profile')}
+              activeOpacity={0.7}
+            >
               <Text style={styles.editBtnText}>Modifier</Text>
             </TouchableOpacity>
           </View>
@@ -83,7 +87,11 @@ export default function SettingsScreen() {
                   <Text style={styles.childName}>{child.name}</Text>
                   <Text style={styles.childPts}>⭐ {child.pts} pts</Text>
                 </View>
-                <TouchableOpacity style={styles.editBtn} activeOpacity={0.7}>
+                <TouchableOpacity
+                  style={styles.editBtn}
+                  onPress={() => router.push({ pathname: '/(parent)/edit-child', params: { childId: child.id, childName: child.name, childEmoji: child.emoji } })}
+                  activeOpacity={0.7}
+                >
                   <Text style={styles.editBtnText}>Modifier</Text>
                 </TouchableOpacity>
               </View>
@@ -131,12 +139,20 @@ export default function SettingsScreen() {
           <View style={styles.rowDivider} />
           <InfoRow label="Environnement" value="Développement" />
           <View style={styles.rowDivider} />
-          <TouchableOpacity style={styles.linkRow} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.linkRow}
+            onPress={() => router.push({ pathname: '/(parent)/legal', params: { type: 'terms' } })}
+            activeOpacity={0.7}
+          >
             <Text style={styles.linkText}>Conditions d'utilisation</Text>
             <Text style={styles.linkArrow}>›</Text>
           </TouchableOpacity>
           <View style={styles.rowDivider} />
-          <TouchableOpacity style={styles.linkRow} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.linkRow}
+            onPress={() => router.push({ pathname: '/(parent)/legal', params: { type: 'privacy' } })}
+            activeOpacity={0.7}
+          >
             <Text style={styles.linkText}>Politique de confidentialité</Text>
             <Text style={styles.linkArrow}>›</Text>
           </TouchableOpacity>
