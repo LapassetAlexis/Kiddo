@@ -52,7 +52,7 @@ export class RewardsService {
       .createQueryBuilder('tx')
       .innerJoin('tx.child', 'child')
       .innerJoin('child.family', 'family')
-      .leftJoin(Reward, 'reward', 'reward.id = tx.referenceId')
+      .leftJoin(Reward, 'reward', 'reward.id = tx.referenceId::uuid')
       .select([
         'tx.id',
         'tx.amount',

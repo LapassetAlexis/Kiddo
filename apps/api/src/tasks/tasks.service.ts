@@ -17,7 +17,20 @@ export class TasksService {
   ) {}
 
   getForChild(childId: string) {
-    return this.tasks.find({ where: { child: { id: childId } }, order: { createdAt: 'DESC' } });
+    return this.tasks.find({ where: { child: { id: childId } }, relations: ['child'], order: { createdAt: 'DESC' } });
+  }
+
+  // GET /api/tasks?childId=X&status=Y
+  getAll(childId?: string, status?: string) {
+    const where: Record<string, any> = {};
+    if (childId) where.child = { id: childId };
+    if (status)  where.status = status;
+    return this.tasks.find({ where, relations: ['child'], order: { createdAt: 'DESC' } });
+  }
+
+  // GET /api/tasks/history — toutes les tâches de la famille (via enfants)
+  getHistory(childId?: string) {
+    return this.getAll(childId);
   }
 
   async create(body: { childId: string; title: string; points: number; frequency?: string }) {
