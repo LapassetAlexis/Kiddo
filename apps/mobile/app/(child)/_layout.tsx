@@ -22,6 +22,7 @@ export default function ChildLayout() {
       <Tabs.Screen name="home"     options={{ title: 'Accueil',      tabBarIcon: ({ color }) => <TabIcon emoji="🏠" color={color} /> }} />
       <Tabs.Screen name="rewards"  options={{ title: 'Récompenses',  tabBarIcon: ({ color }) => <TabIcon emoji="🎁" color={color} /> }} />
       <Tabs.Screen name="history"  options={{ title: 'Historique',   tabBarIcon: ({ color }) => <TabIcon emoji="📊" color={color} /> }} />
+      <Tabs.Screen name="profile"  options={{ title: 'Profil',       tabBarIcon: ({ color }) => <TabIcon emoji="🦊" color={color} /> }} />
     </Tabs>
   );
 }
