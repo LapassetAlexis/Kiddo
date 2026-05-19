@@ -28,7 +28,7 @@ export class FamiliesController {
   @Patch('me')
   updateProfile(
     @CurrentUser() user: JwtPayload,
-    @Body() body: { email?: string; timezone?: string },
+    @Body() body: { name?: string; email?: string; timezone?: string },
   ) {
     return this.svc.updateProfile(user.sub, body);
   }

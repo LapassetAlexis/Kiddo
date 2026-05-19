@@ -35,8 +35,9 @@ export class FamiliesService {
     return family;
   }
 
-  async updateProfile(familyId: string, dto: { email?: string; timezone?: string }) {
+  async updateProfile(familyId: string, dto: { name?: string; email?: string; timezone?: string }) {
     const family = await this.repo.findOneOrFail({ where: { id: familyId } });
+    if (dto.name !== undefined) family.name = dto.name;
     if (dto.email && dto.email !== family.email) {
       const exists = await this.repo.findOne({ where: { email: dto.email } });
       if (exists) throw new ConflictException('Email déjà utilisé');
