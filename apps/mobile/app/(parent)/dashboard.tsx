@@ -214,7 +214,7 @@ export default function ParentDashboardScreen() {
                 <Text style={{ fontSize: 26 }}>{child.avatar}</Text>
               </View>
               <Text style={styles.childName}>{child.name}</Text>
-              <Text style={styles.childPts}>⭐ — pts</Text>
+              <Text style={styles.childPts}>⭐ 0 pts</Text>
               <View style={styles.childTrack}>
                 <View style={[styles.childFill, { width: '0%' }]} />
               </View>
