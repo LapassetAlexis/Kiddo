@@ -48,11 +48,11 @@ export class RewardsService {
    * enriched with the child and reward data for the given family.
    */
   async getHistory(familyId: string, childId?: string): Promise<any[]> {
-    const qb = this.transactions
+    // On évite le JOIN uuid = varchar en faisant deux requêtes simples
+    const txQb = this.transactions
       .createQueryBuilder('tx')
       .innerJoin('tx.child', 'child')
       .innerJoin('child.family', 'family')
-      .leftJoin(Reward, 'reward', 'reward.id = tx.referenceId::uuid')
       .select([
         'tx.id',
         'tx.amount',
@@ -63,19 +63,30 @@ export class RewardsService {
         'child.id',
         'child.name',
         'child.avatar',
-        'reward.id',
-        'reward.title',
-        'reward.status',
       ])
       .where('family.id = :familyId', { familyId })
       .andWhere("tx.type = 'spend'")
       .orderBy('tx.createdAt', 'DESC');
 
     if (childId) {
-      qb.andWhere('child.id = :childId', { childId });
+      txQb.andWhere('child.id = :childId', { childId });
     }
 
-    return qb.getRawMany();
+    const txs = await txQb.getRawMany();
+
+    // Récupérer les récompenses liées en une seule requête
+    const rewardIds = [...new Set(txs.map((t: any) => t.tx_referenceId).filter(Boolean))];
+    const rewards = rewardIds.length
+      ? await this.rewards.findByIds(rewardIds).catch(() => [])
+      : [];
+    const rewardMap = new Map(rewards.map((r: any) => [r.id, r]));
+
+    return txs.map((t: any) => ({
+      ...t,
+      reward_id:     rewardMap.get(t.tx_referenceId)?.id     ?? null,
+      reward_title:  rewardMap.get(t.tx_referenceId)?.title  ?? t.tx_note ?? '—',
+      reward_status: rewardMap.get(t.tx_referenceId)?.status ?? null,
+    }));
   }
 
   async update(id: string, familyId: string, dto: UpdateRewardDto): Promise<Reward> {
