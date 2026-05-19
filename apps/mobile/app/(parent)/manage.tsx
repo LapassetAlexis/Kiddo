@@ -63,13 +63,7 @@ const STATUS_CONFIG = {
 type Tab = 'catalogue' | 'historique';
 
 export default function ManageScreen() {
-  const [tab, setTab]
-
-  useFocusEffect(useCallback(() => {
-    catalogueRefresh();
-    historyRefresh();
-  }, []));
- = useState<Tab>('catalogue');
+  const [tab, setTab]           = useState<Tab>('catalogue');
   const [childFilter, setChildFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState<'all' | HistoryStatus>('all');
 
@@ -86,6 +80,8 @@ export default function ManageScreen() {
     error: historyError,
     refresh: historyRefresh,
   } = useApiData(() => rewardsApi.history(), []);
+
+  useFocusEffect(useCallback(() => { catalogueRefresh(); historyRefresh(); }, []));
 
   const rewards = (catalogueData ?? []).filter(r => r.status === 'available');
   const historySections: HistorySection[] = groupHistoryByDate(historyRaw ?? []);
