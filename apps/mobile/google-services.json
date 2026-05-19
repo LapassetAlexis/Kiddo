@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "846730586382",
+    "project_id": "kidpoints-976e9",
+    "storage_bucket": "kidpoints-976e9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:846730586382:android:9a6daf6c1fd4bec93f8f5f",
+        "android_client_info": {
+          "package_name": "com.kidpoints.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAEACGFyRjCPhhLabKf9L3fk5Gb8EMRXe0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

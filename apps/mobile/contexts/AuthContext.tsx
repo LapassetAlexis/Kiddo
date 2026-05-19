@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { authApi } from '@/lib/api/auth';
+import { notificationsApi } from '@/lib/api/notifications';
 import { getToken, clearToken, saveToken, saveParentToken, getParentToken, clearParentToken } from '@/lib/api-client';
+import { registerForPushNotifications } from '@/lib/registerForPushNotifications';
 
 type Role = 'parent' | 'child';
 
@@ -75,6 +77,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await authApi.saveToken(accessToken);
     const payload = parseJwt(accessToken);
     setUser({ id: payload.sub, role: 'parent', email: payload.email, familyId: payload.familyId });
+    registerForPushNotifications().then(token => {
+      if (token) notificationsApi.registerToken(token).catch(() => null);
+    });
   }
 
   async function loginChild(childId: string, pin: string) {
@@ -85,6 +90,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const payload = parseJwt(accessToken);
     const me = await authApi.me().catch(() => null);
     setUser({ id: payload.sub, role: 'child', familyId: payload.familyId, name: me?.name, avatar: me?.avatar, color: (me as any)?.color });
+    registerForPushNotifications().then(token => {
+      if (token) notificationsApi.registerToken(token).catch(() => null);
+    });
   }
 
   async function joinFamily(name: string, email: string, password: string, inviteCode: string) {

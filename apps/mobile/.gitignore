@@ -33,6 +33,9 @@ yarn-error.*
 # local env files
 .env*.local
 
+# Firebase credentials (GoogleService-Info.plist contains iOS keys — keep out of git)
+GoogleService-Info.plist
+
 # typescript
 *.tsbuildinfo
 
