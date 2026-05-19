@@ -180,19 +180,31 @@ export class RewardsService {
    * 2. Mark reward as 'granted'
    * 3. Notify child
    */
-  async grant(rewardId: string, familyId: string, childId: string): Promise<Reward> {
+  async grant(rewardId: string, familyId: string, childId?: string): Promise<Reward> {
     const reward = await this.assertOwnership(rewardId, familyId);
     if (reward.status !== 'claimed') {
       throw new ConflictException('La récompense n\'a pas encore été réclamée');
     }
 
-    const child = await this.children.findOne({ where: { id: childId, family: { id: familyId } } });
-    if (!child) throw new NotFoundException('Child not found');
+    // Si childId absent, retrouver l'enfant depuis la dernière transaction spend
+    let resolvedChildId = childId;
+    if (!resolvedChildId) {
+      const lastTx = await this.transactions.findOne({
+        where: { referenceId: rewardId, type: 'spend' },
+        relations: ['child'],
+        order: { createdAt: 'DESC' },
+      });
+      resolvedChildId = lastTx?.child?.id;
+    }
+
+    const child = resolvedChildId
+      ? await this.children.findOne({ where: { id: resolvedChildId, family: { id: familyId } } })
+      : null;
 
     await this.ds.transaction(async em => {
       await em.update(Reward, rewardId, { status: 'granted' });
 
-      if (child.fcmToken) {
+      if (child?.fcmToken) {
         await em.save(
           NotificationIntent,
           em.create(NotificationIntent, {
@@ -224,7 +236,7 @@ export class RewardsService {
     }
 
     const child = await this.children.findOne({ where: { id: childId, family: { id: familyId } } });
-    if (!child) throw new NotFoundException('Child not found');
+    // child peut être null si on ne trouve pas l'enfant — la récompense est quand même accordée
 
     await this.ds.transaction(async em => {
       // Re-credit points
@@ -243,7 +255,7 @@ export class RewardsService {
       await em.update(Reward, rewardId, { status: 'available' });
 
       // Notify child
-      if (child.fcmToken) {
+      if (child?.fcmToken) {
         await em.save(
           NotificationIntent,
           em.create(NotificationIntent, {

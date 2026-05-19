@@ -88,10 +88,11 @@ export class RewardsController {
   @HttpCode(HttpStatus.OK)
   grant(
     @Param('id') id: string,
-    @Body() dto: RedeemRewardDto,
     @CurrentUser() user: JwtPayload,
+    @Body() dto?: { childId?: string },
   ) {
-    return this.svc.grant(id, user.sub, dto.childId);
+    // childId optionnel : le service le retrouve depuis la transaction si absent
+    return this.svc.grant(id, user.sub, dto?.childId);
   }
 
   @Post(':id/refuse')
