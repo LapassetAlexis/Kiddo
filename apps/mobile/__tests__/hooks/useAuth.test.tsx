@@ -9,7 +9,7 @@ jest.mock('expo-secure-store');
 const mockAuthLogin    = jest.fn();
 const mockAuthChildPin = jest.fn();
 const mockAuthMe       = jest.fn();
-const mockAuthSaveToken   = jest.fn(() => Promise.resolve());
+const mockAuthSaveToken   = jest.fn((_token?: string) => Promise.resolve());
 const mockAuthClearToken  = jest.fn(() => Promise.resolve());
 
 jest.mock('@/lib/api/auth', () => ({
@@ -17,8 +17,8 @@ jest.mock('@/lib/api/auth', () => ({
     login:      (...args: unknown[]) => mockAuthLogin(...args),
     childPin:   (...args: unknown[]) => mockAuthChildPin(...args),
     me:         (...args: unknown[]) => mockAuthMe(...args),
-    saveToken:  (...args: unknown[]) => mockAuthSaveToken(...args),
-    clearToken: (...args: unknown[]) => mockAuthClearToken(...args),
+    saveToken:  (token: string) => mockAuthSaveToken(token) as unknown,
+    clearToken: () => mockAuthClearToken() as unknown,
   },
 }));
 

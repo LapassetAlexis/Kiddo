@@ -12,7 +12,8 @@ export class Task {
   @Column()                       points: number;
   @Column({ default: 'daily' })   frequency: TaskFrequency;
   @Column({ default: 'created' }) status: TaskStatus;
-  @Column({ nullable: true })     photoUrl: string;
+  @Column({ type: 'text', nullable: true }) photoUrl: string;
+  @Column({ nullable: true })     note: string;
   @Column({ nullable: true })     rejectionReason: string;
   @ManyToOne(() => Child, c => c.tasks, { onDelete: 'CASCADE' }) child: Child;
   @CreateDateColumn()             createdAt: Date;

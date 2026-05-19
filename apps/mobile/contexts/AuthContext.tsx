@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { authApi } from '@/lib/api/auth';
-import { getToken, clearToken, ApiError } from '@/lib/api-client';
+import { getToken, clearToken, saveToken, saveParentToken, getParentToken, clearParentToken } from '@/lib/api-client';
 
 type Role = 'parent' | 'child';
 
@@ -17,6 +17,7 @@ interface AuthContextType {
   loading: boolean;
   loginParent: (email: string, password: string) => Promise<void>;
   loginChild: (childId: string, pin: string) => Promise<void>;
+  switchToParent: () => Promise<boolean>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -69,10 +70,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function loginChild(childId: string, pin: string) {
+    // Sauvegarde le token parent avant d'écraser avec le token enfant
+    const parentToken = await getToken();
+    if (parentToken) await saveParentToken(parentToken);
     const { accessToken } = await authApi.childPin(childId, pin);
     await authApi.saveToken(accessToken);
     const payload = parseJwt(accessToken);
     setUser({ id: payload.sub, role: 'child', familyId: payload.familyId });
+  }
+
+  async function switchToParent(): Promise<boolean> {
+    const parentToken = await getParentToken();
+    if (!parentToken) return false;
+    const payload = parseJwt(parentToken);
+    if (!payload || payload.exp * 1000 <= Date.now()) {
+      await clearParentToken();
+      return false;
+    }
+    await saveToken(parentToken);
+    await clearParentToken();
+    setUser({ id: payload.sub, role: 'parent', email: payload.email });
+    return true;
   }
 
   async function logout() {
@@ -90,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, loginParent, loginChild, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, loginParent, loginChild, switchToParent, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -90,14 +90,14 @@ export default function HistoryScreen() {
     refresh: refreshStreak,
   } = useApiData(() => transactionsApi.getStreak(user?.id ?? ''), [user?.id]);
 
+  const { data: rewardsData } = useApiData(() => rewardsApi.list(), []);
+
   if (txLoading || balanceLoading || streakLoading) return <LoadingScreen />;
   if (txError)      return <ErrorScreen message={txError}      onRetry={refreshTx} />;
   if (balanceError) return <ErrorScreen message={balanceError} onRetry={refreshBalance} />;
   if (streakError)  return <ErrorScreen message={streakError}  onRetry={refreshStreak} />;
 
   const allTx: Transaction[] = txResponse?.data ?? [];
-
-  const { data: rewardsData } = useApiData(() => rewardsApi.list(), []);
 
   const BALANCE = balanceData?.balance ?? 0;
   const STREAK  = streakData?.currentStreak ?? 0;

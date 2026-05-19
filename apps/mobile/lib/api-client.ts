@@ -22,7 +22,8 @@ const getBaseUrl = (): string => {
 };
 
 export const BASE_URL = getBaseUrl();
-const TOKEN_KEY = 'kidpoints_jwt';
+const TOKEN_KEY        = 'kidpoints_jwt';
+const PARENT_TOKEN_KEY = 'kidpoints_parent_jwt';
 
 // ── Token storage ────────────────────────────────────────────────────────────
 
@@ -36,6 +37,18 @@ export async function getToken(): Promise<string | null> {
 
 export async function clearToken() {
   await SecureStore.deleteItemAsync(TOKEN_KEY);
+}
+
+export async function saveParentToken(token: string) {
+  await SecureStore.setItemAsync(PARENT_TOKEN_KEY, token);
+}
+
+export async function getParentToken(): Promise<string | null> {
+  return SecureStore.getItemAsync(PARENT_TOKEN_KEY);
+}
+
+export async function clearParentToken() {
+  await SecureStore.deleteItemAsync(PARENT_TOKEN_KEY);
 }
 
 // ── Core fetch wrapper ────────────────────────────────────────────────────────

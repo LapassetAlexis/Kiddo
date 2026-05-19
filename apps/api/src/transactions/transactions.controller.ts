@@ -14,47 +14,50 @@ import type { JwtPayload } from '../auth/decorators/current-user.decorator';
 
 @Controller('transactions')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('parent')
 export class TransactionsController {
   constructor(private readonly svc: TransactionsService) {}
 
   /**
    * GET /transactions?childId=X&page=N
-   * Returns paginated transaction history for a child, 20 per page.
-   * The child must belong to the authenticated family (IDOR protection).
+   * Parent or child — a child can only access their own history.
    */
   @Get()
+  @Roles('parent', 'child')
   getHistory(
     @Query('childId') childId: string,
     @Query('page') page: string,
     @CurrentUser() user: JwtPayload,
   ) {
-    return this.svc.getHistory(childId, user.sub, page ? parseInt(page, 10) : 1);
+    const familyId = user.role === 'child' ? user.familyId! : user.sub;
+    return this.svc.getHistory(childId, familyId, page ? parseInt(page, 10) : 1);
   }
 
   /**
    * GET /transactions/balance/:childId
-   * Returns computed balance stats: balance, earnedTotal, spentTotal,
-   * earnedThisWeek, spentThisWeek.
+   * Parent or child — a child can only access their own balance.
    */
   @Get('balance/:childId')
+  @Roles('parent', 'child')
   getBalance(
     @Param('childId') childId: string,
     @CurrentUser() user: JwtPayload,
   ) {
-    return this.svc.getBalance(childId, user.sub);
+    const familyId = user.role === 'child' ? user.familyId! : user.sub;
+    return this.svc.getBalance(childId, familyId);
   }
 
   /**
    * GET /transactions/streak/:childId
-   * Returns streak data computed from validated task dates.
+   * Parent or child — a child can only access their own streak.
    */
   @Get('streak/:childId')
+  @Roles('parent', 'child')
   getStreak(
     @Param('childId') childId: string,
     @Query('timezone') timezone: string | undefined,
     @CurrentUser() user: JwtPayload,
   ) {
-    return this.svc.getStreak(childId, user.sub, timezone);
+    const familyId = user.role === 'child' ? user.familyId! : user.sub;
+    return this.svc.getStreak(childId, familyId, timezone);
   }
 }

@@ -5,7 +5,6 @@ import {
 import { useRef, useEffect, useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import { Colors, Radii } from '@/constants/theme';
-import { tasksApi } from '@/lib/api/tasks';
 
 interface Task { id: string; name: string; pts: number; }
 
@@ -17,14 +16,16 @@ type Props = {
 
 export default function TaskCompleteSheet({ task, onConfirm, onClose }: Props) {
   const slideAnim = useRef(new Animated.Value(500)).current;
-  const [note, setNote]       = useState('');
+  const [note, setNote]         = useState('');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [photoB64, setPhotoB64] = useState<string | null>(null);
   const visible = task !== null;
 
   useEffect(() => {
     if (visible) {
       setNote('');
       setPhotoUri(null);
+      setPhotoB64(null);
       Animated.spring(slideAnim, {
         toValue: 0, useNativeDriver: true, bounciness: 3,
       }).start();
@@ -38,11 +39,11 @@ export default function TaskCompleteSheet({ task, onConfirm, onClose }: Props) {
     Animated.timing(slideAnim, { toValue: 500, duration: 200, useNativeDriver: true }).start(onClose);
   }
 
-  function confirm() {
+  async function confirm() {
     if (!task) return;
     Keyboard.dismiss();
     Animated.timing(slideAnim, { toValue: 500, duration: 180, useNativeDriver: true }).start(() => {
-      onConfirm(task.id, note, photoUri ?? undefined);
+      onConfirm(task.id, note, photoB64 ?? undefined);
     });
   }
 
@@ -57,11 +58,13 @@ export default function TaskCompleteSheet({ task, onConfirm, onClose }: Props) {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 3],
-      quality: 0.7,
+      quality: 0.6,
+      base64: true,
     });
 
     if (!result.canceled && result.assets[0]) {
       setPhotoUri(result.assets[0].uri);
+      setPhotoB64(result.assets[0].base64 ? `data:image/jpeg;base64,${result.assets[0].base64}` : null);
     }
   }
 
@@ -72,11 +75,13 @@ export default function TaskCompleteSheet({ task, onConfirm, onClose }: Props) {
     const result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
       aspect: [4, 3],
-      quality: 0.7,
+      quality: 0.6,
+      base64: true,
     });
 
     if (!result.canceled && result.assets[0]) {
       setPhotoUri(result.assets[0].uri);
+      setPhotoB64(result.assets[0].base64 ? `data:image/jpeg;base64,${result.assets[0].base64}` : null);
     }
   }
 
@@ -131,7 +136,7 @@ export default function TaskCompleteSheet({ task, onConfirm, onClose }: Props) {
               {photoUri ? (
                 <View style={styles.photoPreviewWrap}>
                   <Image source={{ uri: photoUri }} style={styles.photoPreview} />
-                  <TouchableOpacity style={styles.photoRemove} onPress={() => setPhotoUri(null)}>
+                  <TouchableOpacity style={styles.photoRemove} onPress={() => { setPhotoUri(null); setPhotoB64(null); }}>
                     <Text style={styles.photoRemoveText}>✕</Text>
                   </TouchableOpacity>
                 </View>

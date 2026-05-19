@@ -33,7 +33,7 @@ export class TasksController {
 
   @Patch(':id/complete')
   complete(@Param('id') id: string, @Body() body: { note?: string; photoUrl?: string }) {
-    return this.svc.complete(id, body.photoUrl);
+    return this.svc.complete(id, body.photoUrl, body.note);
   }
 
   @Patch(':id/approve')

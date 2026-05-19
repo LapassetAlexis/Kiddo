@@ -1,6 +1,6 @@
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Animated } from 'react-native';
-import { useRef, useState } from 'react';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useRef, useState, useCallback } from 'react';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Radii, Spacing, Typography } from '@/constants/theme';
 import TaskCompleteSheet from '@/components/ui/TaskCompleteSheet';
@@ -12,7 +12,7 @@ import { transactionsApi } from '@/lib/api/transactions';
 import { rewardsApi } from '@/lib/api/rewards';
 
 type TaskState = 'todo' | 'pending' | 'done';
-interface UITask { id: string; name: string; pts: number; state: TaskState; }
+interface UITask { id: string; name: string; pts: number; state: TaskState; rejectionReason?: string; }
 
 function apiStatusToState(status: string): TaskState {
   if (status === 'validated') return 'done';
@@ -26,12 +26,13 @@ function taskToUI(task: Task): UITask {
     name:  task.title,
     pts:   task.points,
     state: apiStatusToState(task.status),
+    rejectionReason: task.rejectionReason,
   };
 }
 
 export default function ChildHomeScreen() {
   const { fromParent } = useLocalSearchParams<{ fromParent?: string }>();
-  const { user } = useAuth();
+  const { user, switchToParent } = useAuth();
 
   const {
     data: tasksData,
@@ -54,12 +55,20 @@ export default function ChildHomeScreen() {
     refresh: refreshStreak,
   } = useApiData(() => transactionsApi.getStreak(user?.id ?? ''), [user?.id]);
 
+  useFocusEffect(useCallback(() => {
+    refreshTasks();
+    refreshBalance();
+    refreshStreak();
+  }, []));
+
   const [selectedTask, setSelectedTask] = useState<UITask | null>(null);
   const ptsAnim = useRef(new Animated.Value(1)).current;
 
   const { data: rewardsData } = useApiData(() => rewardsApi.list(), []);
 
-  const tasks: UITask[] = (tasksData ?? []).map(taskToUI);
+  const tasks: UITask[] = (tasksData ?? [])
+    .filter(t => t.status === 'created' || t.status === 'pending_approval')
+    .map(taskToUI);
   const points   = balanceData?.balance ?? 0;
   const streak   = streakData?.currentStreak ?? 0;
 
@@ -118,7 +127,10 @@ export default function ChildHomeScreen() {
             {fromParent === 'true' && (
               <TouchableOpacity
                 style={styles.parentBtn}
-                onPress={() => router.replace('/(parent)/dashboard')}
+                onPress={async () => {
+                  const ok = await switchToParent();
+                  router.replace(ok ? '/(parent)/dashboard' : '/(auth)/login');
+                }}
                 activeOpacity={0.8}
               >
                 <Text style={styles.parentBtnText}>👨‍👩‍👧</Text>
@@ -183,6 +195,11 @@ export default function ChildHomeScreen() {
             <View style={{ flex: 1 }}>
               <Text style={[styles.taskName, task.state === 'done' && styles.taskNameDone]}>{task.name}</Text>
               {task.state === 'pending' && <Text style={styles.taskSub}>Papa vérifie bientôt ! 🤞</Text>}
+              {task.state === 'todo' && task.rejectionReason != null && (
+                <Text style={styles.taskRejected}>
+                  ↩ {task.rejectionReason || 'Réessaie, tu peux le faire !'}
+                </Text>
+              )}
             </View>
             <View style={[styles.ptsBadge, task.state === 'done' && styles.ptsBadgeDone]}>
               <Text style={[styles.ptsBadgeText, task.state === 'done' && styles.ptsBadgeTextDone]}>+{task.pts} pts</Text>
@@ -195,7 +212,7 @@ export default function ChildHomeScreen() {
 
       <TaskCompleteSheet
         task={selectedTask}
-        onConfirm={(id, note) => submitTask(id, note)}
+        onConfirm={(id, note, photo) => submitTask(id, note, photo)}
         onClose={() => setSelectedTask(null)}
       />
     </SafeAreaView>
@@ -267,6 +284,7 @@ const styles = StyleSheet.create({
   taskName:     { fontSize: 15, fontWeight: '800', color: Colors.textPrimary },
   taskNameDone: { color: 'rgba(255,255,255,0.22)', textDecorationLine: 'line-through', fontWeight: '700' },
   taskSub:      { fontSize: 11, fontWeight: '700', color: 'rgba(255,184,0,0.7)', marginTop: 2 },
+  taskRejected: { fontSize: 11, fontWeight: '700', color: 'rgba(239,83,80,0.8)', marginTop: 2 },
 
   ptsBadge:     { backgroundColor: 'rgba(255,184,0,0.1)', borderWidth: 1, borderColor: 'rgba(255,184,0,0.18)', borderRadius: Radii.pill, paddingHorizontal: 11, paddingVertical: 5 },
   ptsBadgeDone: { backgroundColor: 'rgba(76,175,80,0.08)', borderColor: 'rgba(76,175,80,0.18)' },

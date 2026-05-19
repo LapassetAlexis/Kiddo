@@ -37,8 +37,10 @@ export class ChildrenController {
   }
 
   @Get(':id')
+  @Roles('parent', 'child')
   findOne(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    return this.svc.findOneWithStats(id, user.sub);
+    const familyId = user.role === 'child' ? user.familyId! : user.sub;
+    return this.svc.findOneWithStats(id, familyId);
   }
 
   @Patch(':id')

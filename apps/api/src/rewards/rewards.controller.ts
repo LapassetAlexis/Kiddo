@@ -27,9 +27,10 @@ export class RewardsController {
   constructor(private readonly svc: RewardsService) {}
 
   @Get()
-  @Roles('parent')
+  @Roles('parent', 'child')
   findAll(@CurrentUser() user: JwtPayload) {
-    return this.svc.findAllForFamily(user.sub);
+    const familyId = user.role === 'child' ? user.familyId! : user.sub;
+    return this.svc.findAllForFamily(familyId);
   }
 
   @Post()

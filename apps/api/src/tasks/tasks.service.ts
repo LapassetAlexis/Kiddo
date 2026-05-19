@@ -39,12 +39,12 @@ export class TasksService {
     return this.tasks.save(task);
   }
 
-  async complete(id: string, photoUrl?: string) {
+  async complete(id: string, photoUrl?: string, note?: string) {
     const task = await this.tasks.findOne({ where: { id }, relations: ['child', 'child.family'] }).then(t => { if (!t) throw new NotFoundException('Tâche introuvable'); return t; });
     if (task.status !== 'created') throw new ConflictException('Tâche déjà soumise');
 
     await this.ds.transaction(async em => {
-      await em.update(Task, id, { status: 'pending_approval', submittedAt: new Date(), photoUrl });
+      await em.update(Task, id, { status: 'pending_approval', submittedAt: new Date(), photoUrl, note });
       // Outbox: notify parent via FCM (worker delivers async)
       const parentToken = (task.child.family as any).fcmToken;
       if (parentToken) {
@@ -80,7 +80,8 @@ export class TasksService {
   async reject(id: string, reason?: string) {
     const task = await this.tasks.findOne({ where: { id }, relations: ['child'] }).then(t => { if (!t) throw new NotFoundException('Tâche introuvable'); return t; });
     if (task.status !== 'pending_approval') throw new ConflictException();
-    await this.tasks.update(id, { status: 'rejected', rejectionReason: reason ?? '' });
+    // Remet la tâche en "à faire" — l'enfant peut la refaire
+    await this.tasks.update(id, { status: 'created', rejectionReason: reason ?? '', submittedAt: null as any, photoUrl: null as any, note: null as any });
     return this.tasks.findOne({ where: { id } }).then(t => { if (!t) throw new NotFoundException('Tâche introuvable'); return t; });
   }
 }

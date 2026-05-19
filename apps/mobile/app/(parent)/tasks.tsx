@@ -52,7 +52,7 @@ function groupTasksByDate(tasks: Task[]): Section[] {
       id: task.id,
       taskName: task.title,
       childName: task.child.name,
-      childEmoji: task.child.emoji,
+      childEmoji: task.child.avatar,
       pts: task.points,
       status: apiStatusToLocal(task.status),
       time: formatTime(dateRef),
@@ -94,7 +94,7 @@ export default function TasksScreen() {
 
   // Build child filter list from loaded data
   const uniqueChildren = Array.from(
-    new Map(allTasks.map(t => [t.child.id, { id: t.child.id, name: t.child.name, emoji: t.child.emoji }])).values()
+    new Map(allTasks.map(t => [t.child.id, { id: t.child.id, name: t.child.name, emoji: t.child.avatar }])).values()
   );
   const children = [
     { id: 'all', name: 'Tous', emoji: '👨‍👩‍👧' },

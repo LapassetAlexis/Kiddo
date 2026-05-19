@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, Animated, Pressable } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, Animated, Pressable, Image } from 'react-native';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,7 +13,7 @@ import { useApiData } from '@/lib/useApiData';
 import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
 import { useAuth } from '@/contexts/AuthContext';
 
-type PendingTask = { id: string; childName: string; childEmoji: string; taskName: string; pts: number; ago: string; };
+type PendingTask = { id: string; childName: string; childEmoji: string; taskName: string; pts: number; ago: string; note?: string; photoUrl?: string; };
 type RewardRequest = { id: string; childName: string; childEmoji: string; rewardName: string; emoji: string; pts: number; };
 
 function formatAgo(dateStr?: string): string {
@@ -31,7 +31,8 @@ export default function ParentDashboardScreen() {
   const { user } = useAuth();
   const { data: profileData, refresh: profileRefresh } = useApiData(() => familiesApi.getMe(), []);
   const parentName = formatName(profileData?.name, profileData?.email) || 'Bonjour';
-  const [addModal, setAddModal]     = useState(false);
+  const [addModal, setAddModal]         = useState(false);
+  const [reviewTask, setReviewTask]     = useState<PendingTask | null>(null);
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
   const slideAnim = useRef(new Animated.Value(300)).current;
 
@@ -56,21 +57,30 @@ export default function ParentDashboardScreen() {
     refresh: rewardsRefresh,
   } = useApiData(() => rewardsApi.list(), []);
 
+  const {
+    data: todoData,
+    loading: todoLoading,
+    refresh: todoRefresh,
+  } = useApiData(() => tasksApi.list(undefined, 'created'), []);
+
   // Refresh toutes les données quand l'écran revient au premier plan
   useFocusEffect(useCallback(() => {
     profileRefresh();
     childrenRefresh();
     pendingRefresh();
     rewardsRefresh();
+    todoRefresh();
   }, []));
 
   const pending: PendingTask[] = (pendingData ?? []).map(task => ({
     id: task.id,
     childName: task.child.name,
-    childEmoji: task.child.emoji,
+    childEmoji: task.child.avatar,
     taskName: task.title,
     pts: task.points,
     ago: formatAgo(task.submittedAt),
+    note: task.note,
+    photoUrl: task.photoUrl,
   }));
 
   const rewards: RewardRequest[] = (rewardsData ?? [])
@@ -134,28 +144,29 @@ export default function ParentDashboardScreen() {
     setTimeout(() => router.push(path), 220);
   }
 
-  async function approve(id: string) {
-    const task = pending.find(t => t.id === id);
-    try { await tasksApi.approve(id); } catch {}
+  async function confirmApprove(task: PendingTask) {
+    setReviewTask(null);
+    try { await tasksApi.approve(task.id); } catch {}
     pendingRefresh();
     showModal({
       icon: '✅',
       title: 'Tâche validée !',
-      message: `${task?.taskName} de ${task?.childName} validée.\n+${task?.pts} pts crédités.`,
+      message: `${task.taskName} de ${task.childName} validée.\n+${task.pts} pts crédités.`,
       buttons: [{ label: 'Super !', style: 'default' }],
     });
   }
 
-  function reject(id: string) {
-    const task = pending.find(t => t.id === id);
+  function confirmReject(task: PendingTask) {
+    setReviewTask(null);
     showModal({
       icon: '❌',
       title: 'Rejeter la tâche ?',
-      message: `${task?.taskName} de ${task?.childName} sera rejetée et l'enfant en sera notifié.`,
+      message: `${task.taskName} de ${task.childName} sera rejetée.`,
       buttons: [
         { label: 'Rejeter', style: 'destructive', onPress: async () => {
-          try { await tasksApi.reject(id); } catch {}
+          try { await tasksApi.reject(task.id); } catch {}
           pendingRefresh();
+          todoRefresh();
         }},
         { label: 'Annuler', style: 'cancel' },
       ],
@@ -232,8 +243,52 @@ export default function ParentDashboardScreen() {
           </TouchableOpacity>
         </ScrollView>
 
+        {/* Tâches à faire */}
+        <View style={[styles.sectionHeader, { marginTop: 20 }]}>
+          <Text style={styles.sectionTitle}>TÂCHES EN COURS</Text>
+          {(todoData ?? []).length > 0 && <Text style={styles.todoCount}>{(todoData ?? []).length}</Text>}
+        </View>
+
+        {todoLoading && !todoData ? (
+          <View style={styles.emptyPending}>
+            <Text style={styles.emptyText}>Chargement…</Text>
+          </View>
+        ) : (todoData ?? []).length === 0 ? (
+          <View style={styles.emptyPending}>
+            <Text style={{ fontSize: 28, marginBottom: 6 }}>📋</Text>
+            <Text style={styles.emptyText}>Aucune tâche active</Text>
+          </View>
+        ) : (
+          <View style={styles.list}>
+            {(todoData ?? []).map(task => {
+              const wasRejected = task.rejectionReason != null;
+              return (
+                <View key={task.id} style={[styles.todoCard, wasRejected && styles.todoCardRejected]}>
+                  <View style={styles.childAvatarSm}>
+                    <Text style={{ fontSize: 18 }}>{task.child.avatar}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.pendingTask}>{task.title}</Text>
+                    <Text style={styles.pendingMeta}>
+                      {task.child.name}{task.frequency !== 'once' ? ` · ${task.frequency === 'daily' ? 'quotidien' : 'hebdo'}` : ''}
+                    </Text>
+                    {wasRejected && (
+                      <Text style={styles.todoRejectedLabel}>
+                        ↩ Rejeté{task.rejectionReason ? ` — ${task.rejectionReason}` : ''}
+                      </Text>
+                    )}
+                  </View>
+                  <View style={styles.ptsBadge}>
+                    <Text style={styles.ptsBadgeText}>+{task.points} pts</Text>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
+
         {/* Pending validations */}
-        <View style={styles.sectionHeader}>
+        <View style={[styles.sectionHeader, { marginTop: 28 }]}>
           <Text style={styles.sectionTitle}>À VALIDER</Text>
           {pending.length > 0 && <Text style={styles.pendingCount}>{pending.length}</Text>}
         </View>
@@ -254,20 +309,15 @@ export default function ParentDashboardScreen() {
         ) : (
           <View style={styles.list}>
             {pending.map(task => (
-              <View key={task.id} style={styles.pendingCard}>
+              <TouchableOpacity key={task.id} style={styles.pendingCard} onPress={() => setReviewTask(task)} activeOpacity={0.8}>
                 <View style={styles.childAvatarSm}><Text style={{ fontSize: 18 }}>{task.childEmoji}</Text></View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.pendingTask}>{task.taskName}</Text>
-                  <Text style={styles.pendingMeta}>{task.childName} · {task.ago}</Text>
+                  <Text style={styles.pendingMeta}>{task.childName} · {task.ago}{task.note ? ' · 💬' : ''}{task.photoUrl ? ' · 📷' : ''}</Text>
                 </View>
                 <View style={styles.ptsBadge}><Text style={styles.ptsBadgeText}>+{task.pts} pts</Text></View>
-                <TouchableOpacity style={styles.btnApprove} onPress={() => approve(task.id)}>
-                  <Text style={{ color: Colors.green, fontSize: 17 }}>✓</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.btnReject} onPress={() => reject(task.id)}>
-                  <Text style={{ color: '#EF5350', fontSize: 17 }}>✕</Text>
-                </TouchableOpacity>
-              </View>
+                <Text style={{ fontSize: 16, color: Colors.textFaint }}>›</Text>
+              </TouchableOpacity>
             ))}
           </View>
         )}
@@ -319,6 +369,47 @@ export default function ParentDashboardScreen() {
       </ScrollView>
 
       <AppModal config={modalCfg} onHide={hideModal} />
+
+      {/* ── Modal review tâche ── */}
+      <Modal visible={!!reviewTask} transparent animationType="slide" onRequestClose={() => setReviewTask(null)}>
+        <Pressable style={styles.modalOverlay} onPress={() => setReviewTask(null)}>
+          <Pressable style={styles.reviewSheet}>
+            <View style={styles.modalHandle} />
+            {reviewTask && (
+              <>
+                <View style={styles.reviewHeader}>
+                  <View style={styles.childAvatarSm}><Text style={{ fontSize: 22 }}>{reviewTask.childEmoji}</Text></View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.reviewTaskName}>{reviewTask.taskName}</Text>
+                    <Text style={styles.reviewMeta}>{reviewTask.childName} · {reviewTask.ago}</Text>
+                  </View>
+                  <View style={styles.ptsBadge}><Text style={styles.ptsBadgeText}>+{reviewTask.pts} pts</Text></View>
+                </View>
+
+                {reviewTask.note ? (
+                  <View style={styles.reviewNote}>
+                    <Text style={styles.reviewNoteLabel}>Message de {reviewTask.childName}</Text>
+                    <Text style={styles.reviewNoteText}>"{reviewTask.note}"</Text>
+                  </View>
+                ) : null}
+
+                {reviewTask.photoUrl ? (
+                  <Image source={{ uri: reviewTask.photoUrl }} style={styles.reviewPhoto} resizeMode="cover" />
+                ) : null}
+
+                <View style={styles.reviewActions}>
+                  <TouchableOpacity style={styles.btnRejectLg} onPress={() => confirmReject(reviewTask)} activeOpacity={0.8}>
+                    <Text style={styles.btnRejectLgText}>✕  Rejeter</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.btnApproveLg} onPress={() => confirmApprove(reviewTask)} activeOpacity={0.8}>
+                    <Text style={styles.btnApproveLgText}>✓  Valider</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* ── Modal Ajouter ── */}
       <Modal visible={addModal} transparent animationType="none" onRequestClose={closeAddModal}>
@@ -389,6 +480,10 @@ const styles = StyleSheet.create({
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginHorizontal: Spacing.screen, marginBottom: 10 },
   sectionTitle:  { fontSize: 11, fontWeight: '900', color: Colors.textFaint, textTransform: 'uppercase', letterSpacing: 1.2 },
   pendingCount:  { fontSize: 12, fontWeight: '900', color: Colors.orange },
+  todoCount:     { fontSize: 12, fontWeight: '900', color: Colors.textDim },
+  todoCard:         { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: Colors.bgCard, borderRadius: Radii.card, padding: 14, borderWidth: 1, borderColor: Colors.border },
+  todoCardRejected: { borderColor: 'rgba(239,83,80,0.25)', backgroundColor: 'rgba(239,83,80,0.05)' },
+  todoRejectedLabel:{ fontSize: 11, fontWeight: '700', color: 'rgba(239,83,80,0.8)', marginTop: 2 },
 
   childScroll: { paddingHorizontal: Spacing.screen, gap: 12, paddingBottom: 4 },
   childCard:   { backgroundColor: Colors.bgCard, borderRadius: 20, borderWidth: 1, borderColor: Colors.border, padding: 16, width: 150, gap: 8, marginBottom: 16, position: 'relative' },
@@ -417,6 +512,28 @@ const styles = StyleSheet.create({
   grantBtnText: { fontSize: 13, fontWeight: '900', color: '#1a1000' },
   emptyPending: { alignItems: 'center', padding: 32 },
   emptyText:    { fontSize: 15, fontWeight: '800', color: Colors.textDim },
+  // Review modal
+  reviewSheet: {
+    backgroundColor: '#1e1e26', borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    padding: 20, paddingBottom: 36, borderTopWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
+    gap: 16,
+  },
+  reviewHeader:   { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  reviewTaskName: { fontSize: 16, fontWeight: '900', color: Colors.textPrimary },
+  reviewMeta:     { fontSize: 12, fontWeight: '600', color: Colors.textDim, marginTop: 2 },
+  reviewNote: {
+    backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 14,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 14,
+  },
+  reviewNoteLabel: { fontSize: 11, fontWeight: '700', color: Colors.textFaint, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 },
+  reviewNoteText:  { fontSize: 15, fontWeight: '600', color: Colors.textPrimary, fontStyle: 'italic' },
+  reviewPhoto:     { width: '100%', height: 200, borderRadius: 16 },
+  reviewActions:   { flexDirection: 'row', gap: 12 },
+  btnRejectLg:     { flex: 1, backgroundColor: 'rgba(239,83,80,0.1)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(239,83,80,0.25)', padding: 16, alignItems: 'center' },
+  btnRejectLgText: { fontSize: 15, fontWeight: '900', color: '#EF5350' },
+  btnApproveLg:    { flex: 1, backgroundColor: Colors.green, borderRadius: 16, padding: 16, alignItems: 'center' },
+  btnApproveLgText:{ fontSize: 15, fontWeight: '900', color: '#fff' },
+
   // Modal
   modalOverlay: {
     flex: 1, backgroundColor: 'rgba(0,0,0,0.6)',

@@ -11,11 +11,12 @@ export interface Task {
   frequency: TaskFrequency;
   status: TaskStatus;
   photoUrl?: string;
+  note?: string;
   rejectionReason?: string;
   submittedAt?: string;
   validatedAt?: string;
   createdAt: string;
-  child: { id: string; name: string; emoji: string };
+  child: { id: string; name: string; avatar: string };
 }
 
 export const tasksApi = {
