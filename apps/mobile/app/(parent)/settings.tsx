@@ -1,8 +1,8 @@
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, Switch,
 } from 'react-native';
-import { useState } from 'react';
-import { router } from 'expo-router';
+import { useState, useCallback } from 'react';
+import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
@@ -20,9 +20,16 @@ export default function SettingsScreen() {
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
   const { logout } = useAuth();
 
-  const { data: profileData } = useApiData(() => familiesApi.getMe(), []);
+  const { data: profileData, refresh: profileRefresh } = useApiData(() => familiesApi.getMe(), []);
   const { data: childrenData, loading: childrenLoading, error: childrenError, refresh: childrenRefresh } =
     useApiData(() => childrenApi.list(), []);
+
+  useFocusEffect(
+    useCallback(() => {
+      profileRefresh();
+      childrenRefresh();
+    }, [])
+  );
 
   function confirmLogout() {
     showModal({
