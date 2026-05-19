@@ -22,12 +22,6 @@ interface HistorySection {
 }
 
 function formatTime(dateStr?: string): string {
-  useFocusEffect(
-    useCallback(() => {
-    catalogueRefresh();
-    historyRefresh();
-    }, [])
-  );
 
   if (!dateStr) return '';
   const d = new Date(dateStr);
@@ -69,7 +63,13 @@ const STATUS_CONFIG = {
 type Tab = 'catalogue' | 'historique';
 
 export default function ManageScreen() {
-  const [tab, setTab] = useState<Tab>('catalogue');
+  const [tab, setTab]
+
+  useFocusEffect(useCallback(() => {
+    catalogueRefresh();
+    historyRefresh();
+  }, []));
+ = useState<Tab>('catalogue');
   const [childFilter, setChildFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState<'all' | HistoryStatus>('all');
 

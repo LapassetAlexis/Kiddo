@@ -25,12 +25,6 @@ interface Section {
 }
 
 function formatTime(dateStr?: string): string {
-  useFocusEffect(
-    useCallback(() => {
-    refresh();
-    }, [])
-  );
-
   if (!dateStr) return '';
   const d = new Date(dateStr);
   return `${String(d.getHours()).padStart(2, '0')}h${String(d.getMinutes()).padStart(2, '0')}`;
@@ -92,6 +86,8 @@ export default function TasksScreen() {
     () => tasksApi.history(),
     [],
   );
+
+  useFocusEffect(useCallback(() => { refresh(); }, []));
 
   const allTasks = historyData ?? [];
   const allSections = groupTasksByDate(allTasks);

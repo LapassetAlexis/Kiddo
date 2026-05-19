@@ -17,13 +17,6 @@ type PendingTask = { id: string; childName: string; childEmoji: string; taskName
 type RewardRequest = { id: string; childName: string; childEmoji: string; rewardName: string; emoji: string; pts: number; };
 
 function formatAgo(dateStr?: string): string {
-  useFocusEffect(
-    useCallback(() => {
-    childrenRefresh();
-    pendingRefresh();
-    rewardsRefresh();
-    }, [])
-  );
 
   if (!dateStr) return '';
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -35,7 +28,14 @@ function formatAgo(dateStr?: string): string {
 }
 
 export default function ParentDashboardScreen() {
-  const { user } = useAuth();
+  const { user } = useAuth()
+
+  useFocusEffect(useCallback(() => {
+    childrenRefresh();
+    pendingRefresh();
+    rewardsRefresh();
+  }, []));
+;
   const { data: profileData } = useApiData(() => familiesApi.getMe(), []);
   const parentName = formatName(profileData?.name, profileData?.email) || 'Bonjour';
   const [addModal, setAddModal]     = useState(false);
