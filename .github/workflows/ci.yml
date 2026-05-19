@@ -40,7 +40,7 @@ jobs:
 
       - name: Run unit tests
         working-directory: apps/api
-        run: npm test -- --passWithNoTests
+        run: ./node_modules/.bin/jest --passWithNoTests
 
       - name: Run E2E tests
         working-directory: apps/api
@@ -48,7 +48,7 @@ jobs:
           DATABASE_URL: postgresql://kidpoints:password@localhost:5432/kidpoints_test
           JWT_SECRET: ci-test-secret
           NODE_ENV: test
-        run: npm run test:e2e -- --passWithNoTests
+        run: ./node_modules/.bin/jest --config ./test/jest-e2e.json --passWithNoTests --runInBand
 
   test-mobile:
     name: Frontend tests
@@ -68,7 +68,9 @@ jobs:
 
       - name: Run unit tests
         working-directory: apps/mobile
-        run: npx jest --passWithNoTests --ci
+        env:
+          NODE_ENV: test
+        run: ./node_modules/.bin/jest --passWithNoTests --ci
 
   build-api:
     name: Build API (TypeScript check)
