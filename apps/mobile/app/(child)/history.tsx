@@ -6,6 +6,7 @@ import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
 import { useAuth } from '@/contexts/AuthContext';
 import { useApiData } from '@/lib/useApiData';
 import { transactionsApi, Transaction } from '@/lib/api/transactions';
+import { rewardsApi } from '@/lib/api/rewards';
 
 type TxType = 'earn' | 'spend';
 
@@ -96,14 +97,21 @@ export default function HistoryScreen() {
 
   const allTx: Transaction[] = txResponse?.data ?? [];
 
-  const BALANCE     = balanceData?.balance ?? 0;
-  const STREAK      = streakData?.currentStreak ?? 0;
-  const NEXT_REWARD = 'Soirée TV';
-  const NEXT_COST   = 100;
+  const { data: rewardsData } = useApiData(() => rewardsApi.list(), []);
+
+  const BALANCE = balanceData?.balance ?? 0;
+  const STREAK  = streakData?.currentStreak ?? 0;
+
+  const nextReward = (rewardsData ?? [])
+    .filter(r => r.status === 'available' && r.cost > BALANCE)
+    .sort((a, b) => a.cost - b.cost)[0]
+    ?? (rewardsData ?? []).sort((a, b) => a.cost - b.cost)[0];
+  const NEXT_REWARD = nextReward?.title ?? '—';
+  const NEXT_COST   = nextReward?.cost ?? 100;
 
   const earnedW  = balanceData?.earnedThisWeek  ?? 0;
   const spentW   = balanceData?.spentThisWeek   ?? 0;
-  const progress = Math.min(1, BALANCE / NEXT_COST);
+  const progress = NEXT_COST > 0 ? Math.min(1, BALANCE / NEXT_COST) : 1;
 
   const ALL_SECTIONS = groupTransactions(allTx);
 

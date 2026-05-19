@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useApiData } from '@/lib/useApiData';
 import { tasksApi, Task } from '@/lib/api/tasks';
 import { transactionsApi } from '@/lib/api/transactions';
+import { rewardsApi } from '@/lib/api/rewards';
 
 type TaskState = 'todo' | 'pending' | 'done';
 interface UITask { id: string; name: string; pts: number; state: TaskState; }
@@ -56,13 +57,21 @@ export default function ChildHomeScreen() {
   const [selectedTask, setSelectedTask] = useState<UITask | null>(null);
   const ptsAnim = useRef(new Animated.Value(1)).current;
 
+  const { data: rewardsData } = useApiData(() => rewardsApi.list(), []);
+
   const tasks: UITask[] = (tasksData ?? []).map(taskToUI);
   const points   = balanceData?.balance ?? 0;
   const streak   = streakData?.currentStreak ?? 0;
 
-  const nextRewardName = 'Soirée TV';
-  const nextRewardCost = 100;
-  const progress       = Math.min(1, points / nextRewardCost);
+  // Prochaine récompense : la moins chère que l'enfant ne peut pas encore payer
+  const nextReward = (rewardsData ?? [])
+    .filter(r => r.status === 'available' && r.cost > points)
+    .sort((a, b) => a.cost - b.cost)[0]
+    ?? (rewardsData ?? []).sort((a, b) => a.cost - b.cost)[0];
+  const nextRewardName = nextReward?.title ?? '—';
+  const nextRewardCost = nextReward?.cost ?? 100;
+  const nextRewardEmoji = nextReward?.emoji ?? '🎁';
+  const progress       = nextRewardCost > 0 ? Math.min(1, points / nextRewardCost) : 1;
   const doneCount      = tasks.filter(t => t.state === 'done').length;
 
   function bumpPts() {
@@ -131,7 +140,7 @@ export default function ChildHomeScreen() {
           </View>
           {/* Progress to next reward */}
           <View style={styles.progressWrap}>
-            <Text style={{ fontSize: 18 }}>📺</Text>
+            <Text style={{ fontSize: 18 }}>{nextRewardEmoji}</Text>
             <View style={styles.progressInfo}>
               <Text style={styles.progressName}>{nextRewardName}</Text>
               <View style={styles.progressTrack}>

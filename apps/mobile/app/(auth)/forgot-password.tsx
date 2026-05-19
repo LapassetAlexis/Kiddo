@@ -29,7 +29,7 @@ export default function ForgotPasswordScreen() {
     }
     setLoading(true);
     try {
-      await authApi.forgotPassword(email.trim());
+      await authApi.forgotPassword(email.trim().toLowerCase());
       setCode('');
       setStep('code');
     } catch {
@@ -41,7 +41,7 @@ export default function ForgotPasswordScreen() {
 
   async function resendCode() {
     setResending(true);
-    try { await authApi.forgotPassword(email.trim()); } catch {}
+    try { await authApi.forgotPassword(email.trim().toLowerCase()); } catch {}
     setResending(false);
     showModal({ icon: '📧', title: 'Code renvoyé', message: `Un nouveau code a été envoyé à ${email}.`, buttons: [{ label: 'OK', style: 'default' }] });
   }
@@ -54,7 +54,7 @@ export default function ForgotPasswordScreen() {
     }
     setLoading(true);
     try {
-      await authApi.verifyResetCode(email.trim(), code);
+      await authApi.verifyResetCode(email.trim().toLowerCase(), code);
       setNewPwd('');
       setConfirmPwd('');
       setStep('password');
@@ -77,7 +77,7 @@ export default function ForgotPasswordScreen() {
     }
     setLoading(true);
     try {
-      await authApi.resetPassword(email.trim(), code, newPwd);
+      await authApi.resetPassword(email.trim().toLowerCase(), code, newPwd);
     } catch {
       showModal({ icon: '❌', title: 'Erreur', message: 'Impossible de réinitialiser le mot de passe.' });
       setLoading(false);

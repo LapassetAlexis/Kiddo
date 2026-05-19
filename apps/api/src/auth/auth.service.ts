@@ -84,6 +84,7 @@ export class AuthService {
   // ── Registration & email verification ──────────────────────────────────────
 
   async register(name: string, email: string, password: string) {
+    email = email.toLowerCase().trim();
     const existing = await this.families.findOne({ where: { email } });
     if (existing) throw new ConflictException('Cette adresse e-mail est déjà utilisée.');
 
@@ -99,6 +100,7 @@ export class AuthService {
   }
 
   async verifyEmail(email: string, code: string) {
+    email = email.toLowerCase().trim();
     const record = await this.emailVerifs.findOne({
       where: { email, code },
       order: { createdAt: 'DESC' },
@@ -118,6 +120,7 @@ export class AuthService {
   }
 
   async resendVerification(email: string) {
+    email = email.toLowerCase().trim();
     const family = await this.families.findOne({ where: { email } });
     // Return the same generic message whether the family exists or not (no enumeration)
     if (!family) {
@@ -133,6 +136,7 @@ export class AuthService {
   // ── Password reset ─────────────────────────────────────────────────────────
 
   async forgotPassword(email: string) {
+    email = email.toLowerCase().trim();
     const family = await this.families.findOne({ where: { email } });
     // Generic response to prevent account enumeration
     if (family) {
@@ -143,6 +147,7 @@ export class AuthService {
   }
 
   async verifyResetCode(email: string, code: string) {
+    email = email.toLowerCase().trim();
     const record = await this.pwdResets.findOne({
       where: { email, code },
       order: { createdAt: 'DESC' },
@@ -156,6 +161,7 @@ export class AuthService {
   }
 
   async resetPassword(email: string, code: string, newPassword: string) {
+    email = email.toLowerCase().trim();
     const record = await this.pwdResets.findOne({
       where: { email, code },
       order: { createdAt: 'DESC' },
@@ -178,6 +184,7 @@ export class AuthService {
   // ── Existing login methods ─────────────────────────────────────────────────
 
   async parentLogin(email: string, password: string) {
+    email = email.toLowerCase().trim();
     const family = await this.families.findOne({ where: { email } });
     if (!family || !(await bcrypt.compare(password, family.passwordHash))) {
       throw new UnauthorizedException('Identifiants invalides');

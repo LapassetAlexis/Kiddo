@@ -16,7 +16,7 @@ export class FamiliesService {
     const exists = await this.repo.findOne({ where: { email } });
     if (exists) throw new ConflictException('Email déjà utilisé');
     const passwordHash = await bcrypt.hash(password, 12);
-    return this.repo.save(this.repo.create({ email, passwordHash }));
+    return this.repo.save(this.repo.create({ email, passwordHash, name }));
   }
 
   async findById(id: string) {

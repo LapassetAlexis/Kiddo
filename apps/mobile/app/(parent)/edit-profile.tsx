@@ -2,20 +2,28 @@ import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, KeyboardAvoidingView, Platform,
 } from 'react-native';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
+import { familiesApi } from '@/lib/api/families';
 
 export default function EditProfileScreen() {
-  const [name,        setName]        = useState('Marie Dupont');
-  const [email,       setEmail]       = useState('marie.dupont@gmail.com');
+  const [name,        setName]        = useState('');
+  const [email,       setEmail]       = useState('');
   const [currentPwd,  setCurrentPwd]  = useState('');
   const [newPwd,      setNewPwd]      = useState('');
   const [confirmPwd,  setConfirmPwd]  = useState('');
   const [loading,     setLoading]     = useState(false);
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
+
+  useEffect(() => {
+    familiesApi.getMe().then(p => {
+      setName(p.name ?? '');
+      setEmail(p.email ?? '');
+    }).catch(() => {});
+  }, []);
 
   async function saveProfile() {
     if (!name.trim()) {

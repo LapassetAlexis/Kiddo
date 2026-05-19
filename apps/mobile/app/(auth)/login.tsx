@@ -15,7 +15,7 @@ export default function LoginScreen() {
     if (!email || !password) return;
     setLoading(true);
     try {
-      await loginParent(email.trim(), password);
+      await loginParent(email.trim().toLowerCase(), password);
       router.replace('/(parent)/dashboard');
     } catch (err) {
       const msg = err instanceof ApiError

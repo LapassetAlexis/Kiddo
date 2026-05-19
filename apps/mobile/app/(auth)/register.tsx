@@ -46,7 +46,7 @@ export default function RegisterScreen() {
 
     setLoading(true);
     try {
-      await authApi.register(name.trim(), email.trim(), password);
+      await authApi.register(name.trim(), email.trim().toLowerCase(), password);
       setCode('');
       setStep(3);
     } catch (err) {
@@ -63,7 +63,7 @@ export default function RegisterScreen() {
     }
     setLoading(true);
     try {
-      const { accessToken } = await authApi.verifyEmail(email.trim(), code);
+      const { accessToken } = await authApi.verifyEmail(email.trim().toLowerCase(), code);
       await authApi.saveToken(accessToken);
       showModal({
         icon: '🎉',
@@ -80,7 +80,7 @@ export default function RegisterScreen() {
 
   async function resendCode() {
     setResending(true);
-    try { await authApi.resendVerification(email.trim()); } catch {}
+    try { await authApi.resendVerification(email.trim().toLowerCase()); } catch {}
     setResending(false);
     showModal({ icon: '📧', title: 'Code renvoyé', message: `Un nouveau code a été envoyé à ${email}.`, buttons: [{ label: 'OK', style: 'default' }] });
   }

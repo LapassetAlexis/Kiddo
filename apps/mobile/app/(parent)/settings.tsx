@@ -8,6 +8,7 @@ import { Colors, Radii, Spacing } from '@/constants/theme';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { childrenApi } from '@/lib/api/children';
+import { familiesApi } from '@/lib/api/families';
 import { useApiData } from '@/lib/useApiData';
 import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
 
@@ -18,6 +19,7 @@ export default function SettingsScreen() {
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
   const { logout } = useAuth();
 
+  const { data: profileData } = useApiData(() => familiesApi.getMe(), []);
   const { data: childrenData, loading: childrenLoading, error: childrenError, refresh: childrenRefresh } =
     useApiData(() => childrenApi.list(), []);
 
