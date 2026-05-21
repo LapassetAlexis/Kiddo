@@ -1,27 +1,6 @@
-import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
-import Constants from 'expo-constants';
 
-// Dérive l'IP de l'API depuis l'IP de Metro Bundler.
-// - Vrai appareil Android/iOS : Metro tourne sur l'IP du Mac (ex: 192.168.1.221:8081)
-// - Émulateur Android         : Metro sur 10.0.2.2:8081
-// - Web / simulateur iOS      : localhost
-const getBaseUrl = (): string => {
-  const hostUri = Constants.expoConfig?.hostUri // ex: "192.168.1.221:8081"
-    ?? (Constants as any).manifest?.debuggerHost
-    ?? (Constants as any).manifest2?.extra?.expoGo?.debuggerHost;
-
-  if (hostUri) {
-    const host = hostUri.split(':')[0]; // "192.168.1.221"
-    return `http://${host}:3000/api`;
-  }
-
-  // Fallback statiques
-  if (Platform.OS === 'android') return 'http://10.0.2.2:3000/api';
-  return 'http://localhost:3000/api';
-};
-
-export const BASE_URL = getBaseUrl();
+export const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'https://kidpoints.onrender.com/api';
 const TOKEN_KEY        = 'kidpoints_jwt';
 const PARENT_TOKEN_KEY = 'kidpoints_parent_jwt';
 
