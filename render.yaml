@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: kidpoints-api
+    env: node
+    rootDir: apps/api
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm run start:prod
+    autoDeploy: true
