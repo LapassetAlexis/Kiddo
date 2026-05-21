@@ -49,17 +49,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (token) {
           const payload = parseJwt(token);
           if (payload && payload.exp * 1000 > Date.now()) {
-            const me = await authApi.me().catch(() => null);
-            setUser({
-              id:         payload.sub,
-              role:       payload.role,
-              email:      payload.email ?? me?.email,
-              familyId:   payload.familyId ?? me?.familyId,
-              name:       me?.name,
-              avatar:     me?.avatar,
-              color:      (me as any)?.color,
-              inviteCode: (me as any)?.inviteCode,
-            });
+            if (payload.role === 'child') {
+              const parentToken = await getParentToken();
+              const parentPayload = parentToken ? parseJwt(parentToken) : null;
+              if (parentPayload && parentPayload.exp * 1000 > Date.now()) {
+                await saveToken(parentToken);
+                await clearParentToken();
+                const me = await authApi.me().catch(() => null);
+                setUser({
+                  id: parentPayload.sub,
+                  role: 'parent',
+                  email: parentPayload.email ?? me?.email,
+                  familyId: parentPayload.familyId ?? me?.familyId,
+                  name: me?.name,
+                  avatar: me?.avatar,
+                  color: (me as any)?.color,
+                  inviteCode: (me as any)?.inviteCode,
+                });
+              } else {
+                await clearToken();
+                await clearParentToken();
+              }
+            } else {
+              const me = await authApi.me().catch(() => null);
+              setUser({
+                id:         payload.sub,
+                role:       payload.role,
+                email:      payload.email ?? me?.email,
+                familyId:   payload.familyId ?? me?.familyId,
+                name:       me?.name,
+                avatar:     me?.avatar,
+                color:      (me as any)?.color,
+                inviteCode: (me as any)?.inviteCode,
+              });
+            }
           } else {
             await clearToken();
           }
