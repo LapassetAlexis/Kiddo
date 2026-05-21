@@ -1,9 +1,9 @@
-# KidPoints — Commandes de développement
+# Kiddo — Commandes de développement
 .PHONY: help dev api mobile test test-api test-mobile test-e2e db db-stop
 
 help:
 	@echo ""
-	@echo "  KidPoints — Commandes disponibles"
+	@echo "  Kiddo — Commandes disponibles"
 	@echo ""
 	@echo "  Dev"
 	@echo "    make db          Démarrer PostgreSQL (Docker)"

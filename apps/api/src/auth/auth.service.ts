@@ -38,7 +38,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest:   ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey:      config.get<string>('JWT_SECRET') ?? 'kidpoints-dev-secret',
+      secretOrKey:      config.get<string>('JWT_SECRET') ?? 'kiddo-dev-secret',
     });
   }
 

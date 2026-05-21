@@ -1,12 +1,12 @@
 export default {
   expo: {
-    name: 'KidPoints',
-    slug: 'kidpoints',
+    name: 'Kiddo',
+    slug: 'kiddo',
     version: '0.1.0',
     orientation: 'portrait',
     icon: './assets/icon.png',
     userInterfaceStyle: 'dark',
-    scheme: 'kidpoints',
+    scheme: 'kiddo',
     splash: {
       image: './assets/splash-icon.png',
       resizeMode: 'contain',
@@ -14,7 +14,7 @@ export default {
     },
     ios: {
       supportsTablet: false,
-      bundleIdentifier: 'com.kidpoints.app',
+      bundleIdentifier: 'com.kiddo.app',
       googleServicesFile: process.env.GOOGLE_SERVICES_PLIST ?? './GoogleService-Info.plist',
     },
     android: {
@@ -22,7 +22,7 @@ export default {
         foregroundImage: './assets/adaptive-icon.png',
         backgroundColor: '#18181e',
       },
-      package: 'com.kidpoints.app',
+      package: 'com.kiddo.app',
       googleServicesFile: './google-services.json',
       permissions: ['android.permission.RECORD_AUDIO'],
     },
@@ -42,7 +42,7 @@ export default {
     extra: {
       router: {},
       eas: {
-        projectId: '65f463c6-06ef-4019-b84e-4a4be1bd4197',
+        "projectId": "d9538d87-60f5-4888-b1a7-b62d6f9a335f"
       },
     },
     owner: 'alapasset',

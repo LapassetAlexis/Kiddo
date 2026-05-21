@@ -94,7 +94,7 @@ export default function RegisterScreen() {
         {/* Logo */}
         <View style={styles.logoWrap}>
           <Text style={styles.logoEmoji}>⭐</Text>
-          <Text style={styles.logoTitle}>KidPoints</Text>
+          <Text style={styles.logoTitle}>Kiddo</Text>
           <Text style={styles.logoSub}>Crée ton compte parent</Text>
         </View>
 

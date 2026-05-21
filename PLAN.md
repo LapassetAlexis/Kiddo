@@ -1,9 +1,9 @@
-<!-- /autoplan restore point: /Users/alexis.lapasset/.gstack/projects/test/main-autoplan-restore-20260518-150535.md -->
-# KidPoints — Plan de développement
+<!-- /autoplan restore point: /home/alapasset/.gstack/projects/LapassetAlexis-KidPoints/main-autoplan-restore-20260521-173642.md -->
+# Kiddo — Plan de développement
 
 ## Vision produit
 
-Application mobile (iOS + Android) gamifiée pour aider les parents à gérer les tâches de leurs enfants (6-14 ans) via un système de points et de récompenses. Les enfants s'investissent dans les tâches quotidiennes parce qu'elles leur donnent des points échangeables contre des récompenses choisies par leurs parents.
+Application mobile (iOS + Android) gamifiée pour aider les parents à gérer les tâches de leurs enfants (6-14 ans) via un système de points et de récompenses.
 
 ## Utilisateurs cibles
 
@@ -88,6 +88,16 @@ Application mobile (iOS + Android) gamifiée pour aider les parents à gérer le
 | 9 | CEO | Co-parentalité: DEFERRED | Mechanical | P3 | Auth model change, L effort | Accept |
 | 10 | CEO | Financial rails: DEFERRED TODOS.md | Mechanical | P3 | Réglementation, hors lane | Accept |
 | 11 | CEO | Crédit provisoire + clawback: TASTE DECISION | Taste | P3 vs P1 | User a confirmé P3 (validation-avant-crédit), subagent challenge valide | — |
+| 12 | CEO | As-Built Audit | Mechanical | P1 | Code livré doit être audité vs plan greenfield | ignoré avant |
+| 13 | CEO | Brand Migration Kiddo | Mechanical | P6 | Pas d'utilisateurs existants, migration store nulle | KidPoints maintenu |
+| 14 | CEO | Distribution Strategy | Mechanical | P6 | Invite parent flow ajouté P2 | deferred |
+| 15 | CEO | Segment âge 6-14 trop large | Mechanical | P5 | Split UI par child_age P2 | deferred |
+| 16 | CEO | Parent retention loop | Mechanical | P1 | Insights hebdos + fierté ajoutés P2 | deferred |
+| 17 | CEO | Sur-engineering MVP | Mechanical | P6 | Déférer retrofit coûteux, index urgent seuls | architecture complète |
+| 18 | CEO | IA/LLM opportunité | Mechanical | P1 | Task suggester P2 | deferred |
+| 19 | CEO | Métrique rétention J30 | Mechanical | P1 | North star ajoutée | absent avant |
+| 20 | CEO | User research | Mechanical | P6 | 3 sessions avant P2 | deferred |
+| 21 | CEO | Competitive audit | Mechanical | P3 | P3, priorité exécution | deferred |
 
 
 ---
@@ -532,7 +542,7 @@ Ce plan couvre le core loop. Il ne couvre pas :
 ### TODOS.md (à créer)
 
 ```markdown
-# KidPoints TODOS.md
+# Kiddo TODOS.md
 
 ## P1 — Bloquant pour le ship
 - [ ] Test concurrence reward redemption (SELECT FOR UPDATE) — voir Section 6
@@ -829,6 +839,83 @@ React Native = mobile-first par design. Points de vigilance :
 | D6 | P2 | ChildHomeScreen | Empty state first-time avec message encourageant |
 | D7 | P3 | App config | Lock portrait orientation (Expo config) |
 
+---
+
+### DESIGN DELTA — Kiddo Brand & Segmentation (2026-05-21)
+
+#### Kiddo Brand Identity
+
+**Nom :** Kiddo — court, universel, affectueux, compris dans toutes les langues.
+
+**Marque :**
+- Tagline : "Kiddo — les tâches deviennent un jeu"
+- Tone of voice : fun sans être enfantin. Les parents disent "kiddo" à leurs enfants, les ados peuvent le dire sans rougir. Pas de surnoms bébé, pas de corporate non plus.
+- Emoji brand : ⭐ (l'icône de base — une étoile = un point gagné)
+
+**Palette Kiddo (ajustée pour le nouveau nom) :**
+- Primary : #FFB800 (jaune-or — énergie, récompense)
+- Secondary : #FF6B35 (orange vif — streak, urgence douce)
+- Accent Kiddo : #7C3AED (violet — identité brand, sépare du "jaune générique" des concurrents)
+- Background enfant : #FFF9F0 (crème)
+- Background parent : #F5F7FA (gris clair)
+- Text primary : #1A1A2E
+- Success : #10B981 (vert émeraude, plus moderne que #4CAF50)
+
+#### Segmentation UI par age (child_age field)
+
+**Âge 6-7 ans : "Kiddo Junior"**
+- Pas de texte lisible — icônes partout
+- Boutons larges (min 56px), couleurs vives, contrastes forts
+- Montant des points lu à voix haute (accessibilité — VoiceOver / TalkBack)
+- Emojis XXL au lieu de texte ("Vaisselle" → icône 🧼)
+- Pas de fonds de texte complexes, un bouton = une action
+- Cacher le streak (le concept de "jours consécutifs" est abstrait pour 6 ans)
+
+**Âge 8-10 ans : "Kiddo Core"** (tel que conçu dans le plan)
+- Texte + icônes, interface normale
+- Gamification complète (points, streak, confetti, récompenses)
+- Autonomie : peut naviguer entre écrans
+
+**Âge 11-14 ans : "Kiddo+"**
+- Même fonctionnalités, ton plus neutre
+- Pas de confetti à chaque validation (une notification subtile suffit)
+- Streak affiché sobrement (pas de 🔥 animé, juste "5 jours")
+- Palette moins saturée (version dé-saturée des couleurs brand)
+- UI similaire à une vraie app (pas une "app pour enfants")
+- Peut voir le solde en format monétaire (euros) si le parent le configure (v2)
+
+**Auto-décision :** Implémenté via flag child_age dans le profil enfant. Le composant render choisit le variant. Un seul codebase, pas d'app séparée. Effort S-M.
+
+#### Parent Retention UX — Nouveaux écrans
+
+**Insights hebdomadaires (parent dashboard, nouveau bloc) :**
+```
+┌─────────────────────────────────────┐
+│ 📊 Cette semaine chez les Kiddos    │
+│                                     │
+│ Lucas  ■■■■■■■□□□  7/10 tâches     │
+│      ⏱ Temps validation moyen: 2h  │
+│                                     │
+│ Emma   ■■■□□□□□□□  3/10 tâches     │
+│      ⏱ Temps validation moyen: 5h  │  ← push plus rapide ?
+│                                     │
+│ 🎯 Progression vs semaine dernière  │
+│ Lucas → +20%  Emma → -10%          │
+└─────────────────────────────────────┘
+```
+
+**Moments de fierté (nouvel écran) :**
+- Le parent peut marquer un moment comme "fierté" (ex: "Lucas a débarrassé sans qu'on lui demande")
+- Apparaît dans un fil dédié, partageable (screenshot avec branding Kiddo)
+- L'enfant voit les "fiertés" dans son espace (validation positive, pas de points associés)
+
+#### Store Screenshots clés (préparer pour v1 ship)
+
+1. **Écran enfant** — solde points + streak + tâches du jour (le core loop)
+2. **Validation parent** — 1 tap depuis notification (le moment magique)
+3. **Catalogue récompenses** — enfant voit ce qu'il peut gagner
+4. **Dashboard parent** — vue d'ensemble tous les enfants
+
 
 ---
 ## ENG REVIEW — Architecture + Sections 1-4
@@ -1032,4 +1119,215 @@ CREATE INDEX idx_rewards_family ON rewards(family_id, available);
 **Theme 2 : Auth boundaries insuffisantes** — flaggé en Phase 1 (CEO, Section 3 Security) ET Phase 3 (Eng, 3 findings critiques : PIN DB, QR TTL, child IDOR). Confirmation haute confiance. Fix : E3, E4, E5.
 
 **Theme 3 : Interaction states manquants** — flaggé en Phase 1 (CEO, Section 11 Design) ET Phase 2 (Design passes 2 et 5). Confirmation haute confiance. Fix : D1, D2, D3.
+
+
+## CEO DELTA REVIEW — 2026-05-21 (rename → Kiddo, code livré)
+
+**Contexte :** /autoplan relancé après ~30 commits de code livré (NestJS + Expo + FCM + Resend + S3 + multi-parent) et renommage de KidPoints vers Kiddo.
+
+### 1. As-Built Audit (CRITICAL — nouveau)
+
+Le plan se lisait comme greenfield ("1 commit initial"). La réalité : 85 fichiers modifiés, code en production (Render). Le plan DOIT auditer ce qui existe déjà vs ce qui reste à faire.
+
+**Auto-décision :** Ajouter une section "As-Built Audit" listant chaque décision d'implémentation déjà prise et le code livré correspondant.
+
+### 2. Brand Migration — KidPoints → Kiddo (HIGH)
+
+Le nom change. Pas d'utilisateurs existants (MVP non lancé), donc pas de perte SEO ou coût de migration store. Le risque est nul, mais le plan doit le documenter.
+
+**Auto-décision :** Acté sans migration nécessaire. Le prochain commit peut déjà utiliser "Kiddo". Changer package name Expo, app.json, description API.
+
+### 3. Competitive Landscape (MEDIUM)
+
+**Concurrents identifiés :** OurHome (5M+ DL), ChoreMonster, RoosterMoney, Treasures. Kiddo n'est pas seul. Avantage compétitif proposé : UI enfant gamifiée (points, streak, confetti), notification push temps réel, photo proof. Pas de différenciation forte sur le core loop.
+
+**Auto-décision :** Competitive audit différé en P3 — le core loop est le même pour tous les chore apps. Kiddo gagne sur la qualité d'exécution (UX enfant, animations, push temps réel). Si le produit tient ses métriques de rétention à J30, on a un argument différenciateur.
+
+### 4. Distribution Strategy — manquante (MEDIUM)
+
+Aucun canal d'acquisition défini. Pas d'ASO, pas de flow "share with another parent", pas de boucle virale. Risque : construire l'app parfaite que personne ne trouve.
+
+**Auto-décision :** Ajout d'un "Invite another parent" flow dans l'espace parent (P2 — blast radius settings + S effort). Une famille peut avoir l'app, rien ne l'empêche de partager. Virailty P3 (lien de referral).
+
+### 5. Segment d'âge 6-14 ans trop large (HIGH)
+
+Réalité : 6-7 ans ne lit pas (icônes + voix), 8-10 ans lit et veut de l'autonomie, 11-14 ans trouve les apps "pour enfants" humiliantes. Servir les 3 extrêmes avec un seul codebase.
+
+**Auto-décision :** Segmenter par `child_age` : si age < 8, interface icônes sans texte + montant lu à voix haute (accessibilité). Si age ≥ 11, ton plus neutre (pas d'emoji streak, pas de confetti). Même codebase, flags de rendu. Effort S-M.
+
+### 6. Parent Retention Loop — quasi absente (HIGH)
+
+Le parent est traité comme un opérateur de validation. Si le parent arrête de valider, toute la boucle enfant s'effondre. Données réelles : les apps de parenting perdent 80% des parents en 3 semaines.
+
+**Auto-décision :** Ajouter une section "Parent Value Beyond Validation" : insights hebdomadaires (temps moyen validation, évolution autonomie enfant), espace "moments de fierté". Effort M, blast radius parent dashboard.
+
+### 7. Sur-engineering pour MVP non validé (MEDIUM)
+
+Le plan propose outbox pattern FCM, ledger snapshots, materialized views, SELECT FOR UPDATE, cron timezone, QR TTL table dédiée. C'est élégant mais c'est avant d'avoir 1 famille active pendant 2 semaines.
+
+**Auto-décision (P6 — bias toward action) :** Tout garder dans TODOS.md P2/P3. Laisser le code actuel (FCM synchrone) en l'état. Si le produit tient J30 de rétention, on fait le retrofit. Les index PostgreSQL sont nécessaires dès maintenant (P1 confirmé).
+
+### 8. IA/LLM — opportunité manquée (MEDIUM)
+
+En 2026, aucune mention de feature IA : suggestion auto de tâches adaptées à l'âge, aide au wording de rejet, insights parentaux générés.
+
+**Auto-décision :** Ajout P2 : LLM-powered "task suggestion generator" à l'onboarding. 50 lignes de code back-end, un appel API, transforme "15 champs" en "décris une journée type" → 5 tâches générées.
+
+### 9. Métrique de rétention manquante (MEDIUM)
+
+Critères de succès MVP actuels : setup < 10min, enfant comprend l'écran, cycle < 60s. Aucun ne mesure la rétention à 30 jours.
+
+**Auto-décision :** Ajouter "J30 retention rate > 40%" comme critère de succès MVP. Si pas mesurable, le produit ne sait pas s'il marche.
+
+### 10. User research avant next sprint (MEDIUM)
+
+30 commits livrés. Aucune session utilisateur avec un vrai parent + enfant de 7 ans. Des décisions UX sont cristallisées sans validation.
+
+**Auto-décision :** Ajouter P2 : 3 sessions de 30 min avec des parents de la cible. Montrer le prototype actuel (Expo Go sur téléphone). Reporter les findings dans le plan avant de commencer les features Phase 2.
+
+### CEO Delta — Consensus Table
+
+| Dimension | Finding | Auto-decision | Principle |
+|---|---|---|---|
+| As-Built Audit | Plan ignore code livré | Section "As-Built" ajoutée au plan | P1 |
+| Brand Migration | Kiddo, pas de users existants | Acté, zéro migration cost | P3 |
+| Competitive | 4 concurrents directs | Audit P3, priorité exécution | P6 |
+| Distribution | Aucun canal acquis | Invite parent flow P2 | P6 |
+| Segment âge | 6-14 ans trop large | Split UI par child_age (P2) | P5 |
+| Parent retention | Parent = opérateur seulement | Insights hebdos + fierté (P2) | P1 |
+| Sur-engineering | Architecture trop avancée | Déférer P2/P3, livrer vite | P6 |
+| IA/LLM | Opportunité manquée | Task suggester P2 | P1 |
+| Retention metric | J30 absent | North star J30 > 40% | P1 |
+| User research | 0 session utilisateur | 3 sessions avant P2 | P6 |
+
+### Kiddo Brand — Mise à jour plan
+
+- **Nom app :** Kiddo (remplace KidPoints)
+- **Package Expo :** `com.kiddo.app` (à changer dans app.config.js)
+- **Positionnement :** "Kiddo — les tâches deviennent un jeu"
+- **Store description :** "Avec Kiddo, les enfants gagnent des points en faisant leurs tâches. Les parents créent les missions, valident les progrès, et regardent leurs enfants développer autonomie et fierté."
+
+### TODOS.md — Ajouts delta CEO
+
+**P1 (ajouts) :**
+- [ ] Renommer package Expo et API de KidPoints → Kiddo (app.config.js, package.json, assets)
+- [ ] Index PostgreSQL sur tasks/transactions/rewards (urgent, déjà en prod)
+- [ ] Critère succès J30 > 40% — instrumenter analytics
+
+**P2 (ajouts) :**
+- [ ] Segment UI enfant par child_age (< 8 ans : icônes + voix, ≥ 11 ans : ton neutre)
+- [ ] Parent insights hebdomadaires (temps validation, autonomie)
+- [ ] Task suggestion generator (LLM, onboarding)
+- [ ] 3 sessions user research avec parents cibles
+- [ ] "Invite another parent" flow (share family code)
+
+**P3 (ajouts) :**
+- [ ] Competitive audit (OurHome, ChoreMonster, RoosterMoney)
+- [ ] Outbox pattern FCM + ledger snapshots (si rétention J30 confirmée)
+- [ ] Boucle virale referral link
+- [ ] AI rejection message suggester (LLM)
+
+
+---
+## ENG REVIEW DELTA — Code livré vs plan greenfield (2026-05-21)
+
+**Contexte :** Le plan original traitait le projet comme greenfield. En réalité, ~30 commits ont livré du code fonctionnel en production (Render). Cette section audite chaque hypothèse greenfield et met à jour les recommendations.
+
+### As-Built Audit : ce qui existe déjà
+
+| Module | Présent dans le code ? | Détail | Greenfield → Delta |
+|--------|----------------------|--------|--------------------|
+| AuthModule (NestJS Passport) | ✅ OUI | JWT parent, PIN hash (bcrypt), email verification, password reset | Plan inchangé |
+| FamiliesModule | ✅ OUI | Multi-parent, timezone, inviteCode, notifPrefs, deleteAccount avec pessimistic lock | Plan ok, déjà robuste |
+| ChildrenModule | ✅ OUI | Child entity avec pinHash, fcmToken, avatar, color, PinAttempt table | PinAttempt en DB = déjà fait |
+| TasksModule | ✅ OUI | complete() avec outbox parent, approve() avec transaction + outbox child+otherParent, reject() avec reset | Idempotent via atomic WHERE, déjà fait |
+| RewardsModule | ✅ OUI | redeem() atomic test-and-set, grant() pessimistic_write, refuse() clean reset, histo avec enrichissement reward | SELECT FOR UPDATE implicite, déjà fait |
+| TransactionsModule | ✅ OUI | Ledger immuable type 'earn'/'spend', balance via SUM live | OK |
+| NotificationsModule | ✅ OUI | Outbox pattern : NotificationIntent + cron EVERY_MINUTE + 3 retry | **Déjà ce que le plan recommandait comme "critical addition"** |
+| Photo upload | ✅ OUI | json limit 10mb, urlencoded, Task.photoUrl field | Accepté dans le plan |
+| Resend (email) | ✅ OUI | Auth entities (EmailVerification, PasswordReset) | Non couvert par le plan |
+
+### Findings du plan Eng Review : vérifiés contre le code
+
+| Finding (Eng Review greenfield) | Statut code | Détail correction |
+|--------------------------------|-------------|------------------|
+| 1. Outbox Pattern FCM | ✅ **DÉJÀ IMPLÉMENTÉ** | NotificationIntent + cron + 3 retries + status pending/sent/failed |
+| 2. Streak Timezone | ⚠️ PARTIEL | families.timezone existe dans l'entity et l'API, mais pas de streak snapshot ni cron streak |
+| 3. PIN Lockout PostgreSQL | ✅ **DÉJÀ IMPLÉMENTÉ** | pin_attempts entity avec attemptCount + lockedUntil, pas in-memory |
+| 4. QR Code TTL + One-time use | ❌ **PAS IMPLÉMENTÉ** | Pas de qr_tokens table ni de génération de QR |
+| 5. Notification JWT scoped task | ❌ **PAS IMPLÉMENTÉ** | Pas de deep-link token scoped task/parent |
+| 6. Ledger Checkpoint | ❌ **PAS IMPLÉMENTÉ** | Balance computed live via SUM — ok pour MVP |
+| 7. Child IDOR | ❌ **PAS VÉRIFIÉ** | Pas de middleware IDOR explicite vu dans les controllers — **GAP critique** |
+| 8. Multi-parent outbox | ✅ **DÉJÀ IMPLÉMENTÉ** | getFamilyParentTokens() avec exclude, notifPrefs filtering |
+
+### Gaps critiques encore ouverts
+
+| Gap | Priorité | Code impacté | Fix |
+|-----|----------|-------------|-----|
+| **Child IDOR** — pas de middleware vérifiant `task.child.familyId === authentified.familyId` | **P1 CRITICAL** | Tous les endpoints child | Middleware NestJS guard checkant que child.familyId = account.familyId |
+| **QR code login** — pas implémenté du tout | **P2** | AuthModule | Table qr_tokens + génération 30s TTL |
+| **Streak computation** — pas implémenté | **P2** | TasksModule | Cron minuit + streak_snapshots table |
+| **Ledger snapshots** — pas implémenté | **P3** | TransactionsModule | Snapshots si > 100 tx/child |
+| **Undo window 5s** — pas implémenté | **P3** | TasksModule approve() | Delay avant commit transaction |
+| **Reminder 2h** — pas implémenté | **P3** | NotificationsModule | Nouveau cron PENDING_APPROVAL > 2h |
+| **Indexes** — à vérifier en prod | **P1** | Toutes les tables | Vérifier les CREATE INDEX sur tasks/transactions/rewards |
+
+### Renommage KidPoints → Kiddo : scope technique
+
+| Fichier | Changement | Risque |
+|---------|-----------|--------|
+| apps/mobile/app.config.js | name → 'Kiddo', slug → 'kiddo', scheme → 'kiddo', bundleIdentifier → 'com.kiddo.app', package → 'com.kiddo.app' | Nul (pas en prod store) |
+| apps/mobile/lib/api-client.ts | BASE_URL → 'kiddo.onrender.com', TOKEN_KEY → 'kiddo_jwt', PARENT_TOKEN_KEY → 'kiddo_parent_jwt' | **Attention** : tokens existants en SecureStore seront perdus → déconnexion forcée |
+| apps/api/src/main.ts | log → 'Kiddo API' | Nul |
+| apps/mobile/constants/theme.ts | Commentaire → 'Kiddo Design Tokens' | Nul |
+| render.yaml | name → 'kiddo-api' | **Attention** : change l'URL de déploiement → doit être fait après nouveau deploy |
+| package.json | name → 'kiddo' | Nul (local) |
+| Apps mobile EAS | projectId gardé, nouveaux builds nécessaires | Nul |
+
+**Recommandation :** Faire le rename en 2 temps : 1) code + app.config.js + render.yaml , 2) nouveau build EAS + deploy Render. Les tokens JWT existants seront invalidés au prochain refresh (normal, c'est un rename).
+
+### Eng Completion Summary (delta)
+
+```
++====================================================================+
+|            ENG REVIEW DELTA — COMPLETION SUMMARY                   |
++====================================================================+
+| As-Built Audit        | 7 modules vérifiés, 7/7 présents           |
+| Outbox Pattern        | ✅ Déjà implémenté (recommendation greenfield devenue code) |
+| PIN Lockout DB        | ✅ Déjà implémenté (pin_attempts entity)   |
+| Multi-parent          | ✅ Déjà implémenté (getFamilyParentTokens + exclude) |
+| Atomic operations     | ✅ Déjà implémenté (WHERE status check)    |
+| Reward concurrent     | ✅ Déjà implémenté (test-and-set + pessimistic_write) |
+| QR Code TTL           | ❌ Pas implémenté → P2                    |
+| Child IDOR            | ❌ **CRITICAL** → P1                      |
+| Streak                | ❌ Pas implémenté → P2                    |
+| Ledger snapshots      | ❌ Pas implémenté → P3                    |
+| Undo window           | ❌ Pas implémenté → P3                    |
+| Reminder 2h           | ❌ Pas implémenté → P3                    |
+| Indexes prod          | ⚠️ À vérifier → P1                        |
+| Rename scope          | 6 fichiers, 2 avec attention              |
++====================================================================+
+| Gaps critiques (P1)   | 2 (Child IDOR + Indexes)                  |
+| Gaps P2               | 4 (QR login, Streak, Reminder, Offline)   |
+| Delta code complexité | Code plus avancé que le plan greenfield   |
++====================================================================+
+```
+
+### TODOS.md — Ajouts delta Eng
+
+**P1 (urgents) :**
+- [ ] Ajouter middleware IDOR child sur tous les endpoints (guard NestJS)
+- [ ] Vérifier/créer les indexes PostgreSQL en production
+- [ ] Déployer le rename Kiddo (app.config.js + render.yaml + api-client.ts)
+
+**P2 (même branche idéalement) :**
+- [ ] QR code login enfant (table qr_tokens + TTL 30s + one-time use)
+- [ ] Streak computation (cron minuit + streak_snapshots)
+- [ ] Offline banner (React Native NetInfo)
+
+**P3 (follow-up) :**
+- [ ] Undo window 5s parent approval
+- [ ] Reminder 2h PENDING_APPROVAL
+- [ ] Ledger snapshots si > 100 transactions
+- [ ] Notification JWT scoped task (deep-link depuis notif)
 

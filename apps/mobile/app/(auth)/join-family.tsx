@@ -102,7 +102,7 @@ export default function JoinFamilyScreen() {
         <View style={styles.logoWrap}>
           <Text style={styles.logoEmoji}>👨‍👩‍👧‍👦</Text>
           <Text style={styles.logoTitle}>Rejoindre</Text>
-          <Text style={styles.logoSub}>une famille KidPoints</Text>
+          <Text style={styles.logoSub}>une famille Kiddo</Text>
         </View>
 
         {/* Étapes */}

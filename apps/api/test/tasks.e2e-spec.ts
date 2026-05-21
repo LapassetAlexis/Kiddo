@@ -27,7 +27,7 @@ import { PasswordReset } from '../src/auth/entities/password-reset.entity';
 import { JwtService } from '@nestjs/jwt';
 
 const TEST_DB_URL =
-  process.env.DATABASE_URL_TEST ?? process.env.DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/kidpoints_test';
+  process.env.DATABASE_URL_TEST ?? process.env.DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/kiddo_test';
 
 const ALL_ENTITIES = [
   Family, ParentAccount, Child, PinAttempt,

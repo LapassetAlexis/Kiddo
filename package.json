@@ -1,9 +1,14 @@
 {
-  "name": "kidpoints",
+  "name": "kiddo",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "mobile": "cd apps/mobile && npx expo start",
     "api": "cd apps/api && npm run start:dev"
+  },
+  "dependencies": {
+    "expo": "^56.0.3",
+    "react": "19.2.6",
+    "react-native": "0.85.3"
   }
 }

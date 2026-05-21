@@ -217,7 +217,7 @@ export default function SettingsScreen() {
               <TouchableOpacity
                 style={styles.inviteBtn}
                 activeOpacity={0.7}
-                onPress={() => Share.share({ message: `Code famille KidPoints : ${profileData?.inviteCode}` })}
+                onPress={() => Share.share({ message: `Code famille Kiddo : ${profileData?.inviteCode}` })}
               >
                 <Text style={styles.inviteBtnText}>Copier / Partager</Text>
               </TouchableOpacity>
@@ -225,7 +225,7 @@ export default function SettingsScreen() {
                 style={[styles.inviteBtn, styles.inviteBtnSecondary]}
                 activeOpacity={0.7}
                 onPress={() => Share.share({
-                  message: `Rejoins notre famille sur KidPoints avec le code : ${profileData?.inviteCode}\n\nTélécharge l'app et va dans "Rejoindre une famille".`,
+                  message: `Rejoins notre famille sur Kiddo avec le code : ${profileData?.inviteCode}\n\nTélécharge l'app et va dans "Rejoindre une famille".`,
                 })}
               >
                 <Text style={[styles.inviteBtnText, { color: Colors.textDim }]}>Envoyer le lien</Text>
