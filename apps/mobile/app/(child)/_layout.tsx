@@ -2,10 +2,12 @@ import { Tabs } from 'expo-router';
 import { Text } from 'react-native';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ChildLayout() {
   const { user } = useAuth();
   const avatarEmoji = user?.avatar ?? '🧒';
+  const { bottom } = useSafeAreaInsets();
 
   return (
     <Tabs
@@ -15,8 +17,8 @@ export default function ChildLayout() {
           backgroundColor: Colors.bgNav,
           borderTopColor: Colors.border,
           borderTopWidth: 1,
-          height: 80,
-          paddingBottom: 16,
+          height: 64 + bottom,
+          paddingBottom: bottom + 8,
           paddingTop: 8,
         },
         tabBarActiveTintColor: Colors.gold,

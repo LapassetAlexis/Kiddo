@@ -127,7 +127,7 @@ describe('TaskCompleteSheet', () => {
 
   it('renders message for parent section label', () => {
     const { getByText } = renderSheet(mockTask);
-    expect(getByText('Message pour papa/maman')).toBeTruthy();
+    expect(getByText('Message pour ton gardien')).toBeTruthy();
   });
 
   it('renders proof photo section label', () => {

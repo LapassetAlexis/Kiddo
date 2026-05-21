@@ -126,7 +126,7 @@ export default function ChildProfileScreen() {
     showModal({
       icon: '🔢',
       title: 'Changer de code',
-      message: 'Demande à papa ou maman de te changer ton code secret.',
+      message: 'Demande à ton gardien de te changer ton code secret.',
       buttons: [{ label: 'OK', style: 'default' }],
     });
   }
@@ -134,8 +134,8 @@ export default function ChildProfileScreen() {
   function switchToParent() {
     showModal({
       icon: '👨‍👩‍👧',
-      title: 'Espace parent',
-      message: 'Papa ou maman devra entrer son mot de passe.',
+      title: 'Espace gardien',
+      message: 'Ton gardien devra entrer son mot de passe.',
       buttons: [
         {
           label: 'Continuer',
@@ -213,7 +213,7 @@ export default function ChildProfileScreen() {
           <View style={styles.actionDivider} />
           <TouchableOpacity style={styles.actionRow} onPress={switchToParent} activeOpacity={0.7}>
             <Text style={styles.actionIcon}>👨‍👩‍👧</Text>
-            <Text style={styles.actionText}>Espace parent</Text>
+            <Text style={styles.actionText}>Espace gardien</Text>
             <Text style={styles.actionArrow}>›</Text>
           </TouchableOpacity>
         </View>

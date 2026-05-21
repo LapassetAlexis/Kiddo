@@ -64,7 +64,7 @@ export default function RewardsScreen() {
     showModal({
       icon: r.emoji,
       title: `Réclamer "${r.title}" ?`,
-      message: `Cela coûte ${r.cost} pts.\nPapa / Maman va recevoir ta demande et devra l'approuver.`,
+      message: `Cela coûte ${r.cost} pts.\nTon gardien va recevoir ta demande et devra l'approuver.`,
       buttons: [
         {
           label: 'Réclamer 🎉', style: 'default',
@@ -76,7 +76,7 @@ export default function RewardsScreen() {
               showModal({
                 icon: '⏳',
                 title: 'Demande envoyée !',
-                message: `Papa / Maman va valider ta récompense "${r.title}" très bientôt.`,
+                message: `Ton gardien va valider ta récompense "${r.title}" très bientôt.`,
                 buttons: [{ label: 'Super !', style: 'default' }],
               });
             } catch (e: any) {
@@ -115,7 +115,7 @@ export default function RewardsScreen() {
               <Text style={styles.pendingTitle}>
                 {pending.length} récompense{pending.length > 1 ? 's' : ''} en attente
               </Text>
-              <Text style={styles.pendingDesc}>Papa / Maman doit valider</Text>
+              <Text style={styles.pendingDesc}>Ton gardien doit valider</Text>
             </View>
           </View>
         )}

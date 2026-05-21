@@ -160,7 +160,7 @@ export default function CreateChildScreen() {
 
             {/* Prévisualisation */}
             <View style={styles.preview}>
-              <View style={[styles.previewAvatar, { backgroundColor: color + '33' }]}><Text style={{ fontSize: 32 }}>{avatar}</Text></View>
+              <View style={[styles.previewAvatar, { backgroundColor: color }]}><Text style={{ fontSize: 32 }}>{avatar}</Text></View>
               <View>
                 <Text style={styles.previewName}>{name || 'Prénom'}</Text>
                 <Text style={styles.previewPts}>⭐ 0 pts</Text>
@@ -184,7 +184,7 @@ export default function CreateChildScreen() {
             </Text>
 
             {/* Avatar + dots */}
-            <View style={[styles.pinAvatar, { backgroundColor: color + '33' }]}><Text style={{ fontSize: 40 }}>{avatar}</Text></View>
+            <View style={[styles.pinAvatar, { backgroundColor: color }]}><Text style={{ fontSize: 40 }}>{avatar}</Text></View>
             <View style={styles.dots}>
               {[0,1,2,3].map(i => (
                 <View key={i} style={[styles.dot, currentPin.length > i && styles.dotFilled]} />

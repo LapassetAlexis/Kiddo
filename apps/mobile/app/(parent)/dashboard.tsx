@@ -137,7 +137,7 @@ export default function ParentDashboardScreen() {
             showModal({
               icon: alreadyDone ? 'ℹ️' : '❌',
               title: alreadyDone ? 'Déjà traité' : 'Erreur',
-              message: alreadyDone ? 'L\'autre parent a déjà accordé cette récompense.' : 'Une erreur est survenue, réessaie.',
+              message: alreadyDone ? 'L\'autre gardien a déjà accordé cette récompense.' : 'Une erreur est survenue, réessaie.',
               buttons: [{ label: 'OK', style: 'default' }],
             });
           }
@@ -166,7 +166,7 @@ export default function ParentDashboardScreen() {
             showModal({
               icon: alreadyDone ? 'ℹ️' : '❌',
               title: alreadyDone ? 'Déjà traité' : 'Erreur',
-              message: alreadyDone ? 'L\'autre parent a déjà traité cette récompense.' : 'Une erreur est survenue, réessaie.',
+              message: alreadyDone ? 'L\'autre gardien a déjà traité cette récompense.' : 'Une erreur est survenue, réessaie.',
               buttons: [{ label: 'OK', style: 'default' }],
             });
           }
@@ -199,7 +199,7 @@ export default function ParentDashboardScreen() {
       showModal({
         icon: alreadyDone ? 'ℹ️' : '❌',
         title: alreadyDone ? 'Déjà validée' : 'Erreur',
-        message: alreadyDone ? 'L\'autre parent a déjà validé cette tâche.' : 'Une erreur est survenue, réessaie.',
+        message: alreadyDone ? 'L\'autre gardien a déjà validé cette tâche.' : 'Une erreur est survenue, réessaie.',
         buttons: [{ label: 'OK', style: 'default' }],
       });
     }
@@ -223,7 +223,7 @@ export default function ParentDashboardScreen() {
             showModal({
               icon: alreadyDone ? 'ℹ️' : '❌',
               title: alreadyDone ? 'Déjà traitée' : 'Erreur',
-              message: alreadyDone ? 'L\'autre parent a déjà traité cette tâche.' : 'Une erreur est survenue, réessaie.',
+              message: alreadyDone ? 'L\'autre gardien a déjà traité cette tâche.' : 'Une erreur est survenue, réessaie.',
               buttons: [{ label: 'OK', style: 'default' }],
             });
           }
@@ -287,10 +287,6 @@ export default function ParentDashboardScreen() {
               </View>
               <Text style={styles.childName}>{child.name}</Text>
               <Text style={styles.childPts}>⭐ {balances[child.id] ?? 0} pts</Text>
-              <View style={styles.childTrack}>
-                <View style={[styles.childFill, { width: '0%' }]} />
-              </View>
-              <Text style={styles.childReward}>—</Text>
             </TouchableOpacity>
           ))}
           <TouchableOpacity

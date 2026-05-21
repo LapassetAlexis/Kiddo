@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors, Radii } from '@/constants/theme';
@@ -7,12 +7,13 @@ import { ApiError } from '@/lib/api-client';
 
 export default function ChildPinScreen() {
   const { name, childId, fromParent } = useLocalSearchParams<{ name: string; childId?: string; fromParent?: string }>();
-  const [pin, setPin]   = useState('');
-  const [error, setError] = useState(false);
+  const [pin, setPin]           = useState('');
+  const [error, setError]       = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
   const { loginChild }  = useAuth();
 
   function pressDigit(d: string) {
-    if (pin.length >= 4) return;
+    if (pin.length >= 4 || isValidating) return;
     const next = pin + d;
     setPin(next);
     setError(false);
@@ -20,17 +21,20 @@ export default function ChildPinScreen() {
   }
 
   function pressDelete() {
+    if (isValidating) return;
     setPin(p => p.slice(0, -1));
     setError(false);
   }
 
   async function validatePin(p: string) {
+    setIsValidating(true);
     try {
       await loginChild(childId ?? '', p);
       router.replace({ pathname: '/(child)/home', params: { fromParent } });
     } catch (err) {
       setPin('');
       setError(true);
+      setIsValidating(false);
     }
   }
 
@@ -44,13 +48,18 @@ export default function ChildPinScreen() {
       {/* Dots */}
       <View style={styles.dots}>
         {[0,1,2,3].map(i => (
-          <View key={i} style={[styles.dot, pin.length > i && styles.dotFilled, error && styles.dotError]} />
+          <View key={i} style={[styles.dot, pin.length > i && styles.dotFilled, error && styles.dotError, isValidating && styles.dotValidating]} />
         ))}
       </View>
-      {error && <Text style={styles.errorText}>Code incorrect — réessaie</Text>}
+      {isValidating
+        ? <ActivityIndicator size="small" color={Colors.gold} style={styles.spinner} />
+        : error
+          ? <Text style={styles.errorText}>Code incorrect — réessaie</Text>
+          : <View style={styles.errorPlaceholder} />
+      }
 
       {/* Numpad */}
-      <View style={styles.numpad}>
+      <View style={[styles.numpad, isValidating && styles.numpadDisabled]}>
         {KEYS.map((k, i) => k === '' ? (
           <View key={i} style={styles.keyEmpty} />
         ) : (
@@ -59,6 +68,7 @@ export default function ChildPinScreen() {
             style={[styles.key, k === '⌫' && styles.keyDelete]}
             onPress={() => k === '⌫' ? pressDelete() : pressDigit(k)}
             activeOpacity={0.7}
+            disabled={isValidating}
           >
             <Text style={[styles.keyText, k === '⌫' && styles.keyDeleteText]}>{k}</Text>
           </TouchableOpacity>
@@ -112,11 +122,26 @@ const styles = StyleSheet.create({
     borderColor: '#EF5350',
     backgroundColor: '#EF5350',
   },
+  dotValidating: {
+    backgroundColor: Colors.gold,
+    borderColor: Colors.gold,
+    opacity: 0.5,
+  },
   errorText: {
     color: '#EF5350',
     fontSize: 13,
     fontWeight: '700',
     marginTop: -12,
+  },
+  errorPlaceholder: {
+    height: 18,
+    marginTop: -12,
+  },
+  spinner: {
+    marginTop: -12,
+  },
+  numpadDisabled: {
+    opacity: 0.4,
   },
   numpad: {
     width: '100%',

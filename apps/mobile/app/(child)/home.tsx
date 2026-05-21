@@ -243,7 +243,7 @@ export default function ChildHomeScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.taskName, task.state === 'done' && styles.taskNameDone]}>{task.name}</Text>
-              {task.state === 'pending' && <Text style={styles.taskSub}>Papa vérifie bientôt ! 🤞</Text>}
+              {task.state === 'pending' && <Text style={styles.taskSub}>Ton gardien vérifie bientôt ! 🤞</Text>}
               {task.state === 'todo' && task.rejectionReason != null && (
                 <Text style={styles.taskRejected}>
                   ↩ {task.rejectionReason || 'Réessaie, tu peux le faire !'}

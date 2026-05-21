@@ -11,6 +11,7 @@ type TaskStatus = 'validated' | 'rejected' | 'pending';
 
 interface HistoryTask {
   id: string;
+  childId: string;
   taskName: string;
   childName: string;
   childEmoji: string;
@@ -51,6 +52,7 @@ function groupTasksByDate(tasks: Task[]): Section[] {
       `il y a ${Math.floor((today.getTime() - d.getTime()) / 86400000)} jours`;
     const entry: HistoryTask = {
       id: task.id,
+      childId: task.child.id,
       taskName: task.title,
       childName: task.child.name,
       childEmoji: task.child.avatar,
@@ -107,7 +109,7 @@ export default function TasksScreen() {
     ...section,
     data: section.data.filter(t => {
       const statusOk = filter === 'all' || t.status === filter;
-      const childOk  = childFilter === 'all' || t.childName.toLowerCase() === childFilter.toLowerCase() || t.childName === childFilter;
+      const childOk  = childFilter === 'all' || t.childId === childFilter;
       return statusOk && childOk;
     }),
   })).filter(s => s.data.length > 0);
@@ -125,7 +127,7 @@ export default function TasksScreen() {
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Historique 📋</Text>
+        <Text style={styles.title}>Tâches 📋</Text>
         <TouchableOpacity
           style={styles.addBtn}
           onPress={() => router.push('/(parent)/create-task')}

@@ -113,7 +113,7 @@ export default function TaskCompleteSheet({ task, onConfirm, onClose }: Props) {
 
             {/* Note */}
             <View style={styles.section}>
-              <Text style={styles.sectionLabel}>Message pour papa/maman</Text>
+              <Text style={styles.sectionLabel}>Message pour ton gardien</Text>
               <Text style={styles.sectionHint}>Facultatif — explique ce que tu as fait</Text>
               <TextInput
                 style={styles.noteInput}

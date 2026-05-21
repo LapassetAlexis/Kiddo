@@ -12,7 +12,7 @@ type HistoryStatus = 'granted' | 'refused';
 
 interface HistoryEntry {
   id: string; emoji: string; rewardName: string;
-  childName: string; childEmoji: string;
+  childId: string; childName: string; childEmoji: string;
   pts: number; status: HistoryStatus; time: string;
 }
 
@@ -43,6 +43,7 @@ function groupHistoryByDate(items: any[]): HistorySection[] {
       id:        item.id,
       emoji:     item.emoji ?? '🎁',
       rewardName:item.title ?? item.rewardName ?? '—',
+      childId:   item.child?.id ?? item.childId ?? '',
       childName: item.childName ?? item.child?.name ?? '—',
       childEmoji:item.childEmoji ?? item.child?.avatar ?? '👶',
       pts:       item.pts ?? item.cost ?? 0,
@@ -102,7 +103,7 @@ export default function ManageScreen() {
   const filteredHistory = historySections.map(s => ({
     ...s,
     data: s.data.filter(h => {
-      const childOk  = childFilter === 'all' || h.childName.toLowerCase() === childFilter.toLowerCase();
+      const childOk  = childFilter === 'all' || h.childId === childFilter;
       const statusOk = statusFilter === 'all' || h.status === statusFilter;
       return childOk && statusOk;
     }),

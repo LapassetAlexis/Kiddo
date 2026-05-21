@@ -2,6 +2,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, Switch, Share,
 } from 'react-native';
 import { useState, useCallback, useEffect } from 'react';
+import { transactionsApi } from '@/lib/api/transactions';
 import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Radii, Spacing } from '@/constants/theme';
@@ -14,10 +15,11 @@ import { useApiData } from '@/lib/useApiData';
 import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
 
 export default function SettingsScreen() {
-  const [notifTask,   setNotifTask]   = useState(true);
-  const [notifReward, setNotifReward] = useState(true);
-  const [notifStreak, setNotifStreak] = useState(false);
-  const [savingNotif, setSavingNotif] = useState(false);
+  const [notifTask,      setNotifTask]      = useState(true);
+  const [notifReward,    setNotifReward]    = useState(true);
+  const [notifStreak,    setNotifStreak]    = useState(false);
+  const [savingNotif,    setSavingNotif]    = useState(false);
+  const [childBalances,  setChildBalances]  = useState<Record<string, number>>({});
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
   const { logout, user } = useAuth();
 
@@ -42,6 +44,17 @@ export default function SettingsScreen() {
     }
   }, [profileData]);
 
+  useEffect(() => {
+    if (!childrenData?.length) return;
+    Promise.all(
+      childrenData.map(c =>
+        transactionsApi.getBalance(c.id)
+          .then(b => [c.id, b.balance] as const)
+          .catch(() => [c.id, 0] as const)
+      )
+    ).then(entries => setChildBalances(Object.fromEntries(entries)));
+  }, [childrenData]);
+
   async function saveNotifPref(field: 'notifTaskSubmitted' | 'notifRewardClaimed' | 'notifStreakAlert', value: boolean) {
     setSavingNotif(true);
     try { await familiesApi.updateNotifPrefs({ [field]: value }); } catch {}
@@ -52,7 +65,7 @@ export default function SettingsScreen() {
     showModal({
       icon: '🔑',
       title: 'Nouveau code famille ?',
-      message: 'L\'ancien code ne fonctionnera plus. Les co-parents existants ne sont pas affectés.',
+      message: 'L\'ancien code ne fonctionnera plus. Les autres gardiens ne sont pas affectés.',
       buttons: [
         { label: 'Générer', style: 'destructive', onPress: async () => {
           try {
@@ -137,7 +150,7 @@ export default function SettingsScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.childName}>{child.name}</Text>
-                  <Text style={styles.childPts}>⭐ 0 pts</Text>
+                  <Text style={styles.childPts}>⭐ {childBalances[child.id] ?? 0} pts</Text>
                 </View>
                 <TouchableOpacity
                   style={styles.editBtn}
@@ -160,7 +173,7 @@ export default function SettingsScreen() {
         </View>
 
         {/* Parents */}
-        <Text style={styles.sectionLabel}>Parents</Text>
+        <Text style={styles.sectionLabel}>Gardiens</Text>
         <View style={styles.card}>
           {(parentsData ?? []).map((parent, i) => {
             const isSelf = parent.id === user?.id;
@@ -195,8 +208,8 @@ export default function SettingsScreen() {
         <Text style={styles.sectionLabel}>Invitation</Text>
         <View style={styles.card}>
           <View style={styles.inviteBlock}>
-            <Text style={styles.inviteTitle}>Inviter un co-parent</Text>
-            <Text style={styles.inviteDesc}>Partage ce code pour qu'un autre parent rejoigne ta famille avec les mêmes droits.</Text>
+            <Text style={styles.inviteTitle}>Inviter un gardien</Text>
+            <Text style={styles.inviteDesc}>Partage ce code pour qu'un autre gardien rejoigne ta famille avec les mêmes droits.</Text>
             <View style={styles.codeBox}>
               <Text style={styles.codeText}>{profileData?.inviteCode ?? '——————'}</Text>
             </View>
@@ -212,7 +225,7 @@ export default function SettingsScreen() {
                 style={[styles.inviteBtn, styles.inviteBtnSecondary]}
                 activeOpacity={0.7}
                 onPress={() => Share.share({
-                  message: `Rejoins ma famille sur KidPoints avec le code : ${profileData?.inviteCode}\n\nTélécharge l'app et va dans "Rejoindre une famille".`,
+                  message: `Rejoins notre famille sur KidPoints avec le code : ${profileData?.inviteCode}\n\nTélécharge l'app et va dans "Rejoindre une famille".`,
                 })}
               >
                 <Text style={[styles.inviteBtnText, { color: Colors.textDim }]}>Envoyer le lien</Text>
@@ -361,7 +374,7 @@ const styles = StyleSheet.create({
 
   profileRow:       { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 },
   profileAvatar:    { width: 52, height: 52, borderRadius: 26, backgroundColor: 'rgba(255,184,0,0.1)', alignItems: 'center', justifyContent: 'center' },
-  profileAvatarText:{ fontSize: 28 },
+  profileAvatarText:{ fontSize: 24, fontWeight: '900', color: Colors.gold },
   profileName:      { fontSize: 16, fontWeight: '900', color: Colors.textPrimary },
   profileEmail:     { fontSize: 12, fontWeight: '600', color: Colors.textFaint, marginTop: 2 },
 
