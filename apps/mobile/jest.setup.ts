@@ -21,3 +21,8 @@ jest.mock('expo-constants', () => ({
   default: { expoConfig: { hostUri: 'localhost:8081' } },
   expoConfig: { hostUri: 'localhost:8081' },
 }));
+
+// registerForPushNotifications — contient un dynamic import qui crash dans Jest
+jest.mock('@/lib/registerForPushNotifications', () => ({
+  registerForPushNotifications: jest.fn().mockResolvedValue(null),
+}));

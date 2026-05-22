@@ -8,6 +8,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 
 import { AuthModule } from '../src/auth/auth.module';
+import { EmailService } from '../src/email/email.service';
 import { FamiliesModule } from '../src/families/families.module';
 import { ChildrenModule } from '../src/children/children.module';
 import { TasksModule } from '../src/tasks/tasks.module';
@@ -71,7 +72,14 @@ describe('Auth E2E', () => {
         TransactionsModule,
         NotificationsModule,
       ],
-    }).compile();
+    })
+      .overrideProvider(EmailService)
+      .useValue({
+        isEnabled:            true,
+        sendVerificationCode: jest.fn().mockResolvedValue(undefined),
+        sendPasswordReset:    jest.fn().mockResolvedValue(undefined),
+      })
+      .compile();
 
     app = module.createNestApplication();
     app.useGlobalPipes(
