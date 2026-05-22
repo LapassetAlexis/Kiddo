@@ -1,11 +1,11 @@
-# KidPoints
+# Kiddo
 
 Application mobile gamifiée pour aider les parents à gérer les tâches de leurs enfants (6-14 ans) via un système de points et de récompenses.
 
 ## Structure
 
 ```
-kidpoints/
+kiddo/
 ├── apps/
 │   ├── mobile/     # Expo React Native (iOS + Android)
 │   └── api/        # NestJS + PostgreSQL

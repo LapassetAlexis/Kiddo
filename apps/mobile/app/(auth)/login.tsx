@@ -36,7 +36,7 @@ export default function LoginScreen() {
         {/* Logo */}
         <View style={styles.logoWrap}>
           <Text style={styles.logoEmoji}>⭐</Text>
-          <Text style={styles.logoTitle}>KidPoints</Text>
+          <Text style={styles.logoTitle}>Kiddo</Text>
           <Text style={styles.logoSub}>Espace parents</Text>
         </View>
 

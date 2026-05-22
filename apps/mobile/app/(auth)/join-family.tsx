@@ -50,7 +50,12 @@ export default function JoinFamilyScreen() {
     setLoading(true);
     try {
       const fullName = [firstName.trim(), lastName.trim()].filter(Boolean).join(' ');
-      await authApi.joinFamily(fullName, email.trim().toLowerCase(), password, inviteCode.trim().toUpperCase());
+      const res = await authApi.joinFamily(fullName, email.trim().toLowerCase(), password, inviteCode.trim().toUpperCase());
+      if (res.accessToken) {
+        await authApi.saveToken(res.accessToken);
+        router.replace('/(parent)/dashboard');
+        return;
+      }
       setCode('');
       setStep(3);
     } catch (err) {
@@ -102,7 +107,7 @@ export default function JoinFamilyScreen() {
         <View style={styles.logoWrap}>
           <Text style={styles.logoEmoji}>👨‍👩‍👧‍👦</Text>
           <Text style={styles.logoTitle}>Rejoindre</Text>
-          <Text style={styles.logoSub}>une famille KidPoints</Text>
+          <Text style={styles.logoSub}>une famille Kiddo</Text>
         </View>
 
         {/* Étapes */}

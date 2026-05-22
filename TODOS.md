@@ -1,4 +1,4 @@
-# KidPoints TODOS.md
+# Kiddo TODOs
 
 ## P1 — Bloquant pour le ship
 - [ ] Test concurrence reward redemption (SELECT FOR UPDATE) — deux enfants réclament même récompense "une seule fois" simultanément. Failure ici = double-debit silencieux.

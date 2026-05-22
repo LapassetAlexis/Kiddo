@@ -9,11 +9,11 @@ const CONTENT = {
     sections: [
       {
         heading: '1. Acceptation des conditions',
-        body: "En utilisant KidPoints, vous acceptez les présentes conditions d'utilisation. L'application est destinée aux familles pour la gestion des tâches quotidiennes des enfants.",
+        body: "En utilisant Kiddo, vous acceptez les présentes conditions d'utilisation. L'application est destinée aux familles pour la gestion des tâches quotidiennes des enfants.",
       },
       {
         heading: '2. Utilisation de l\'application',
-        body: "KidPoints est un outil familial. Le compte parent est responsable de la gestion des profils enfants. L'application ne doit pas être utilisée à des fins commerciales.",
+        body: "Kiddo est un outil familial. Le compte parent est responsable de la gestion des profils enfants. L'application ne doit pas être utilisée à des fins commerciales.",
       },
       {
         heading: '3. Données personnelles',
@@ -21,7 +21,7 @@ const CONTENT = {
       },
       {
         heading: '4. Responsabilité',
-        body: "KidPoints est fourni \"tel quel\". Nous ne sommes pas responsables des décisions éducatives prises par les parents via l'application. Le système de points est purement symbolique.",
+        body: "Kiddo est fourni \"tel quel\". Nous ne sommes pas responsables des décisions éducatives prises par les parents via l'application. Le système de points est purement symbolique.",
       },
       {
         heading: '5. Modification des conditions',
@@ -29,7 +29,7 @@ const CONTENT = {
       },
       {
         heading: '6. Contact',
-        body: "Pour toute question concernant ces conditions : contact@kidpoints.app",
+        body: "Pour toute question concernant ces conditions : contact@kiddo.app",
       },
     ],
   },
@@ -42,7 +42,7 @@ const CONTENT = {
       },
       {
         heading: '2. Utilisation des données',
-        body: "Vos données sont utilisées uniquement pour faire fonctionner KidPoints : synchroniser les tâches entre appareils, envoyer des notifications push, et afficher l'historique.",
+        body: "Vos données sont utilisées uniquement pour faire fonctionner Kiddo : synchroniser les tâches entre appareils, envoyer des notifications push, et afficher l'historique.",
       },
       {
         heading: '3. Stockage et sécurité',
@@ -54,11 +54,11 @@ const CONTENT = {
       },
       {
         heading: '5. Vos droits',
-        body: "Vous pouvez à tout moment demander la suppression de votre compte et de toutes les données associées depuis Paramètres → Supprimer le compte. Pour exercer vos droits RGPD : privacy@kidpoints.app",
+        body: "Vous pouvez à tout moment demander la suppression de votre compte et de toutes les données associées depuis Paramètres → Supprimer le compte. Pour exercer vos droits RGPD : privacy@kiddo.app",
       },
       {
         heading: '6. Cookies et tracking',
-        body: "KidPoints n'utilise pas de cookies de tracking ni de régies publicitaires. Aucune donnée de comportement n'est transmise à des tiers.",
+        body: "Kiddo n'utilise pas de cookies de tracking ni de régies publicitaires. Aucune donnée de comportement n'est transmise à des tiers.",
       },
       {
         heading: '7. Enfants',

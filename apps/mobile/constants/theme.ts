@@ -1,4 +1,4 @@
-// KidPoints Design Tokens — source: variant-F approved design
+// Kiddo Design Tokens
 export const Colors = {
   bgScreen:       '#18181e',
   bgCard:         '#26262e',

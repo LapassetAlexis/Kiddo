@@ -10,7 +10,7 @@ jest.mock('react-native', () => ({ Platform: { OS: 'ios' } }));
 import * as SecureStore from 'expo-secure-store';
 import { api, ApiError, saveToken, clearToken, getToken, BASE_URL } from '@/lib/api-client';
 
-const TOKEN_KEY = 'kidpoints_jwt';
+const TOKEN_KEY = 'kiddo_jwt';
 
 function mockFetch(status: number, body: unknown) {
   const text = JSON.stringify(body);

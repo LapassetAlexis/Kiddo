@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "846730586382",
-    "project_id": "kidpoints-976e9",
-    "storage_bucket": "kidpoints-976e9.firebasestorage.app"
+    "project_number": "487151542754",
+    "project_id": "kiddo-d25ff",
+    "storage_bucket": "kiddo-d25ff.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:846730586382:android:9a6daf6c1fd4bec93f8f5f",
+        "mobilesdk_app_id": "1:487151542754:android:0d5c5ee4b59f189dd0d9bb",
         "android_client_info": {
-          "package_name": "com.kidpoints.app"
+          "package_name": "com.kiddo.app"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAEACGFyRjCPhhLabKf9L3fk5Gb8EMRXe0"
+          "current_key": "AIzaSyBvgO3eEC7EOV0soMGXYlM9MprLmRkOipo"
         }
       ],
       "services": {

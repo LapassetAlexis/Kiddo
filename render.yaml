@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: kidpoints-api
+    name: kiddo-api
     env: node
     rootDir: apps/api
     buildCommand: npm ci --include=dev && npm run build

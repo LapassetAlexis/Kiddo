@@ -1,8 +1,8 @@
 import * as SecureStore from 'expo-secure-store';
 
-export const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'https://kidpoints.onrender.com/api';
-const TOKEN_KEY        = 'kidpoints_jwt';
-const PARENT_TOKEN_KEY = 'kidpoints_parent_jwt';
+export const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'https://kiddo-api.onrender.com/api';
+const TOKEN_KEY        = 'kiddo_jwt';
+const PARENT_TOKEN_KEY = 'kiddo_parent_jwt';
 
 // ── Token storage ────────────────────────────────────────────────────────────
 

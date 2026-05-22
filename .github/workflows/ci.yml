@@ -15,8 +15,8 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_DB: kidpoints_test
-          POSTGRES_USER: kidpoints
+          POSTGRES_DB: kiddo_test
+          POSTGRES_USER: kiddo
           POSTGRES_PASSWORD: password
         ports:
           - 5432:5432
@@ -45,7 +45,7 @@ jobs:
 
       - name: Run E2E tests
         env:
-          DATABASE_URL: postgresql://kidpoints:password@localhost:5432/kidpoints_test
+          DATABASE_URL: postgresql://kiddo:password@localhost:5432/kiddo_test
           JWT_SECRET: ci-test-secret
           JWT_EXPIRES_IN: 15m
           JWT_REFRESH_SECRET: ci-refresh-secret

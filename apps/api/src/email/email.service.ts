@@ -8,23 +8,25 @@ export class EmailService {
   private readonly resend: Resend | null;
   private readonly from: string;
 
+  get isEnabled(): boolean { return this.resend !== null; }
+
   constructor(private config: ConfigService) {
     const apiKey = this.config.get<string>('RESEND_API_KEY');
-    this.from    = this.config.get<string>('EMAIL_FROM') ?? 'KidPoints <noreply@kidpoints.app>';
+    this.from    = this.config.get<string>('EMAIL_FROM') ?? 'Kiddo <noreply@kiddo.app>';
 
     if (apiKey) {
       this.resend = new Resend(apiKey);
     } else {
       this.resend = null;
-      this.log.warn('RESEND_API_KEY not set — emails will be logged to console only');
+      this.log.warn('RESEND_API_KEY not set — dev mode, email verification skipped');
     }
   }
 
   async sendVerificationCode(to: string, code: string): Promise<void> {
-    const subject = 'Votre code de vérification KidPoints';
+    const subject = 'Votre code de vérification Kiddo';
     const html = `
       <div style="font-family:sans-serif;max-width:480px;margin:auto">
-        <h2 style="color:#FFB300">KidPoints 🌟</h2>
+        <h2 style="color:#FFB300">Kiddo ⭐</h2>
         <p>Bienvenue ! Entrez ce code pour confirmer votre adresse e-mail :</p>
         <div style="font-size:36px;font-weight:900;letter-spacing:8px;color:#1a1000;
                     background:#FFF8E1;border-radius:12px;padding:20px;text-align:center;margin:24px 0">
@@ -36,10 +38,10 @@ export class EmailService {
   }
 
   async sendPasswordReset(to: string, code: string): Promise<void> {
-    const subject = 'Réinitialisation de votre mot de passe KidPoints';
+    const subject = 'Réinitialisation de votre mot de passe Kiddo';
     const html = `
       <div style="font-family:sans-serif;max-width:480px;margin:auto">
-        <h2 style="color:#FFB300">KidPoints 🌟</h2>
+        <h2 style="color:#FFB300">Kiddo ⭐</h2>
         <p>Voici votre code de réinitialisation de mot de passe :</p>
         <div style="font-size:36px;font-weight:900;letter-spacing:8px;color:#1a1000;
                     background:#FFF8E1;border-radius:12px;padding:20px;text-align:center;margin:24px 0">
@@ -58,7 +60,7 @@ export class EmailService {
     try {
       await this.resend.emails.send({ from: this.from, to, subject, html });
     } catch (err) {
-      this.log.error(`Failed to send email to ${to}: ${err.message}`);
+      this.log.error(`Failed to send email to ${to}: ${(err as Error).message}`);
       throw err;
     }
   }

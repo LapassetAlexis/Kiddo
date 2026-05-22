@@ -23,8 +23,12 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
+  if (process.env.NODE_ENV === 'production' && !process.env.RESEND_API_KEY) {
+    throw new Error('RESEND_API_KEY must be set in production');
+  }
+
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
-  console.log(`🚀 KidPoints API démarrée sur http://localhost:${port}/api`);
+  console.log(`🚀 Kiddo API démarrée sur http://localhost:${port}/api`);
 }
 bootstrap();

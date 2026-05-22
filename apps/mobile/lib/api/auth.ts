@@ -10,7 +10,7 @@ export const authApi = {
     api.post<AuthResponse>('/auth/child/pin', { childId, pin }, false),
 
   register: (name: string, email: string, password: string) =>
-    api.post<{ message: string }>('/auth/register', { name, email, password }, false),
+    api.post<{ message: string; accessToken?: string }>('/auth/register', { name, email, password }, false),
 
   verifyEmail: (email: string, code: string) =>
     api.post<AuthResponse>('/auth/verify-email', { email, code }, false),
@@ -30,7 +30,7 @@ export const authApi = {
   me: () => api.get<{ id: string; role: string; email?: string; name?: string; avatar?: string; familyId?: string; inviteCode?: string; children?: any[] }>('/auth/me'),
 
   joinFamily: (name: string, email: string, password: string, inviteCode: string) =>
-    api.post<{ message: string }>('/auth/join-family', { name, email, password, inviteCode }, false),
+    api.post<{ message: string; accessToken?: string }>('/auth/join-family', { name, email, password, inviteCode }, false),
 
   saveToken,
   clearToken,

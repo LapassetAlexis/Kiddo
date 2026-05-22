@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "d9538d87-60f5-4888-b1a7-b62d6f9a335f"
+      }
+    },
+    "android": {
+      "package": "com.kiddo.app"
+    }
+  }
+}
