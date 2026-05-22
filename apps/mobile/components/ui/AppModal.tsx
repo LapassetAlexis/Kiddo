@@ -3,6 +3,7 @@ import {
   Pressable, Animated,
 } from 'react-native';
 import { useRef, useEffect, useState, useCallback } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Radii } from '@/constants/theme';
 
 export type ModalButton = {
@@ -35,6 +36,7 @@ type Props = {
 };
 
 export default function AppModal({ config, onHide }: Props) {
+  const { bottom } = useSafeAreaInsets();
   const slideAnim = useRef(new Animated.Value(300)).current;
   const visible   = config !== null;
 
@@ -61,7 +63,7 @@ export default function AppModal({ config, onHide }: Props) {
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={() => close()}>
       <Pressable style={styles.overlay} onPress={() => close()}>
-        <Animated.View style={[styles.sheet, { transform: [{ translateY: slideAnim }] }]}>
+        <Animated.View style={[styles.sheet, { paddingBottom: 40 + bottom, transform: [{ translateY: slideAnim }] }]}>
           <Pressable>
             <View style={styles.handle} />
 
@@ -110,7 +112,7 @@ const styles = StyleSheet.create({
   sheet: {
     backgroundColor: '#1e1e26',
     borderTopLeftRadius: 28, borderTopRightRadius: 28,
-    padding: 24, paddingBottom: 40,
+    padding: 24,
     borderTopWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
   },
   handle: {
