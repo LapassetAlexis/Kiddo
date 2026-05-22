@@ -27,7 +27,7 @@ export class TasksController {
   }
 
   @Post()
-  create(@Body() body: { childId: string; title: string; points: number; frequency?: string; weekDay?: number }) {
+  create(@Body() body: { childId: string; title: string; points: number; frequency?: string; weekDay?: number; timesPerDay?: number; bonusPoints?: number }) {
     return this.svc.create(body);
   }
 

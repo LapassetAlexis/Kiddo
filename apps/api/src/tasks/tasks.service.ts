@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository }  from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, MoreThanOrEqual, Repository } from 'typeorm';
 import { Task }                from './task.entity';
 import { Transaction }         from '../transactions/transaction.entity';
 import { NotificationIntent }  from '../notifications/notification-intent.entity';
@@ -18,24 +18,52 @@ export class TasksService {
     private familiesSvc: FamiliesService,
   ) {}
 
-  getForChild(childId: string) {
-    return this.tasks.find({ where: { child: { id: childId } }, relations: ['child'], order: { createdAt: 'DESC' } });
+  private todayStart(): Date {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
   }
 
-  getAll(childId?: string, status?: string) {
+  private async countTodayCompletions(taskId: string): Promise<number> {
+    return this.txs.count({
+      where: { referenceId: taskId, type: 'earn', createdAt: MoreThanOrEqual(this.todayStart()) },
+    });
+  }
+
+  private async enrichTasks(tasks: Task[]): Promise<Array<Task & { completedToday: number }>> {
+    return Promise.all(tasks.map(async task => {
+      const completedToday = await this.countTodayCompletions(task.id);
+      return Object.assign(task, { completedToday });
+    }));
+  }
+
+  async getForChild(childId: string) {
+    const tasks = await this.tasks.find({ where: { child: { id: childId } }, relations: ['child'], order: { createdAt: 'DESC' } });
+    return this.enrichTasks(tasks);
+  }
+
+  async getAll(childId?: string, status?: string) {
     const where: Record<string, any> = {};
     if (childId) where.child = { id: childId };
     if (status)  where.status = status;
-    return this.tasks.find({ where, relations: ['child'], order: { createdAt: 'DESC' } });
+    const tasks = await this.tasks.find({ where, relations: ['child'], order: { createdAt: 'DESC' } });
+    return this.enrichTasks(tasks);
   }
 
   getHistory(childId?: string) {
     return this.getAll(childId);
   }
 
-  async create(body: { childId: string; title: string; points: number; frequency?: string }) {
+  async create(body: { childId: string; title: string; points: number; frequency?: string; timesPerDay?: number; bonusPoints?: number }) {
     const child = await this.children.findOne({ where: { id: body.childId } }).then(c => { if (!c) throw new NotFoundException('Enfant introuvable'); return c; });
-    const task  = this.tasks.create({ title: body.title, points: body.points, frequency: (body.frequency as any) ?? 'daily', child });
+    const task  = this.tasks.create({
+      title: body.title,
+      points: body.points,
+      frequency: (body.frequency as any) ?? 'daily',
+      timesPerDay: body.timesPerDay ?? 1,
+      bonusPoints: body.bonusPoints ?? 0,
+      child,
+    });
     return this.tasks.save(task);
   }
 
@@ -43,6 +71,11 @@ export class TasksService {
     const task = await this.tasks.findOne({ where: { id }, relations: ['child', 'child.family'] });
     if (!task) throw new NotFoundException('Tâche introuvable');
     if (task.status !== 'created') throw new ConflictException('Tâche déjà soumise');
+
+    if (task.timesPerDay > 1) {
+      const completedToday = await this.countTodayCompletions(id);
+      if (completedToday >= task.timesPerDay) throw new ConflictException('Limite journalière atteinte');
+    }
 
     const familyId = (task.child.family as any).id as string;
     const parentTokens = await this.familiesSvc.getFamilyParentTokens(familyId, { event: 'task' });
@@ -76,9 +109,26 @@ export class TasksService {
     const otherParentTokens = await this.familiesSvc.getFamilyParentTokens(familyId, { exclude: accountId });
 
     await this.ds.transaction(async em => {
+      const completedToday = await em.count(Transaction, {
+        where: { referenceId: id, type: 'earn', createdAt: MoreThanOrEqual(this.todayStart()) },
+      });
+
+      const isLast = (completedToday + 1) >= task.timesPerDay;
+
+      const updateFields: Partial<Task> = { approvedByName: approverName };
+      if (isLast) {
+        updateFields.status     = 'validated';
+        updateFields.validatedAt = new Date();
+      } else {
+        updateFields.status      = 'created';
+        updateFields.submittedAt = null as any;
+        updateFields.photoUrl    = null as any;
+        updateFields.note        = null as any;
+      }
+
       const result = await em.createQueryBuilder()
         .update(Task)
-        .set({ status: 'validated', validatedAt: new Date(), approvedByName: approverName })
+        .set(updateFields)
         .where('id = :id AND status = :status', { id, status: 'pending_approval' })
         .execute();
 
@@ -86,15 +136,22 @@ export class TasksService {
 
       await em.save(Transaction, em.create(Transaction, { type: 'earn', amount: task.points, referenceId: id, child: task.child }));
 
-      // Notif à l'enfant
-      if (task.child.fcmToken) {
-        await em.save(NotificationIntent, em.create(NotificationIntent, {
-          fcmToken: task.child.fcmToken,
-          payload: { title: '🎉 Validé !', body: `+${task.points} pts pour ${task.title}`, data: { taskId: id } },
+      if (isLast && task.bonusPoints > 0) {
+        await em.save(Transaction, em.create(Transaction, {
+          type: 'earn', amount: task.bonusPoints, referenceId: `${id}:bonus`, child: task.child,
         }));
       }
 
-      // Notif à l'autre parent
+      if (task.child.fcmToken) {
+        const notifBody = isLast && task.bonusPoints > 0
+          ? `+${task.points} pts pour ${task.title} + 🎁 bonus !`
+          : `+${task.points} pts pour ${task.title}`;
+        await em.save(NotificationIntent, em.create(NotificationIntent, {
+          fcmToken: task.child.fcmToken,
+          payload: { title: '🎉 Validé !', body: notifBody, data: { taskId: id } },
+        }));
+      }
+
       for (const fcmToken of otherParentTokens) {
         await em.save(NotificationIntent, em.create(NotificationIntent, {
           fcmToken,
@@ -123,7 +180,6 @@ export class TasksService {
 
       if (!result.affected) throw new ConflictException('Tâche déjà traitée par l\'autre parent');
 
-      // Notif à l'autre parent
       for (const fcmToken of otherParentTokens) {
         await em.save(NotificationIntent, em.create(NotificationIntent, {
           fcmToken,
