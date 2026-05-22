@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { useState, useEffect } from 'react';
 import { router } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
 import { familiesApi } from '@/lib/api/families';
@@ -13,6 +13,7 @@ import { ApiError } from '@/lib/api-client';
 const AVATARS = ['👨','👩','👨‍👩‍👧','🧑','👱','👴','👵','🧔','👩‍🦰','👨‍🦳','🧑‍💼','👩‍💼'];
 
 export default function EditProfileScreen() {
+  const { bottom } = useSafeAreaInsets();
   const [firstName,   setFirstName]   = useState('');
   const [lastName,    setLastName]    = useState('');
   const [email,       setEmail]       = useState('');
@@ -140,7 +141,7 @@ export default function EditProfileScreen() {
       {/* Avatar picker */}
       <Modal visible={avatarModal} transparent animationType="slide" onRequestClose={() => setAvatarModal(false)}>
         <Pressable style={styles.pickerOverlay} onPress={() => setAvatarModal(false)}>
-          <Pressable style={styles.pickerSheet}>
+          <Pressable style={[styles.pickerSheet, { paddingBottom: 40 + bottom }]}>
             <View style={styles.pickerHandle} />
             <Text style={styles.pickerTitle}>Choisir un avatar</Text>
             <View style={styles.pickerGrid}>

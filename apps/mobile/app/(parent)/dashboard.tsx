@@ -1,7 +1,7 @@
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, Animated, Pressable, Image } from 'react-native';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { router, useFocusEffect } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
 import { tasksApi } from '@/lib/api/tasks';
@@ -30,6 +30,7 @@ function formatAgo(dateStr?: string): string {
 }
 
 export default function ParentDashboardScreen() {
+  const { bottom } = useSafeAreaInsets();
   const { user } = useAuth();
   const { data: profileData, refresh: profileRefresh } = useApiData(() => familiesApi.getMe(), []);
   const parentName = formatName(profileData?.name, profileData?.email) || 'Bonjour';
@@ -189,6 +190,7 @@ export default function ParentDashboardScreen() {
     try {
       await tasksApi.approve(task.id);
       pendingRefresh();
+      todoRefresh();
       refreshBalances(childrenData);
       showModal({
         icon: '✅',
@@ -437,7 +439,7 @@ export default function ParentDashboardScreen() {
       {/* ── Modal review tâche ── */}
       <Modal visible={!!reviewTask} transparent animationType="slide" onRequestClose={() => setReviewTask(null)}>
         <Pressable style={styles.modalOverlay} onPress={() => setReviewTask(null)}>
-          <Pressable style={styles.reviewSheet}>
+          <Pressable style={[styles.reviewSheet, { paddingBottom: 36 + bottom }]}>
             <View style={styles.modalHandle} />
             {reviewTask && (
               <>
@@ -479,7 +481,7 @@ export default function ParentDashboardScreen() {
       <Modal visible={addModal} transparent animationType="none" onRequestClose={closeAddModal}>
         <Pressable style={styles.modalOverlay} onPress={closeAddModal}>
           <Animated.View
-            style={[styles.modalSheet, { transform: [{ translateY: slideAnim }] }]}
+            style={[styles.modalSheet, { paddingBottom: 36 + bottom, transform: [{ translateY: slideAnim }] }]}
           >
             <Pressable>
               {/* Handle */}

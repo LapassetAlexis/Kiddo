@@ -5,7 +5,7 @@ import {
 import { useState } from 'react';
 import { router } from 'expo-router';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { rewardsApi } from '@/lib/api/rewards';
 import { ApiError } from '@/lib/api-client';
 import { Colors, Radii, Spacing } from '@/constants/theme';
@@ -35,6 +35,7 @@ const AVAIL_OPTIONS: { value: Availability; label: string; desc: string; icon: s
 ];
 
 export default function CreateRewardScreen() {
+  const { bottom } = useSafeAreaInsets();
   const [title, setTitle]           = useState('');
   const [emoji, setEmoji]           = useState('🎁');
   const [cost, setCost]             = useState('');
@@ -237,7 +238,7 @@ export default function CreateRewardScreen() {
       {/* ── Emoji Picker ── */}
       <Modal visible={emojiPicker} transparent animationType="slide" onRequestClose={() => setEmojiPicker(false)}>
         <Pressable style={styles.pickerOverlay} onPress={() => setEmojiPicker(false)}>
-          <Pressable style={styles.pickerSheet}>
+          <Pressable style={[styles.pickerSheet, { paddingBottom: 40 + bottom }]}>
             <View style={styles.pickerHandle} />
             <Text style={styles.pickerTitle}>Choisir un icône</Text>
             <ScrollView contentContainerStyle={styles.pickerGrid} showsVerticalScrollIndicator={false}>

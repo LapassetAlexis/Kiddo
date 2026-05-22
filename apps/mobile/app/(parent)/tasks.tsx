@@ -7,7 +7,7 @@ import { tasksApi, Task } from '@/lib/api/tasks';
 import { useApiData } from '@/lib/useApiData';
 import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
 
-type TaskStatus = 'validated' | 'rejected' | 'pending';
+type TaskStatus = 'validated' | 'rejected' | 'pending' | 'partial';
 
 interface HistoryTask {
   id: string;
@@ -19,6 +19,8 @@ interface HistoryTask {
   status: TaskStatus;
   time: string;
   approvedByName?: string;
+  timesPerDay: number;
+  completedToday: number;
 }
 
 interface Section {
@@ -32,9 +34,10 @@ function formatTime(dateStr?: string): string {
   return `${String(d.getHours()).padStart(2, '0')}h${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
-function apiStatusToLocal(apiStatus: string): TaskStatus {
-  if (apiStatus === 'validated') return 'validated';
-  if (apiStatus === 'rejected') return 'rejected';
+function apiStatusToLocal(task: Task): TaskStatus {
+  if (task.status === 'validated') return 'validated';
+  if (task.status === 'rejected') return 'rejected';
+  if (task.timesPerDay > 1 && task.completedToday > 0) return 'partial';
   return 'pending';
 }
 
@@ -57,9 +60,11 @@ function groupTasksByDate(tasks: Task[]): Section[] {
       childName: task.child.name,
       childEmoji: task.child.avatar,
       pts: task.points,
-      status: apiStatusToLocal(task.status),
+      status: apiStatusToLocal(task),
       time: formatTime(dateRef),
       approvedByName: task.approvedByName,
+      timesPerDay: task.timesPerDay ?? 1,
+      completedToday: task.completedToday ?? 0,
     };
     (groups[key] = groups[key] ?? []).push(entry);
   }
@@ -68,9 +73,10 @@ function groupTasksByDate(tasks: Task[]): Section[] {
 }
 
 const STATUS_CONFIG = {
-  validated: { label: 'Validée',    color: Colors.green,  bg: 'rgba(76,175,80,0.12)',   border: 'rgba(76,175,80,0.22)',   icon: '✓' },
-  rejected:  { label: 'Rejetée',   color: '#EF5350',     bg: 'rgba(239,83,80,0.1)',    border: 'rgba(239,83,80,0.2)',    icon: '✕' },
-  pending:   { label: 'En attente', color: Colors.gold,   bg: 'rgba(255,184,0,0.1)',    border: 'rgba(255,184,0,0.2)',    icon: '⏳' },
+  validated: { label: 'Validée',    color: Colors.green,    bg: 'rgba(76,175,80,0.12)',   border: 'rgba(76,175,80,0.22)',   icon: '✓'  },
+  rejected:  { label: 'Rejetée',   color: '#EF5350',       bg: 'rgba(239,83,80,0.1)',    border: 'rgba(239,83,80,0.2)',    icon: '✕'  },
+  pending:   { label: 'En attente', color: Colors.gold,     bg: 'rgba(255,184,0,0.1)',    border: 'rgba(255,184,0,0.2)',    icon: '⏳' },
+  partial:   { label: 'En cours',   color: Colors.orange,   bg: 'rgba(255,107,53,0.1)',   border: 'rgba(255,107,53,0.2)',   icon: '↺'  },
 };
 
 type Filter = 'all' | 'validated' | 'rejected' | 'pending';
@@ -229,6 +235,9 @@ export default function TasksScreen() {
 
                 {/* Points */}
                 <View style={styles.rowRight}>
+                  {item.timesPerDay > 1 && (
+                    <Text style={styles.stepBadge}>{item.completedToday}/{item.timesPerDay}</Text>
+                  )}
                   <Text style={[styles.rowPts, item.status !== 'validated' && { color: Colors.textFaint }]}>
                     {item.status === 'validated' ? `+${item.pts}` : `${item.pts}`} pts
                   </Text>
@@ -317,6 +326,7 @@ const styles = StyleSheet.create({
 
   rowRight:  { alignItems: 'flex-end', gap: 4, flexShrink: 0 },
   rowPts:    { fontSize: 13, fontWeight: '900', color: Colors.gold },
+  stepBadge: { fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.45)' },
   statusBadge: {
     borderRadius: Radii.pill, paddingHorizontal: 8, paddingVertical: 3,
     borderWidth: 1,
