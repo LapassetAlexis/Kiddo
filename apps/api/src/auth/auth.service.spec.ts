@@ -73,7 +73,8 @@ describe('AuthService', () => {
 
     jwtService = { sign: jest.fn().mockReturnValue('signed-token') };
 
-    const emailSvc: jest.Mocked<Pick<EmailService, 'sendVerificationCode' | 'sendPasswordReset'>> = {
+    const emailSvc: jest.Mocked<Pick<EmailService, 'sendVerificationCode' | 'sendPasswordReset' | 'isEnabled'>> = {
+      isEnabled:            true,
       sendVerificationCode: jest.fn().mockResolvedValue(undefined),
       sendPasswordReset:    jest.fn().mockResolvedValue(undefined),
     };

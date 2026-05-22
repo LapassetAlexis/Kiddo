@@ -1,8 +1,8 @@
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
-import Constants, { ExecutionEnvironment } from 'expo-constants';
+import Constants from 'expo-constants';
 
-const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+const isExpoGo = Constants.executionEnvironment === 'storeClient';
 
 export async function registerForPushNotifications(): Promise<string | null> {
   if (isExpoGo) {
