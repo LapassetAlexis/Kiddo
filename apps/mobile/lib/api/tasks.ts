@@ -17,6 +17,9 @@ export interface Task {
   validatedAt?: string;
   approvedByName?: string;
   createdAt: string;
+  timesPerDay: number;
+  bonusPoints: number;
+  completedToday: number;
   child: { id: string; name: string; avatar: string; color: string };
 }
 
@@ -36,6 +39,7 @@ export const tasksApi = {
   create: (data: {
     childId: string; title: string; points: number;
     frequency?: TaskFrequency; weekDay?: number;
+    timesPerDay?: number; bonusPoints?: number;
   }) => api.post<Task>('/tasks', data),
 
   complete: (id: string, note?: string, photoUrl?: string) =>

@@ -15,7 +15,7 @@ import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
 import { ApiError } from '@/lib/api-client';
 import { useAuth } from '@/contexts/AuthContext';
 
-type PendingTask = { id: string; childName: string; childEmoji: string; childColor: string; taskName: string; pts: number; ago: string; note?: string; photoUrl?: string; };
+type PendingTask = { id: string; childName: string; childEmoji: string; childColor: string; taskName: string; pts: number; ago: string; note?: string; photoUrl?: string; timesPerDay: number; completedToday: number; bonusPoints: number; };
 type RewardRequest = { id: string; childName: string; childEmoji: string; rewardName: string; emoji: string; pts: number; };
 
 function formatAgo(dateStr?: string): string {
@@ -95,6 +95,9 @@ export default function ParentDashboardScreen() {
     ago: formatAgo(task.submittedAt),
     note: task.note,
     photoUrl: task.photoUrl,
+    timesPerDay:    task.timesPerDay ?? 1,
+    completedToday: task.completedToday ?? 0,
+    bonusPoints:    task.bonusPoints ?? 0,
   }));
 
   const rewards: RewardRequest[] = (rewardsData ?? [])
@@ -371,6 +374,11 @@ export default function ParentDashboardScreen() {
                   <Text style={styles.pendingTask}>{task.taskName}</Text>
                   <Text style={styles.pendingMeta}>{task.childName} · {task.ago}{task.note ? ' · 💬' : ''}{task.photoUrl ? ' · 📷' : ''}</Text>
                 </View>
+                {task.timesPerDay > 1 && (
+                  <View style={styles.repBadge}>
+                    <Text style={styles.repBadgeText}>{task.completedToday + 1}/{task.timesPerDay}</Text>
+                  </View>
+                )}
                 <View style={styles.ptsBadge}><Text style={styles.ptsBadgeText}>+{task.pts} pts</Text></View>
                 <Text style={{ fontSize: 16, color: Colors.textFaint }}>›</Text>
               </TouchableOpacity>
@@ -559,6 +567,8 @@ const styles = StyleSheet.create({
   childAvatarSm: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   pendingTask:{ fontSize: 14, fontWeight: '800', color: Colors.textPrimary },
   pendingMeta:{ fontSize: 11, fontWeight: '600', color: Colors.textDim, marginTop: 2 },
+  repBadge:     { backgroundColor: 'rgba(255,255,255,0.07)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', borderRadius: Radii.pill, paddingHorizontal: 8, paddingVertical: 3, marginRight: 2 },
+  repBadgeText: { fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.45)' },
   ptsBadge:   { backgroundColor: 'rgba(255,184,0,0.1)', borderWidth: 1, borderColor: 'rgba(255,184,0,0.18)', borderRadius: Radii.pill, paddingHorizontal: 10, paddingVertical: 4 },
   ptsBadgeText: { fontSize: 12, fontWeight: '900', color: Colors.gold },
   btnApprove: { width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(76,175,80,0.15)', borderWidth: 1, borderColor: 'rgba(76,175,80,0.25)', alignItems: 'center', justifyContent: 'center' },

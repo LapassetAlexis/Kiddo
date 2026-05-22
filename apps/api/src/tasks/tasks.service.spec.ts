@@ -22,6 +22,7 @@ function mockRepo<T extends Record<string, any>>(): jest.Mocked<Repository<T>> {
     save: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
+    count: jest.fn().mockResolvedValue(0),
   } as unknown as jest.Mocked<Repository<T>>;
 }
 
@@ -47,6 +48,7 @@ function mockEntityManager(affected = 1): jest.Mocked<EntityManager> & { _qb: Re
     save:   jest.fn().mockResolvedValue({}),
     create: jest.fn().mockImplementation((_cls: any, data: any) => data),
     createQueryBuilder: jest.fn().mockReturnValue(qb),
+    count: jest.fn().mockResolvedValue(0),
   } as unknown as jest.Mocked<EntityManager> & { _qb: ReturnType<typeof mockQueryBuilder> };
 }
 
@@ -97,8 +99,11 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     frequency: 'daily',
     status: 'created',
     photoUrl: null as any,
+    note: null as any,
     rejectionReason: null as any,
     approvedByName: null as any,
+    timesPerDay: 1,
+    bonusPoints: 0,
     child: makeChild(),
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -194,6 +199,33 @@ describe('TasksService', () => {
         expect.objectContaining({ frequency: 'weekly' }),
       );
     });
+
+    it('saves timesPerDay and bonusPoints when provided', async () => {
+      const child = makeChild();
+      childRepo.findOne.mockResolvedValue(child);
+      const savedTask = makeTask({ timesPerDay: 3, bonusPoints: 10 });
+      taskRepo.create.mockReturnValue(savedTask);
+      taskRepo.save.mockResolvedValue(savedTask);
+
+      await service.create({ childId: 'child-1', title: 'Débarrasser', points: 10, timesPerDay: 3, bonusPoints: 10 });
+
+      expect(taskRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ timesPerDay: 3, bonusPoints: 10 }),
+      );
+    });
+
+    it('defaults timesPerDay to 1 and bonusPoints to 0 when not provided', async () => {
+      const child = makeChild();
+      childRepo.findOne.mockResolvedValue(child);
+      taskRepo.create.mockReturnValue(makeTask());
+      taskRepo.save.mockResolvedValue(makeTask());
+
+      await service.create({ childId: 'child-1', title: 'Task', points: 10 });
+
+      expect(taskRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ timesPerDay: 1, bonusPoints: 0 }),
+      );
+    });
   });
 
   // ── complete ─────────────────────────────────────────────────────────────────
@@ -265,6 +297,25 @@ describe('TasksService', () => {
       em._qb.execute.mockResolvedValue({ affected: 0 });
 
       await expect(service.complete('task-1')).rejects.toThrow(ConflictException);
+    });
+
+    it('throws ConflictException when daily limit already reached for repeating task', async () => {
+      const task = makeTask({ status: 'created', timesPerDay: 3 });
+      taskRepo.findOne.mockResolvedValue(task);
+      (txRepo.count as jest.Mock).mockResolvedValue(3); // already done 3 times today
+
+      await expect(service.complete('task-1')).rejects.toThrow(ConflictException);
+    });
+
+    it('allows completion when under daily limit for repeating task', async () => {
+      const task = makeTask({ status: 'created', timesPerDay: 3 });
+      const updatedTask = makeTask({ status: 'pending_approval' });
+      taskRepo.findOne.mockResolvedValue(task);
+      taskRepo.findOneOrFail.mockResolvedValue(updatedTask);
+      (txRepo.count as jest.Mock).mockResolvedValue(2); // done 2, limit is 3
+
+      const result = await service.complete('task-1');
+      expect(result.status).toBe('pending_approval');
     });
   });
 
@@ -365,6 +416,111 @@ describe('TasksService', () => {
       em._qb.execute.mockResolvedValue({ affected: 0 });
       await expect(service.approve('task-1', 'acc-1')).rejects.toThrow(ConflictException);
     });
+
+    // ── repeating task logic ──────────────────────────────────────────────────
+
+    it('resets task to created on non-final iteration approval', async () => {
+      const task = makeTask({ status: 'pending_approval', timesPerDay: 3, points: 10 });
+      const resetTask = makeTask({ status: 'created' });
+
+      taskRepo.findOne.mockResolvedValue(task);
+      taskRepo.findOneOrFail.mockResolvedValue(resetTask);
+      // em.count returns 1 (1 already done today) → this is the 2nd → not last
+      (em.count as jest.Mock).mockResolvedValue(1);
+
+      const result = await service.approve('task-1', 'acc-1');
+
+      expect(em._qb.set).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'created' }),
+      );
+      expect(result.status).toBe('created');
+    });
+
+    it('clears submittedAt, photoUrl, note on intermediate approval', async () => {
+      const task = makeTask({ status: 'pending_approval', timesPerDay: 3 });
+      taskRepo.findOne.mockResolvedValue(task);
+      taskRepo.findOneOrFail.mockResolvedValue(makeTask({ status: 'created' }));
+      (em.count as jest.Mock).mockResolvedValue(0); // 0 done → this is 1st → not last
+
+      await service.approve('task-1', 'acc-1');
+
+      expect(em._qb.set).toHaveBeenCalledWith(
+        expect.objectContaining({ submittedAt: null, photoUrl: null, note: null }),
+      );
+    });
+
+    it('validates task on final iteration approval', async () => {
+      const task = makeTask({ status: 'pending_approval', timesPerDay: 3, points: 10 });
+      const validatedTask = makeTask({ status: 'validated' });
+
+      taskRepo.findOne.mockResolvedValue(task);
+      taskRepo.findOneOrFail.mockResolvedValue(validatedTask);
+      // em.count returns 2 (2 already done today) → this is the 3rd → last
+      (em.count as jest.Mock).mockResolvedValue(2);
+
+      const result = await service.approve('task-1', 'acc-1');
+
+      expect(em._qb.set).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'validated' }),
+      );
+      expect(result.status).toBe('validated');
+    });
+
+    it('creates bonus transaction on final iteration when bonusPoints > 0', async () => {
+      const child = makeChild({ id: 'child-99' });
+      const task = makeTask({ status: 'pending_approval', timesPerDay: 3, points: 10, bonusPoints: 5, child });
+      taskRepo.findOne.mockResolvedValue(task);
+      taskRepo.findOneOrFail.mockResolvedValue(makeTask({ status: 'validated' }));
+      (em.count as jest.Mock).mockResolvedValue(2); // 2 done → this is 3rd → last
+
+      await service.approve('task-1', 'acc-1');
+
+      expect(em.save).toHaveBeenCalledWith(
+        Transaction,
+        expect.objectContaining({ type: 'earn', amount: 5, referenceId: 'task-1:bonus', child }),
+      );
+    });
+
+    it('does not create bonus transaction on intermediate iteration', async () => {
+      const task = makeTask({ status: 'pending_approval', timesPerDay: 3, bonusPoints: 5 });
+      taskRepo.findOne.mockResolvedValue(task);
+      taskRepo.findOneOrFail.mockResolvedValue(makeTask({ status: 'created' }));
+      (em.count as jest.Mock).mockResolvedValue(1); // 1 done → this is 2nd → not last
+
+      await service.approve('task-1', 'acc-1');
+
+      const saveCalls = (em.save as jest.Mock).mock.calls;
+      const bonusCall = saveCalls.find(([, data]) => data?.referenceId === 'task-1:bonus');
+      expect(bonusCall).toBeUndefined();
+    });
+
+    it('does not create bonus transaction on final iteration when bonusPoints is 0', async () => {
+      const task = makeTask({ status: 'pending_approval', timesPerDay: 2, bonusPoints: 0, points: 10 });
+      taskRepo.findOne.mockResolvedValue(task);
+      taskRepo.findOneOrFail.mockResolvedValue(makeTask({ status: 'validated' }));
+      (em.count as jest.Mock).mockResolvedValue(1); // 1 done → 2nd → last
+
+      await service.approve('task-1', 'acc-1');
+
+      const saveCalls = (em.save as jest.Mock).mock.calls;
+      const bonusCall = saveCalls.find(([, data]) => data?.referenceId === 'task-1:bonus');
+      expect(bonusCall).toBeUndefined();
+    });
+
+    it('creates earn transaction on every iteration (including non-final)', async () => {
+      const child = makeChild({ id: 'child-77' });
+      const task = makeTask({ status: 'pending_approval', timesPerDay: 3, points: 10, child });
+      taskRepo.findOne.mockResolvedValue(task);
+      taskRepo.findOneOrFail.mockResolvedValue(makeTask({ status: 'created' }));
+      (em.count as jest.Mock).mockResolvedValue(0); // 0 done → 1st → not last
+
+      await service.approve('task-1', 'acc-1');
+
+      expect(em.save).toHaveBeenCalledWith(
+        Transaction,
+        expect.objectContaining({ type: 'earn', amount: 10, referenceId: 'task-1', child }),
+      );
+    });
   });
 
   // ── reject ───────────────────────────────────────────────────────────────────
@@ -459,6 +615,16 @@ describe('TasksService', () => {
       taskRepo.find.mockResolvedValue([]);
       const result = await service.getForChild('child-1');
       expect(result).toEqual([]);
+    });
+
+    it('enriches tasks with completedToday from transaction count', async () => {
+      const tasks = [makeTask({ id: 'task-1' })];
+      taskRepo.find.mockResolvedValue(tasks);
+      (txRepo.count as jest.Mock).mockResolvedValue(2);
+
+      const result = await service.getForChild('child-1');
+
+      expect((result[0] as any).completedToday).toBe(2);
     });
   });
 });

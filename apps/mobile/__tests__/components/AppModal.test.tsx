@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AppModal, { ModalConfig, ModalButton } from '@/components/ui/AppModal';
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
@@ -22,7 +23,11 @@ jest.mock('@/constants/theme', () => ({
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function renderModal(config: ModalConfig | null, onHide = jest.fn()) {
-  return render(<AppModal config={config} onHide={onHide} />);
+  return render(
+    <SafeAreaProvider initialMetrics={{ insets: { top: 0, bottom: 0, left: 0, right: 0 }, frame: { x: 0, y: 0, width: 390, height: 844 } }}>
+      <AppModal config={config} onHide={onHide} />
+    </SafeAreaProvider>
+  );
 }
 
 // ── Tests ────────────────────────────────────────────────────────────────────

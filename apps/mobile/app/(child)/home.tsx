@@ -13,7 +13,7 @@ import { rewardsApi } from '@/lib/api/rewards';
 import { childrenApi } from '@/lib/api/children';
 
 type TaskState = 'todo' | 'pending' | 'done';
-interface UITask { id: string; name: string; pts: number; state: TaskState; rejectionReason?: string; }
+interface UITask { id: string; name: string; pts: number; state: TaskState; rejectionReason?: string; timesPerDay: number; completedToday: number; bonusPoints: number; }
 
 function apiStatusToState(status: string): TaskState {
   if (status === 'validated') return 'done';
@@ -28,6 +28,9 @@ function taskToUI(task: Task): UITask {
     pts:   task.points,
     state: apiStatusToState(task.status),
     rejectionReason: task.rejectionReason,
+    timesPerDay:    task.timesPerDay ?? 1,
+    completedToday: task.completedToday ?? 0,
+    bonusPoints:    task.bonusPoints ?? 0,
   };
 }
 
@@ -250,6 +253,11 @@ export default function ChildHomeScreen() {
                 </Text>
               )}
             </View>
+            {task.timesPerDay > 1 && (
+              <View style={styles.repBadge}>
+                <Text style={styles.repBadgeText}>{task.completedToday}/{task.timesPerDay}</Text>
+              </View>
+            )}
             <View style={[styles.ptsBadge, task.state === 'done' && styles.ptsBadgeDone]}>
               <Text style={[styles.ptsBadgeText, task.state === 'done' && styles.ptsBadgeTextDone]}>+{task.pts} pts</Text>
             </View>
@@ -345,6 +353,8 @@ const styles = StyleSheet.create({
   taskSub:      { fontSize: 11, fontWeight: '700', color: 'rgba(255,184,0,0.7)', marginTop: 2 },
   taskRejected: { fontSize: 11, fontWeight: '700', color: 'rgba(239,83,80,0.8)', marginTop: 2 },
 
+  repBadge:     { backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', borderRadius: Radii.pill, paddingHorizontal: 8, paddingVertical: 4, marginRight: 4 },
+  repBadgeText: { fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.5)' },
   ptsBadge:     { backgroundColor: 'rgba(255,184,0,0.1)', borderWidth: 1, borderColor: 'rgba(255,184,0,0.18)', borderRadius: Radii.pill, paddingHorizontal: 11, paddingVertical: 5 },
   ptsBadgeDone: { backgroundColor: 'rgba(76,175,80,0.08)', borderColor: 'rgba(76,175,80,0.18)' },
   ptsBadgeText:     { fontSize: 13, fontWeight: '900', color: Colors.gold },

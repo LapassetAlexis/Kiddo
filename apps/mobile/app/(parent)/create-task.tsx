@@ -39,6 +39,8 @@ export default function CreateTaskScreen() {
   const [points, setPoints]         = useState('');
   const [frequency, setFrequency]   = useState<Frequency>('daily');
   const [weekDay, setWeekDay]       = useState(0); // 0=Lun … 6=Dim
+  const [timesPerDay, setTimesPerDay] = useState(1);
+  const [bonusPoints, setBonusPoints] = useState('');
   const [assignedIds, setAssignedIds] = useState<string[]>([]);
   const [loading, setLoading]       = useState(false);
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
@@ -82,11 +84,14 @@ export default function CreateTaskScreen() {
     setLoading(true);
     try {
       // Créer la tâche pour chaque enfant assigné
+      const bonus = parseInt(bonusPoints, 10) || 0;
       await Promise.all(assignedIds.map(childId =>
         tasksApi.create({
           childId, title, points: pts,
           frequency,
           weekDay: frequency === 'weekly' ? weekDay : undefined,
+          timesPerDay: frequency === 'daily' ? timesPerDay : 1,
+          bonusPoints: frequency === 'daily' && timesPerDay > 1 ? bonus : 0,
         })
       ));
       const names = (childrenData ?? []).filter(c => assignedIds.includes(c.id)).map(c => c.name).join(' et ');
@@ -234,6 +239,66 @@ export default function CreateTaskScreen() {
             </View>
           )}
 
+          {/* Répétitions par jour (daily uniquement) */}
+          {frequency === 'daily' && (
+            <>
+              <Text style={styles.sectionLabel}>Fois par jour</Text>
+              <View style={styles.stepperRow}>
+                <TouchableOpacity
+                  style={[styles.stepperBtn, timesPerDay <= 1 && styles.stepperBtnDisabled]}
+                  onPress={() => setTimesPerDay(v => Math.max(1, v - 1))}
+                  disabled={timesPerDay <= 1}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.stepperBtnText}>−</Text>
+                </TouchableOpacity>
+                <View style={styles.stepperValue}>
+                  <Text style={styles.stepperValueText}>{timesPerDay}×</Text>
+                  <Text style={styles.stepperValueSub}>par jour</Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.stepperBtn, timesPerDay >= 10 && styles.stepperBtnDisabled]}
+                  onPress={() => setTimesPerDay(v => Math.min(10, v + 1))}
+                  disabled={timesPerDay >= 10}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.stepperBtnText}>+</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+
+          {/* Bonus (visible quand timesPerDay > 1) */}
+          {frequency === 'daily' && timesPerDay > 1 && (
+            <>
+              <Text style={styles.sectionLabel}>Bonus si tout complété</Text>
+              <View style={styles.ptsRow}>
+                {[5, 10, 15, 20].map(p => (
+                  <TouchableOpacity
+                    key={p}
+                    style={[styles.ptsChip, bonusPoints === String(p) && styles.ptsChipActive]}
+                    onPress={() => setBonusPoints(String(p))}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.ptsChipText, bonusPoints === String(p) && styles.ptsChipTextActive]}>
+                      +{p}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+                <TextInput
+                  style={[styles.ptsInput, !([5,10,15,20].map(String).includes(bonusPoints)) && bonusPoints !== '' && styles.ptsInputActive]}
+                  placeholder="0"
+                  placeholderTextColor={Colors.textFaint}
+                  value={[5,10,15,20].map(String).includes(bonusPoints) ? '' : bonusPoints}
+                  onChangeText={v => setBonusPoints(v.replace(/[^0-9]/g, ''))}
+                  keyboardType="numeric"
+                  maxLength={3}
+                  returnKeyType="done"
+                />
+              </View>
+            </>
+          )}
+
           {/* Assigner aux enfants */}
           <Text style={styles.sectionLabel}>Assigner à</Text>
           <View style={styles.childrenGroup}>
@@ -267,6 +332,9 @@ export default function CreateTaskScreen() {
               </Text>
               <Text style={styles.summaryLine}>
                 ⭐ <Text style={{ color: Colors.gold, fontWeight: '900' }}>+{points} pts</Text>
+                {frequency === 'daily' && timesPerDay > 1 && (
+                  <Text style={{ color: Colors.textDim }}>{` × ${timesPerDay}`}{bonusPoints ? ` + ${bonusPoints} bonus` : ''}</Text>
+                )}
                 {'  ·  '}
                 <Text style={{ color: Colors.textDim }}>
                   {frequency === 'weekly'
@@ -410,6 +478,19 @@ const styles = StyleSheet.create({
   },
   dayText:       { fontSize: 12, fontWeight: '800', color: Colors.textFaint },
   dayTextActive: { color: Colors.gold },
+
+  // Stepper
+  stepperRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  stepperBtn: {
+    width: 48, height: 48, borderRadius: Radii.card,
+    backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  stepperBtnDisabled: { opacity: 0.35 },
+  stepperBtnText: { fontSize: 22, fontWeight: '800', color: Colors.textPrimary },
+  stepperValue: { flex: 1, alignItems: 'center' },
+  stepperValueText: { fontSize: 22, fontWeight: '900', color: Colors.gold },
+  stepperValueSub:  { fontSize: 11, fontWeight: '700', color: Colors.textFaint, marginTop: 1 },
 
   // Bouton créer
   createBtn: {
