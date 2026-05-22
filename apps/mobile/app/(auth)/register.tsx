@@ -48,7 +48,12 @@ export default function RegisterScreen() {
     setLoading(true);
     try {
       const fullName = [firstName.trim(), lastName.trim()].filter(Boolean).join(' ');
-      await authApi.register(fullName, email.trim().toLowerCase(), password);
+      const res = await authApi.register(fullName, email.trim().toLowerCase(), password);
+      if (res.accessToken) {
+        await authApi.saveToken(res.accessToken);
+        router.replace('/(parent)/dashboard');
+        return;
+      }
       setCode('');
       setStep(3);
     } catch (err) {

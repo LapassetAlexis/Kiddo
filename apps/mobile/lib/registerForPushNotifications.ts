@@ -1,20 +1,30 @@
 import * as Device from 'expo-device';
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge:  true,
-  }),
-});
+const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
 export async function registerForPushNotifications(): Promise<string | null> {
+  if (isExpoGo) {
+    console.warn('[FCM] Push notifications not supported in Expo Go');
+    return null;
+  }
+
+  // Dynamic import so the module never loads in Expo Go
+  const Notifications = await import('expo-notifications');
+
   if (!Device.isDevice) {
     console.warn('[FCM] Push notifications require a physical device');
     return null;
   }
+
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge:  true,
+    }),
+  });
 
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;

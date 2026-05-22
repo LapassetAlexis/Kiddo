@@ -50,7 +50,12 @@ export default function JoinFamilyScreen() {
     setLoading(true);
     try {
       const fullName = [firstName.trim(), lastName.trim()].filter(Boolean).join(' ');
-      await authApi.joinFamily(fullName, email.trim().toLowerCase(), password, inviteCode.trim().toUpperCase());
+      const res = await authApi.joinFamily(fullName, email.trim().toLowerCase(), password, inviteCode.trim().toUpperCase());
+      if (res.accessToken) {
+        await authApi.saveToken(res.accessToken);
+        router.replace('/(parent)/dashboard');
+        return;
+      }
       setCode('');
       setStep(3);
     } catch (err) {

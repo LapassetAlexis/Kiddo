@@ -38,7 +38,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest:   ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey:      config.get<string>('JWT_SECRET') ?? 'kiddo-dev-secret',
+      secretOrKey:      config.getOrThrow<string>('JWT_SECRET'),
     });
   }
 
@@ -97,9 +97,13 @@ export class AuthService {
     const family = await this.families.save(
       this.families.create({ name, inviteCode: this.generateInviteCode() }),
     );
-    await this.accounts.save(
+    const account = await this.accounts.save(
       this.accounts.create({ email, passwordHash, name, family }),
     );
+
+    if (!this.email.isEnabled) {
+      return { accessToken: this.parentJwt({ ...account, family } as any), message: 'Famille créée.' };
+    }
 
     const code = await this.createEmailVerificationCode(email);
     await this.email.sendVerificationCode(email, code);
@@ -242,6 +246,10 @@ export class AuthService {
     const account = await this.accounts.save(
       this.accounts.create({ email, passwordHash, name, family }),
     );
+
+    if (!this.email.isEnabled) {
+      return { accessToken: this.parentJwt({ ...account, family } as any), message: 'Compte co-parent créé.' };
+    }
 
     const code = await this.createEmailVerificationCode(email);
     await this.email.sendVerificationCode(email, code);

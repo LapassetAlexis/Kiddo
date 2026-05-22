@@ -8,6 +8,8 @@ export class EmailService {
   private readonly resend: Resend | null;
   private readonly from: string;
 
+  get isEnabled(): boolean { return this.resend !== null; }
+
   constructor(private config: ConfigService) {
     const apiKey = this.config.get<string>('RESEND_API_KEY');
     this.from    = this.config.get<string>('EMAIL_FROM') ?? 'Kiddo <noreply@kiddo.app>';
@@ -16,7 +18,7 @@ export class EmailService {
       this.resend = new Resend(apiKey);
     } else {
       this.resend = null;
-      this.log.warn('RESEND_API_KEY not set — emails will be logged to console only');
+      this.log.warn('RESEND_API_KEY not set — dev mode, email verification skipped');
     }
   }
 
@@ -58,7 +60,7 @@ export class EmailService {
     try {
       await this.resend.emails.send({ from: this.from, to, subject, html });
     } catch (err) {
-      this.log.error(`Failed to send email to ${to}: ${err.message}`);
+      this.log.error(`Failed to send email to ${to}: ${(err as Error).message}`);
       throw err;
     }
   }
