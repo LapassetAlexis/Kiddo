@@ -8,6 +8,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useApiData } from '@/lib/useApiData';
 import { childrenApi } from '@/lib/api/children';
 import { transactionsApi } from '@/lib/api/transactions';
+import { getXpProgress, CLASS_LABELS, CLASS_EMOJI } from '@/lib/rpg';
+import type { ChildClass } from '@/lib/rpg';
 
 interface BadgeGroup {
   title: string;
@@ -20,18 +22,18 @@ function buildBadgeGroups(tasksCompleted: number, earnedTotal: number, spentTota
       title: '🎯 Premiers objectifs',
       badges: [
         { id: 'o1', emoji: '🌟', label: 'Bienvenue !',          unlocked: true                },
-        { id: 'o2', emoji: '🏆', label: 'Première tâche',       unlocked: tasksCompleted >= 1 },
+        { id: 'o2', emoji: '🏆', label: 'Première quête',       unlocked: tasksCompleted >= 1 },
         { id: 'o3', emoji: '🎁', label: 'Première récompense',  unlocked: rewardsClaimed >= 1 },
         { id: 'o4', emoji: '🔥', label: 'Première série',       unlocked: longestStreak >= 2  },
       ],
     },
     {
-      title: '⭐ Points gagnés',
+      title: '🪙 Pièces gagnées',
       badges: [
-        { id: 'p1', emoji: '🥉', label: '100 pts',   unlocked: earnedTotal >= 100  },
-        { id: 'p2', emoji: '🥈', label: '500 pts',   unlocked: earnedTotal >= 500  },
-        { id: 'p3', emoji: '🥇', label: '1 000 pts', unlocked: earnedTotal >= 1000 },
-        { id: 'p4', emoji: '👑', label: '1 500 pts', unlocked: earnedTotal >= 1500 },
+        { id: 'p1', emoji: '🥉', label: '100 🪙',    unlocked: earnedTotal >= 100  },
+        { id: 'p2', emoji: '🥈', label: '500 🪙',    unlocked: earnedTotal >= 500  },
+        { id: 'p3', emoji: '🥇', label: '1 000 🪙',  unlocked: earnedTotal >= 1000 },
+        { id: 'p4', emoji: '👑', label: '1 500 🪙',  unlocked: earnedTotal >= 1500 },
       ],
     },
     {
@@ -44,21 +46,21 @@ function buildBadgeGroups(tasksCompleted: number, earnedTotal: number, spentTota
       ],
     },
     {
-      title: '✅ Tâches',
+      title: '⚔️ Quêtes',
       badges: [
-        { id: 't1', emoji: '🎯', label: '1 tâche',    unlocked: tasksCompleted >= 1  },
-        { id: 't2', emoji: '💪', label: '10 tâches',  unlocked: tasksCompleted >= 10 },
-        { id: 't3', emoji: '🏅', label: '25 tâches',  unlocked: tasksCompleted >= 25 },
-        { id: 't4', emoji: '🏆', label: '50 tâches',  unlocked: tasksCompleted >= 50 },
+        { id: 't1', emoji: '🎯', label: '1 quête',    unlocked: tasksCompleted >= 1  },
+        { id: 't2', emoji: '💪', label: '10 quêtes',  unlocked: tasksCompleted >= 10 },
+        { id: 't3', emoji: '🏅', label: '25 quêtes',  unlocked: tasksCompleted >= 25 },
+        { id: 't4', emoji: '🏆', label: '50 quêtes',  unlocked: tasksCompleted >= 50 },
       ],
     },
     {
       title: '🎁 Récompenses',
       badges: [
-        { id: 'r1', emoji: '🎀', label: '1 récompense',  unlocked: rewardsClaimed >= 1  },
-        { id: 'r2', emoji: '🎊', label: '3 récompenses', unlocked: rewardsClaimed >= 3  },
-        { id: 'r3', emoji: '🎉', label: '5 récompenses', unlocked: rewardsClaimed >= 5  },
-        { id: 'r4', emoji: '🚀', label: '10 récompenses',unlocked: rewardsClaimed >= 10 },
+        { id: 'r1', emoji: '🎀', label: '1 récompense',   unlocked: rewardsClaimed >= 1  },
+        { id: 'r2', emoji: '🎊', label: '3 récompenses',  unlocked: rewardsClaimed >= 3  },
+        { id: 'r3', emoji: '🎉', label: '5 récompenses',  unlocked: rewardsClaimed >= 5  },
+        { id: 'r4', emoji: '🚀', label: '10 récompenses', unlocked: rewardsClaimed >= 10 },
       ],
     },
   ];
@@ -94,32 +96,39 @@ export default function ChildProfileScreen() {
   if (balanceError) return <ErrorScreen message={balanceError} onRetry={refreshBalance} />;
   if (streakError)  return <ErrorScreen message={streakError}  onRetry={refreshStreak} />;
 
-  const childInfo    = statsData?.child;
-  const childName    = childInfo?.name ?? user?.name ?? '';
-  const childEmoji   = childInfo?.avatar ?? user?.avatar ?? '🧒';
-  const childColor   = user?.color ?? '#FFB300';
-  const currentPts   = balanceData?.balance ?? 0;
-  const currentStreak= streakData?.currentStreak ?? 0;
-  const earnedTotal  = balanceData?.earnedTotal ?? 0;
-  const spentTotal   = balanceData?.spentTotal ?? 0;
-  const longestStreak= streakData?.longestStreak ?? 0;
+  const childName       = statsData?.name       ?? user?.name   ?? '';
+  const childEmoji      = statsData?.avatar     ?? user?.avatar ?? '🧒';
+  const childColor      = user?.color           ?? '#FFB300';
+  const childXp         = statsData?.xp         ?? 0;
+  const childLevel      = statsData?.level      ?? 1;
+  const childTitle      = statsData?.levelTitle ?? '';
+  const childLevelEmoji = statsData?.levelEmoji ?? '';
+  const childClass      = (statsData?.class     ?? 'warrior') as ChildClass;
+  const currentGold     = balanceData?.balance  ?? 0;
+  const currentStreak   = streakData?.currentStreak  ?? 0;
+  const earnedTotal     = balanceData?.earnedTotal    ?? 0;
+  const spentTotal      = balanceData?.spentTotal     ?? 0;
+  const longestStreak   = streakData?.longestStreak   ?? 0;
+  const xpProgress      = getXpProgress(childXp);
+  const xpPercent       = xpProgress.total > 0 ? Math.round((xpProgress.current / xpProgress.total) * 100) : 0;
+
   const BADGE_GROUPS = buildBadgeGroups(
-    statsData?.tasksCompleted ?? 0,
+    statsData?.stats?.tasksCompleted ?? 0,
     earnedTotal,
     spentTotal,
     longestStreak,
-    statsData?.rewardsClaimed ?? 0,
+    statsData?.stats?.rewardsClaimed ?? 0,
   );
 
-  const joinedDate = childInfo?.createdAt
-    ? new Date(childInfo.createdAt).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+  const joinedDate = statsData?.createdAt
+    ? new Date(statsData.createdAt).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
     : '';
 
   const STATS = [
-    { label: 'Tâches faites',   value: String(statsData?.tasksCompleted ?? 0),   icon: '✅', color: Colors.green  },
-    { label: 'Récompenses',     value: String(statsData?.rewardsClaimed ?? 0),   icon: '🎁', color: Colors.gold   },
-    { label: 'Record de série', value: `${streakData?.longestStreak ?? 0}j`,     icon: '🔥', color: Colors.orange },
-    { label: 'Points gagnés',   value: earnedTotal.toLocaleString('fr-FR'),      icon: '⭐', color: Colors.gold   },
+    { label: 'Quêtes faites',   value: String(statsData?.stats?.tasksCompleted ?? 0), icon: '⚔️', color: Colors.green  },
+    { label: 'Récompenses',     value: String(statsData?.stats?.rewardsClaimed ?? 0), icon: '🎁', color: Colors.gold   },
+    { label: 'Record de série', value: `${streakData?.longestStreak ?? 0}j`,          icon: '🔥', color: Colors.orange },
+    { label: 'Or gagné',        value: earnedTotal.toLocaleString('fr-FR') + ' 🪙',   icon: '💰', color: Colors.gold   },
   ];
 
   function changePin() {
@@ -167,9 +176,27 @@ export default function ChildProfileScreen() {
           <Text style={styles.childName}>{childName}</Text>
           {joinedDate ? <Text style={styles.childSince}>Membre depuis {joinedDate}</Text> : null}
 
-          {/* Balance */}
+          {/* Level + classe + XP */}
+          <View style={styles.levelRow}>
+            <Text style={styles.levelEmoji}>{childLevelEmoji}</Text>
+            <View style={styles.levelInfo}>
+              <View style={styles.levelTitleRow}>
+                <View style={styles.levelBadge}>
+                  <Text style={styles.levelBadgeText}>Niv. {childLevel}</Text>
+                </View>
+                <Text style={styles.levelTitle}>{childTitle}</Text>
+                <Text style={styles.classChip}>{CLASS_EMOJI[childClass]} {CLASS_LABELS[childClass]}</Text>
+              </View>
+              <View style={styles.xpBarTrack}>
+                <View style={[styles.xpBarFill, { width: `${xpPercent}%` }]} />
+              </View>
+              <Text style={styles.xpLabel}>{xpProgress.current} / {xpProgress.total} XP</Text>
+            </View>
+          </View>
+
+          {/* Or */}
           <View style={styles.balancePill}>
-            <Text style={styles.balancePillText}>⭐ {currentPts} pts</Text>
+            <Text style={styles.balancePillText}>🪙 {currentGold} pièces d'or</Text>
           </View>
         </View>
 
@@ -244,6 +271,29 @@ const styles = StyleSheet.create({
   streakBadgeText: { fontSize: 12, fontWeight: '900', color: Colors.orange },
   childName:       { fontSize: 28, fontWeight: '900', color: Colors.textPrimary },
   childSince:      { fontSize: 13, fontWeight: '600', color: Colors.textFaint },
+
+  // Level / XP
+  levelRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    width: '100%', paddingHorizontal: 8,
+    backgroundColor: Colors.bgCard, borderRadius: Radii.card,
+    borderWidth: 1, borderColor: Colors.border, padding: 14,
+  },
+  levelEmoji:    { fontSize: 36 },
+  levelInfo:     { flex: 1, gap: 5 },
+  levelTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  levelBadge: {
+    backgroundColor: 'rgba(139,92,246,0.15)', borderRadius: 6,
+    paddingHorizontal: 7, paddingVertical: 2,
+    borderWidth: 1, borderColor: 'rgba(139,92,246,0.3)',
+  },
+  levelBadgeText: { fontSize: 11, fontWeight: '900', color: '#a78bfa' },
+  levelTitle:     { fontSize: 13, fontWeight: '800', color: Colors.textPrimary },
+  classChip:      { marginLeft: 'auto', fontSize: 12, fontWeight: '700', color: Colors.textDim },
+  xpBarTrack: { height: 6, borderRadius: 99, backgroundColor: 'rgba(139,92,246,0.15)', overflow: 'hidden', width: '100%' },
+  xpBarFill:  { height: '100%', borderRadius: 99, backgroundColor: '#8b5cf6' },
+  xpLabel:    { fontSize: 10, fontWeight: '700', color: Colors.textFaint },
+
   balancePill: {
     backgroundColor: 'rgba(255,184,0,0.12)',
     borderRadius: 99, paddingHorizontal: 20, paddingVertical: 10,
@@ -291,9 +341,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bgCard, borderRadius: Radii.card,
     borderWidth: 1, borderColor: Colors.border, overflow: 'hidden',
   },
-  actionRow: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 },
-  actionIcon:{ fontSize: 22 },
-  actionText:{ flex: 1, fontSize: 15, fontWeight: '700', color: Colors.textPrimary },
-  actionArrow:{ fontSize: 20, color: Colors.textFaint },
+  actionRow:     { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 },
+  actionIcon:    { fontSize: 22 },
+  actionText:    { flex: 1, fontSize: 15, fontWeight: '700', color: Colors.textPrimary },
+  actionArrow:   { fontSize: 20, color: Colors.textFaint },
   actionDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.05)' },
 });

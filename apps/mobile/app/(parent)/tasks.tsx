@@ -15,7 +15,7 @@ interface HistoryTask {
   taskName: string;
   childName: string;
   childEmoji: string;
-  pts: number;
+  goldReward: number;
   status: TaskStatus;
   time: string;
   approvedByName?: string;
@@ -59,7 +59,7 @@ function groupTasksByDate(tasks: Task[]): Section[] {
       taskName: task.title,
       childName: task.child.name,
       childEmoji: task.child.avatar,
-      pts: task.points,
+      goldReward: task.goldReward,
       status: apiStatusToLocal(task),
       time: formatTime(dateRef),
       approvedByName: task.approvedByName,
@@ -122,7 +122,7 @@ export default function TasksScreen() {
 
   // Stats
   const totalValidated = allTasks.filter(t => t.status === 'validated').length;
-  const totalPts       = allTasks.filter(t => t.status === 'validated').reduce((sum, t) => sum + t.points, 0);
+  const totalGold      = allTasks.filter(t => t.status === 'validated').reduce((sum, t) => sum + t.goldReward, 0);
   const totalPending   = allTasks.filter(t => t.status === 'pending_approval' || t.status === 'created').length;
 
   if (loading && !historyData) return <LoadingScreen />;
@@ -133,7 +133,7 @@ export default function TasksScreen() {
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Tâches 📋</Text>
+        <Text style={styles.title}>Quêtes ⚔️</Text>
         <TouchableOpacity
           style={styles.addBtn}
           onPress={() => router.push('/(parent)/create-task')}
@@ -154,8 +154,8 @@ export default function TasksScreen() {
           <Text style={styles.statLabel}>En attente</Text>
         </View>
         <View style={styles.statCard}>
-          <Text style={[styles.statValue, { color: Colors.gold }]}>+{totalPts}</Text>
-          <Text style={styles.statLabel}>Pts accordés</Text>
+          <Text style={[styles.statValue, { color: Colors.gold }]}>+{totalGold}🪙</Text>
+          <Text style={styles.statLabel}>Or accordé</Text>
         </View>
       </View>
 
@@ -196,7 +196,7 @@ export default function TasksScreen() {
       {filteredSections.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.emptyEmoji}>🔍</Text>
-          <Text style={styles.emptyText}>Aucune tâche pour ce filtre</Text>
+          <Text style={styles.emptyText}>Aucune quête pour ce filtre</Text>
         </View>
       ) : (
         <SectionList
@@ -239,7 +239,7 @@ export default function TasksScreen() {
                     <Text style={styles.stepBadge}>{item.completedToday}/{item.timesPerDay}</Text>
                   )}
                   <Text style={[styles.rowPts, item.status !== 'validated' && { color: Colors.textFaint }]}>
-                    {item.status === 'validated' ? `+${item.pts}` : `${item.pts}`} pts
+                    {item.status === 'validated' ? `+${item.goldReward}` : `${item.goldReward}`} 🪙
                   </Text>
                   <View style={[styles.statusBadge, { backgroundColor: cfg.bg, borderColor: cfg.border }]}>
                     <Text style={[styles.statusText, { color: cfg.color }]}>{cfg.icon} {cfg.label}</Text>

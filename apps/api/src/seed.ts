@@ -42,12 +42,10 @@ async function seed() {
   let family: Family;
 
   if (accounts.length > 0) {
-    // Use first existing account's family
     const account = accounts[0];
     family = account.family;
     console.log(`✓ Compte existant trouvé — ${account.email} (famille: ${family.id})`);
 
-    // Clear existing seed data for this family to avoid dupes
     const existingChildren = await childRepo.find({ where: { family: { id: family.id } }, relations: ['family'] });
     if (existingChildren.length > 0) {
       console.log(`  ${existingChildren.length} enfant(s) déjà présents — suppression pour re-seed propre…`);
@@ -60,7 +58,6 @@ async function seed() {
     await rewardRepo.delete({ family: { id: family.id } });
 
   } else {
-    // No existing account — create a test one
     family = await familyRepo.save(
       familyRepo.create({ name: 'Famille Test', inviteCode: 'KIDDO001' }),
     );
@@ -75,85 +72,85 @@ async function seed() {
 
   // ── Children ──────────────────────────────────────────────────────────────
   const emma = await childRepo.save(childRepo.create({
-    name: 'Emma', avatar: '🦄', color: '#FF80AB',
+    name: 'Emma', avatar: '🦄', color: '#FF80AB', class: 'mage', xp: 145,
     pinHash: await bcrypt.hash('1234', 12), family,
   }));
   const lucas = await childRepo.save(childRepo.create({
-    name: 'Lucas', avatar: '🚀', color: '#40C4FF',
+    name: 'Lucas', avatar: '🚀', color: '#40C4FF', class: 'warrior', xp: 300,
     pinHash: await bcrypt.hash('5678', 12), family,
   }));
   const zoe = await childRepo.save(childRepo.create({
-    name: 'Zoé', avatar: '🌈', color: '#69F0AE',
+    name: 'Zoé', avatar: '🌈', color: '#69F0AE', class: 'archer', xp: 10,
     pinHash: await bcrypt.hash('0000', 12), family,
   }));
-  console.log('✓ 3 enfants — Emma (PIN: 1234), Lucas (PIN: 5678), Zoé (PIN: 0000)');
+  console.log('✓ 3 enfants — Emma (mage, PIN: 1234), Lucas (warrior, PIN: 5678), Zoé (archer, PIN: 0000)');
 
   // ── Tasks ─────────────────────────────────────────────────────────────────
   const now = new Date();
 
-  // Emma — mix de statuts
+  // Emma
   const emmaT1 = await taskRepo.save(taskRepo.create({
-    title: 'Ranger sa chambre', points: 20, frequency: 'daily',
+    title: 'Ranger sa chambre', goldReward: 20, difficulty: 'easy', frequency: 'daily',
     status: 'validated', child: emma,
     submittedAt: now, validatedAt: now, approvedByName: 'Maman',
   }));
   await taskRepo.save(taskRepo.create({
-    title: 'Faire ses devoirs', points: 30, frequency: 'daily',
+    title: 'Faire ses devoirs', goldReward: 30, difficulty: 'medium', frequency: 'daily',
     description: 'Tous les devoirs du soir',
     status: 'pending_approval', child: emma, submittedAt: now,
   }));
   await taskRepo.save(taskRepo.create({
-    title: 'Mettre la table', points: 10, frequency: 'daily',
+    title: 'Mettre la table', goldReward: 10, difficulty: 'easy', frequency: 'daily',
     status: 'created', child: emma,
   }));
   await taskRepo.save(taskRepo.create({
-    title: 'Lire 20 minutes', points: 15, frequency: 'daily',
+    title: 'Lire 20 minutes', goldReward: 15, difficulty: 'easy', frequency: 'daily',
     status: 'rejected', child: emma, submittedAt: now,
     rejectionReason: 'Photo pas claire, recommence !',
   }));
   const emmaT5 = await taskRepo.save(taskRepo.create({
-    title: 'Nettoyer les vitres', points: 50, frequency: 'weekly',
+    title: 'Nettoyer les vitres', goldReward: 50, difficulty: 'hard', frequency: 'weekly',
     status: 'validated', child: emma,
     submittedAt: now, validatedAt: now, approvedByName: 'Maman',
   }));
 
-  // Lucas — plusieurs validées → bon solde
+  // Lucas
   const lucasT1 = await taskRepo.save(taskRepo.create({
-    title: 'Sortir la poubelle', points: 15, frequency: 'weekly',
+    title: 'Sortir la poubelle', goldReward: 15, difficulty: 'easy', frequency: 'weekly',
     status: 'validated', child: lucas,
     submittedAt: now, validatedAt: now, approvedByName: 'Maman',
   }));
   const lucasT2 = await taskRepo.save(taskRepo.create({
-    title: 'Passer l\'aspirateur', points: 40, frequency: 'weekly',
+    title: 'Passer l\'aspirateur', goldReward: 40, difficulty: 'medium', frequency: 'weekly',
     status: 'validated', child: lucas,
     submittedAt: now, validatedAt: now, approvedByName: 'Maman',
   }));
   await taskRepo.save(taskRepo.create({
-    title: 'Faire la vaisselle', points: 20, frequency: 'daily',
+    title: 'Faire la vaisselle', goldReward: 20, difficulty: 'easy', frequency: 'daily',
     status: 'pending_approval', child: lucas, submittedAt: now,
   }));
   await taskRepo.save(taskRepo.create({
-    title: 'Réviser les maths', points: 35, frequency: 'daily',
+    title: 'Réviser les maths', goldReward: 35, difficulty: 'hard', frequency: 'daily',
     description: 'Tables de multiplication × 7 et × 8',
     status: 'created', child: lucas,
   }));
   await taskRepo.save(taskRepo.create({
-    title: 'Arroser les plantes', points: 10, frequency: 'weekly',
+    title: 'Arroser les plantes', goldReward: 10, difficulty: 'easy', frequency: 'weekly',
     status: 'created', child: lucas,
   }));
 
-  // Zoé — tâches simples
+  // Zoé
   const zoeT1 = await taskRepo.save(taskRepo.create({
-    title: 'Se brosser les dents', points: 10, frequency: 'daily',
+    title: 'Se brosser les dents', goldReward: 10, difficulty: 'easy', frequency: 'daily',
     status: 'validated', child: zoe,
     submittedAt: now, validatedAt: now, approvedByName: 'Maman',
   }));
   await taskRepo.save(taskRepo.create({
-    title: 'Ranger ses jouets', points: 15, frequency: 'daily',
+    title: 'Ranger ses jouets', goldReward: 15, difficulty: 'easy', frequency: 'daily',
     status: 'pending_approval', child: zoe, submittedAt: now,
   }));
   await taskRepo.save(taskRepo.create({
-    title: 'Faire son lit', points: 10, frequency: 'daily',
+    title: 'Faire son lit', goldReward: 10, difficulty: 'easy', frequency: 'daily',
     status: 'created', child: zoe,
   }));
   console.log('✓ 13 tâches créées');
@@ -170,21 +167,26 @@ async function seed() {
   ]);
   console.log('✓ 7 récompenses créées');
 
-  // ── Transactions (earn only — spend créées par le vrai flow récompenses) ──
+  // ── Transactions ──────────────────────────────────────────────────────────
   await txRepo.save([
-    // Emma — 70 pts
-    txRepo.create({ type: 'earn', amount: 20, referenceId: emmaT1.id, note: 'Ranger sa chambre',   child: emma }),
-    txRepo.create({ type: 'earn', amount: 50, referenceId: emmaT5.id, note: 'Nettoyer les vitres', child: emma }),
+    // Emma — 70 gold, 60 XP
+    txRepo.create({ type: 'earn', currency: 'gold', amount: 20, referenceId: emmaT1.id, note: 'Ranger sa chambre',   child: emma }),
+    txRepo.create({ type: 'earn', currency: 'gold', amount: 50, referenceId: emmaT5.id, note: 'Nettoyer les vitres', child: emma }),
+    txRepo.create({ type: 'earn', currency: 'xp',   amount: 10, referenceId: emmaT1.id, child: emma }),
+    txRepo.create({ type: 'earn', currency: 'xp',   amount: 50, referenceId: emmaT5.id, child: emma }),
 
-    // Lucas — 105 pts
-    txRepo.create({ type: 'earn', amount: 15,  referenceId: lucasT1.id,          note: 'Sortir la poubelle',   child: lucas }),
-    txRepo.create({ type: 'earn', amount: 40,  referenceId: lucasT2.id,          note: 'Passer l\'aspirateur', child: lucas }),
-    txRepo.create({ type: 'earn', amount: 50,  referenceId: crypto.randomUUID(), note: 'Super semaine 🌟',     child: lucas }),
+    // Lucas — 105 gold, 85 XP
+    txRepo.create({ type: 'earn', currency: 'gold', amount: 15,  referenceId: lucasT1.id,          note: 'Sortir la poubelle',   child: lucas }),
+    txRepo.create({ type: 'earn', currency: 'gold', amount: 40,  referenceId: lucasT2.id,          note: 'Passer l\'aspirateur', child: lucas }),
+    txRepo.create({ type: 'earn', currency: 'gold', amount: 50,  referenceId: crypto.randomUUID(), note: 'Super semaine !',      child: lucas }),
+    txRepo.create({ type: 'earn', currency: 'xp',   amount: 10,  referenceId: lucasT1.id, child: lucas }),
+    txRepo.create({ type: 'earn', currency: 'xp',   amount: 25,  referenceId: lucasT2.id, child: lucas }),
 
-    // Zoé — 10 pts
-    txRepo.create({ type: 'earn', amount: 10, referenceId: zoeT1.id, note: 'Se brosser les dents', child: zoe }),
+    // Zoé — 10 gold, 10 XP
+    txRepo.create({ type: 'earn', currency: 'gold', amount: 10, referenceId: zoeT1.id, note: 'Se brosser les dents', child: zoe }),
+    txRepo.create({ type: 'earn', currency: 'xp',   amount: 10, referenceId: zoeT1.id, child: zoe }),
   ]);
-  console.log('✓ Soldes — Emma: 70pts | Lucas: 105pts | Zoé: 10pts');
+  console.log('✓ Soldes — Emma: 70 pièces | Lucas: 105 pièces | Zoé: 10 pièces');
 
   await ds.destroy();
   console.log('\n🎉 Seed terminé !');

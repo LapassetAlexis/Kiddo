@@ -35,7 +35,7 @@ jest.mock('expo-image-picker', () => ({
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-const mockTask = { id: 'task-1', name: 'Ranger sa chambre', pts: 30 };
+const mockTask = { id: 'task-1', name: 'Ranger sa chambre', gold: 30, xp: 10 };
 
 function renderSheet(
   task: typeof mockTask | null,
@@ -60,9 +60,9 @@ describe('TaskCompleteSheet', () => {
     expect(getByText('Ranger sa chambre')).toBeTruthy();
   });
 
-  it('renders the points with "+X pts à gagner" text', () => {
+  it('renders the rewards with gold and xp', () => {
     const { getByText } = renderSheet(mockTask);
-    expect(getByText('+30 pts à gagner ⭐')).toBeTruthy();
+    expect(getByText('+30🪙  +10⭐')).toBeTruthy();
   });
 
   it('renders the confirm button "C\'est fait ! ✓"', () => {

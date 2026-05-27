@@ -13,7 +13,7 @@ type HistoryStatus = 'granted' | 'refused';
 interface HistoryEntry {
   id: string; emoji: string; rewardName: string;
   childId: string; childName: string; childEmoji: string;
-  pts: number; status: HistoryStatus; time: string;
+  pts: number; status: HistoryStatus; time: string; grantedByName?: string;
 }
 
 interface HistorySection {
@@ -121,7 +121,7 @@ export default function ManageScreen() {
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>Récompenses 🎁</Text>
+        <Text style={styles.title}>Magasin 🛒</Text>
         <TouchableOpacity
           style={styles.addBtn}
           onPress={() => router.push('/(parent)/create-reward')}
@@ -174,8 +174,7 @@ export default function ManageScreen() {
                   </View>
                 </View>
                 <View style={styles.costWrap}>
-                  <Text style={styles.costValue}>{r.cost}</Text>
-                  <Text style={styles.costPts}>pts</Text>
+                  <Text style={styles.costValue}>{r.cost} 🪙</Text>
                 </View>
               </View>
             ))}
@@ -197,8 +196,8 @@ export default function ManageScreen() {
               <Text style={styles.statLabel}>Accordées</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={[styles.statValue, { color: Colors.gold }]}>{totalPts}</Text>
-              <Text style={styles.statLabel}>Pts dépensés</Text>
+              <Text style={[styles.statValue, { color: Colors.gold }]}>{totalPts} 🪙</Text>
+              <Text style={styles.statLabel}>Or dépensé</Text>
             </View>
           </View>
 
@@ -267,7 +266,7 @@ export default function ManageScreen() {
                     </View>
                     <View style={styles.historyRight}>
                       <Text style={[styles.historyPts, item.status === 'refused' && { color: Colors.textFaint }]}>
-                        {item.status === 'granted' ? '−' : '↩'}{item.pts} pts
+                        {item.status === 'granted' ? '−' : '↩'}{item.pts} 🪙
                       </Text>
                       <View style={[styles.statusBadge, { backgroundColor: cfg.bg, borderColor: cfg.border }]}>
                         <Text style={[styles.statusText, { color: cfg.color }]}>{cfg.icon} {cfg.label}</Text>

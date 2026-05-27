@@ -22,8 +22,8 @@ export default function ParentLayout() {
       }}
     >
       <Tabs.Screen name="dashboard"    options={{ title: 'Tableau de bord', tabBarIcon: ({ color }) => <TabIcon emoji="🏠" color={color} /> }} />
-      <Tabs.Screen name="tasks"        options={{ title: 'Tâches',          tabBarIcon: ({ color }) => <TabIcon emoji="📋" color={color} /> }} />
-      <Tabs.Screen name="manage"       options={{ title: 'Récompenses',     tabBarIcon: ({ color }) => <TabIcon emoji="🎁" color={color} /> }} />
+      <Tabs.Screen name="tasks"        options={{ title: 'Quêtes',          tabBarIcon: ({ color }) => <TabIcon emoji="⚔️" color={color} /> }} />
+      <Tabs.Screen name="manage"       options={{ title: 'Magasin',         tabBarIcon: ({ color }) => <TabIcon emoji="🛒" color={color} /> }} />
       <Tabs.Screen name="settings"     options={{ title: 'Paramètres',      tabBarIcon: ({ color }) => <TabIcon emoji="⚙️" color={color} /> }} />
       <Tabs.Screen name="create-child"  options={{ href: null }} />
       <Tabs.Screen name="create-task"   options={{ href: null }} />

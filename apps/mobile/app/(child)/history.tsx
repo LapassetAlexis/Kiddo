@@ -131,15 +131,15 @@ export default function HistoryScreen() {
         ListHeaderComponent={
           <>
             {/* Header */}
-            <Text style={styles.title}>Mes points 📊</Text>
+            <Text style={styles.title}>Mes pièces 🪙</Text>
 
             {/* Balance hero */}
             <View style={styles.hero}>
               <View style={styles.heroGlow} pointerEvents="none" />
-              <Text style={styles.heroLabel}>⭐ Ton solde</Text>
+              <Text style={styles.heroLabel}>🪙 Ton solde</Text>
               <View style={styles.heroRow}>
                 <Text style={styles.heroValue}>{BALANCE}</Text>
-                <Text style={styles.heroUnit}>pts</Text>
+                <Text style={styles.heroUnit}>🪙</Text>
               </View>
               {/* Progression */}
               <View style={styles.progressWrap}>
@@ -212,7 +212,7 @@ export default function HistoryScreen() {
                 <Text style={styles.rowMeta}>{item.meta}</Text>
               </View>
               <Text style={[styles.rowAmount, { color: item.type === 'earn' ? Colors.green : Colors.orange }]}>
-                {item.type === 'earn' ? '+' : '−'}{item.amount} pts
+                {item.type === 'earn' ? '+' : '−'}{item.amount} 🪙
               </Text>
             </View>
           );

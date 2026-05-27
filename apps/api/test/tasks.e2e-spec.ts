@@ -161,19 +161,19 @@ describe('Tasks E2E', () => {
       const res = await request(app.getHttpServer())
         .post('/api/tasks')
         .set('Authorization', `Bearer ${parentTokenA}`)
-        .send({ childId: childA.id, title: 'Clean room', points: 10 });
+        .send({ childId: childA.id, title: 'Clean room', goldReward: 10 });
 
       expect(res.status).toBe(201);
       expect(res.body.status).toBe('created');
       expect(res.body.title).toBe('Clean room');
-      expect(res.body.points).toBe(10);
+      expect(res.body.goldReward).toBe(10);
     });
 
     it('returns 404 when the child does not exist', async () => {
       const res = await request(app.getHttpServer())
         .post('/api/tasks')
         .set('Authorization', `Bearer ${parentTokenA}`)
-        .send({ childId: '00000000-0000-0000-0000-000000000000', title: 'Ghost task', points: 5 });
+        .send({ childId: '00000000-0000-0000-0000-000000000000', title: 'Ghost task', goldReward: 5 });
 
       expect(res.status).toBe(404);
     });
@@ -187,7 +187,7 @@ describe('Tasks E2E', () => {
       await request(app.getHttpServer())
         .post('/api/tasks')
         .set('Authorization', `Bearer ${parentTokenA}`)
-        .send({ childId: childA.id, title: 'Make bed', points: 5 });
+        .send({ childId: childA.id, title: 'Make bed', goldReward: 5 });
 
       const res = await request(app.getHttpServer())
         .get(`/api/tasks/child/${childA.id}`)
@@ -216,7 +216,7 @@ describe('Tasks E2E', () => {
       const createRes = await request(app.getHttpServer())
         .post('/api/tasks')
         .set('Authorization', `Bearer ${parentTokenA}`)
-        .send({ childId: childA.id, title: 'Homework', points: 15 });
+        .send({ childId: childA.id, title: 'Homework', goldReward: 15 });
       const taskId: string = createRes.body.id;
 
       const completeRes = await request(app.getHttpServer())
@@ -233,7 +233,7 @@ describe('Tasks E2E', () => {
       const createRes = await request(app.getHttpServer())
         .post('/api/tasks')
         .set('Authorization', `Bearer ${parentTokenA}`)
-        .send({ childId: childA.id, title: 'Read book', points: 8 });
+        .send({ childId: childA.id, title: 'Read book', goldReward: 8 });
       const taskId: string = createRes.body.id;
 
       await request(app.getHttpServer())
@@ -253,7 +253,7 @@ describe('Tasks E2E', () => {
       const createRes = await request(app.getHttpServer())
         .post('/api/tasks')
         .set('Authorization', `Bearer ${parentTokenA}`)
-        .send({ childId: childA.id, title: 'Draw a picture', points: 6 });
+        .send({ childId: childA.id, title: 'Draw a picture', goldReward: 6 });
       const taskId: string = createRes.body.id;
 
       const completeRes = await request(app.getHttpServer())
@@ -273,7 +273,7 @@ describe('Tasks E2E', () => {
       const createRes = await request(app.getHttpServer())
         .post('/api/tasks')
         .set('Authorization', `Bearer ${parentTokenA}`)
-        .send({ childId: childA.id, title: 'Wash dishes', points: 20 });
+        .send({ childId: childA.id, title: 'Wash dishes', goldReward: 20 });
       const taskId: string = createRes.body.id;
 
       await request(app.getHttpServer())
@@ -289,20 +289,24 @@ describe('Tasks E2E', () => {
       expect(approveRes.body.status).toBe('validated');
       expect(approveRes.body.validatedAt).toBeTruthy();
 
-      // Verify ledger entry was created
+      // Verify ledger entries were created (gold + XP)
       const transactions = await transactionRepo.find({
         where: { referenceId: taskId },
       });
-      expect(transactions.length).toBe(1);
-      expect(transactions[0].type).toBe('earn');
-      expect(transactions[0].amount).toBe(20);
+      expect(transactions.length).toBe(2);
+      const goldTx = transactions.find(t => t.currency === 'gold');
+      const xpTx   = transactions.find(t => t.currency === 'xp');
+      expect(goldTx?.type).toBe('earn');
+      expect(goldTx?.amount).toBe(20);
+      expect(xpTx?.type).toBe('earn');
+      expect(xpTx?.amount).toBe(10); // easy difficulty = 10 XP
     });
 
     it('returns 409 when task is still in created status', async () => {
       const createRes = await request(app.getHttpServer())
         .post('/api/tasks')
         .set('Authorization', `Bearer ${parentTokenA}`)
-        .send({ childId: childA.id, title: 'Not submitted', points: 10 });
+        .send({ childId: childA.id, title: 'Not submitted', goldReward: 10 });
       const taskId: string = createRes.body.id;
 
       const approveRes = await request(app.getHttpServer())
@@ -320,7 +324,7 @@ describe('Tasks E2E', () => {
       const createRes = await request(app.getHttpServer())
         .post('/api/tasks')
         .set('Authorization', `Bearer ${parentTokenA}`)
-        .send({ childId: childA.id, title: 'Walk dog', points: 12 });
+        .send({ childId: childA.id, title: 'Walk dog', goldReward: 12 });
       const taskId: string = createRes.body.id;
 
       await request(app.getHttpServer())
@@ -348,7 +352,7 @@ describe('Tasks E2E', () => {
       const createRes = await request(app.getHttpServer())
         .post('/api/tasks')
         .set('Authorization', `Bearer ${parentTokenA}`)
-        .send({ childId: childA.id, title: 'Unsubmitted', points: 5 });
+        .send({ childId: childA.id, title: 'Unsubmitted', goldReward: 5 });
       const taskId: string = createRes.body.id;
 
       const rejectRes = await request(app.getHttpServer())
@@ -368,7 +372,7 @@ describe('Tasks E2E', () => {
       const createRes = await request(app.getHttpServer())
         .post('/api/tasks')
         .set('Authorization', `Bearer ${parentTokenA}`)
-        .send({ childId: childA.id, title: 'Family A task', points: 10 });
+        .send({ childId: childA.id, title: 'Family A task', goldReward: 10 });
       const taskId: string = createRes.body.id;
 
       // Complete it
@@ -417,7 +421,7 @@ describe('Tasks E2E', () => {
       const res = await request(app.getHttpServer())
         .post('/api/tasks')
         .set('Authorization', `Bearer ${parentTokenB}`)
-        .send({ childId: childA.id, title: 'Cross-family task', points: 5 });
+        .send({ childId: childA.id, title: 'Cross-family task', goldReward: 5 });
 
       // Acceptable statuses: 403/404 (guarded) or 201 (not guarded — known gap)
       expect([201, 403, 404]).toContain(res.status);

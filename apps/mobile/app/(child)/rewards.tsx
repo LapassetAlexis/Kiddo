@@ -42,13 +42,13 @@ export default function RewardsScreen() {
   if (balanceError) return <ErrorScreen message={balanceError} onRetry={refreshBalance} />;
   if (rewardsError) return <ErrorScreen message={rewardsError} onRetry={refreshRewards} />;
 
-  const myPts  = balanceData?.balance ?? 0;
+  const myGold = balanceData?.balance ?? 0;
   // 'granted' once-rewards are done — no need to show them
   const rawRewards: Reward[] = (rewardsData ?? []).filter(r => r.status !== 'granted');
 
   const rewards = rawRewards.map(r => ({
     ...r,
-    uiStatus: getUIStatus(r, myPts),
+    uiStatus: getUIStatus(r, myGold),
   }));
 
   const available = rewards.filter(r => r.uiStatus === 'available');
@@ -64,7 +64,7 @@ export default function RewardsScreen() {
     showModal({
       icon: r.emoji,
       title: `Réclamer "${r.title}" ?`,
-      message: `Cela coûte ${r.cost} pts.\nTon gardien va recevoir ta demande et devra l'approuver.`,
+      message: `Cela coûte ${r.cost} 🪙.\nTon gardien va recevoir ta demande et devra l'approuver.`,
       buttons: [
         {
           label: 'Réclamer 🎉', style: 'default',
@@ -98,10 +98,10 @@ export default function RewardsScreen() {
     <SafeAreaView style={styles.root} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Récompenses 🎁</Text>
+        <Text style={styles.title}>Magasin 🛒</Text>
         <View style={styles.ptsPill}>
-          <Text style={{ fontSize: 14 }}>⭐</Text>
-          <Text style={styles.ptsPillText}>{myPts} pts</Text>
+          <Text style={{ fontSize: 14 }}>🪙</Text>
+          <Text style={styles.ptsPillText}>{myGold} pièces</Text>
         </View>
       </View>
 
@@ -148,8 +148,8 @@ export default function RewardsScreen() {
         {/* Grille */}
         <View style={styles.grid}>
           {displayed.map(r => {
-            const progress  = Math.min(1, myPts / r.cost);
-            const missing   = r.cost - myPts;
+            const progress  = Math.min(1, myGold / r.cost);
+            const missing   = r.cost - myGold;
             const isAvail   = r.uiStatus === 'available';
             const isPending = r.uiStatus === 'pending';
             const isLocked  = r.uiStatus === 'locked';
@@ -189,7 +189,7 @@ export default function RewardsScreen() {
                 {/* Coût */}
                 <View style={[styles.costBadge, isLocked && styles.costBadgeLocked, isPending && styles.costBadgePending]}>
                   <Text style={[styles.costText, isLocked && styles.costTextLocked, isPending && styles.costTextPending]}>
-                    {r.cost} pts
+                    {r.cost} 🪙
                   </Text>
                 </View>
 
@@ -199,7 +199,7 @@ export default function RewardsScreen() {
                     <View style={styles.progressTrack}>
                       <View style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` }]} />
                     </View>
-                    <Text style={styles.missingText}>encore {missing} pts</Text>
+                    <Text style={styles.missingText}>encore {missing} 🪙</Text>
                   </>
                 )}
 

@@ -96,7 +96,7 @@ export default function SettingsScreen() {
     showModal({
       icon: '⚠️',
       title: 'Supprimer le compte ?',
-      message: 'Toutes les données (enfants, tâches, récompenses, points) seront définitivement supprimées. Cette action est irréversible.',
+      message: 'Toutes les données (enfants, quêtes, récompenses, pièces) seront définitivement supprimées. Cette action est irréversible.',
       buttons: [
         { label: 'Supprimer définitivement', style: 'destructive', onPress: () => {
           showModal({ icon: '✅', title: 'Compte supprimé', message: 'Toutes tes données ont été effacées.', buttons: [{ label: 'OK', style: 'default', onPress: () => router.replace('/(auth)/login') }] });
@@ -150,7 +150,13 @@ export default function SettingsScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.childName}>{child.name}</Text>
-                  <Text style={styles.childPts}>⭐ {childBalances[child.id] ?? 0} pts</Text>
+                  <View style={styles.childMeta}>
+                    <Text style={styles.childLevelEmoji}>{child.levelEmoji}</Text>
+                    <View style={styles.childLevelBadge}>
+                      <Text style={styles.childLevelText}>Niv. {child.level}</Text>
+                    </View>
+                    <Text style={styles.childPts}>· 🪙 {childBalances[child.id] ?? 0}</Text>
+                  </View>
                 </View>
                 <TouchableOpacity
                   style={styles.editBtn}
@@ -245,8 +251,8 @@ export default function SettingsScreen() {
         <Text style={styles.sectionLabel}>Notifications</Text>
         <View style={styles.card}>
           <ToggleRow
-            label="Tâche soumise"
-            desc="Quand un enfant marque une tâche comme faite"
+            label="Quête soumise"
+            desc="Quand un enfant marque une quête comme faite"
             value={notifTask}
             onToggle={v => { setNotifTask(v); saveNotifPref('notifTaskSubmitted', v); }}
             disabled={savingNotif}
@@ -384,6 +390,10 @@ const styles = StyleSheet.create({
   childRow:    { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
   childAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,184,0,0.1)', alignItems: 'center', justifyContent: 'center' },
   childName:   { fontSize: 15, fontWeight: '800', color: Colors.textPrimary },
+  childMeta:   { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 3 },
+  childLevelEmoji: { fontSize: 13 },
+  childLevelBadge: { backgroundColor: 'rgba(139,92,246,0.15)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1, borderWidth: 1, borderColor: 'rgba(139,92,246,0.3)' },
+  childLevelText:  { fontSize: 10, fontWeight: '900', color: '#a78bfa' },
   childPts:    { fontSize: 12, fontWeight: '700', color: Colors.gold, marginTop: 2 },
   addChildRow: { padding: 16, alignItems: 'center' },
   addChildText:{ fontSize: 14, fontWeight: '800', color: Colors.textDim },

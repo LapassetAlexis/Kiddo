@@ -6,7 +6,7 @@ import { useRef, useEffect, useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import { Colors, Radii } from '@/constants/theme';
 
-interface Task { id: string; name: string; pts: number; }
+interface Task { id: string; name: string; gold: number; xp: number; }
 
 type Props = {
   task: Task | null;
@@ -104,7 +104,7 @@ export default function TaskCompleteSheet({ task, onConfirm, onClose }: Props) {
               <View style={{ flex: 1, gap: 4 }}>
                 <Text style={styles.taskName}>{task.name}</Text>
                 <View style={styles.ptsBadge}>
-                  <Text style={styles.ptsBadgeText}>+{task.pts} pts à gagner ⭐</Text>
+                  <Text style={styles.ptsBadgeText}>+{task.gold}🪙  +{task.xp}⭐</Text>
                 </View>
               </View>
             </View>

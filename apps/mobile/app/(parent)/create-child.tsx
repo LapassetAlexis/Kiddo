@@ -9,15 +9,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { childrenApi } from '@/lib/api/children';
 import { ApiError } from '@/lib/api-client';
 import { Colors, Radii, Spacing } from '@/constants/theme';
+import type { ChildClass } from '@/lib/rpg';
+import { CLASS_LABELS, CLASS_EMOJI } from '@/lib/rpg';
 
 const AVATARS = [
-  // Animaux universels
   '🦊','🐺','🦁','🐯','🦅','🐉','🦈','🦋',
-  // Sports & action
   '⚽','🏀','🎯','🏄','🏂','🤸','🎾','🥊',
-  // Gaming, musique & créa
   '🎮','👾','🎸','🎧','🎨','🤖','🎤','🥁',
-  // Attitude & cool
   '😎','⚡','🔥','🚀',
 ];
 
@@ -27,44 +25,47 @@ const COLORS = [
   '#5C6BC0', '#26C6DA',
 ];
 
-type Step = 'info' | 'pin' | 'confirm';
+const CLASSES: { value: ChildClass; desc: string }[] = [
+  { value: 'warrior', desc: 'Fort et courageux' },
+  { value: 'archer',  desc: 'Rapide et précis' },
+  { value: 'mage',    desc: 'Sage et mystérieux' },
+  { value: 'rogue',   desc: 'Rusé et discret' },
+  { value: 'paladin', desc: 'Noble et protecteur' },
+];
+
+type Step = 'info' | 'class' | 'pin' | 'confirm';
 
 export default function CreateChildScreen() {
-  const [step, setStep]         = useState<Step>('info');
-  const [name, setName]         = useState('');
-  const [avatar, setAvatar]     = useState('🦊');
-  const [color, setColor]       = useState('#FFB300');
-  const [pin, setPin]           = useState('');
+  const [step, setStep]             = useState<Step>('info');
+  const [name, setName]             = useState('');
+  const [avatar, setAvatar]         = useState('🦊');
+  const [color, setColor]           = useState('#FFB300');
+  const [childClass, setChildClass] = useState<ChildClass>('warrior');
+  const [pin, setPin]               = useState('');
   const [pinConfirm, setPinConfirm] = useState('');
-  const [loading, setLoading]   = useState(false);
+  const [loading, setLoading]       = useState(false);
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
 
-  // ── Step 1 : nom + avatar ──────────────────────────────────────────
   function submitInfo() {
     if (!name.trim()) {
       showModal({ icon: '✏️', title: 'Prénom requis', message: 'Entre le prénom de l\'enfant.' });
       return;
     }
-    setStep('pin');
+    setStep('class');
   }
 
-  // ── Step 2 : saisie PIN ────────────────────────────────────────────
   function pressDigit(d: string, target: 'pin' | 'confirm') {
     const current = target === 'pin' ? pin : pinConfirm;
     if (current.length >= 4) return;
     const next = current + d;
     target === 'pin' ? setPin(next) : setPinConfirm(next);
-
-    if (next.length === 4 && target === 'pin') {
-      setStep('confirm');
-    }
+    if (next.length === 4 && target === 'pin') setStep('confirm');
   }
 
   function pressDelete(target: 'pin' | 'confirm') {
     target === 'pin' ? setPin(p => p.slice(0, -1)) : setPinConfirm(p => p.slice(0, -1));
   }
 
-  // ── Step 3 : confirmation PIN ──────────────────────────────────────
   async function submitCreate() {
     if (pin !== pinConfirm) {
       showModal({ icon: '🔢', title: 'Codes différents', message: 'Les deux codes ne correspondent pas.\nRecommence la confirmation.', buttons: [{ label: 'Réessayer', style: 'default', onPress: () => { setPinConfirm(''); setStep('confirm'); } }] });
@@ -72,7 +73,7 @@ export default function CreateChildScreen() {
     }
     setLoading(true);
     try {
-      await childrenApi.create({ name: name.trim(), avatar, color, pin });
+      await childrenApi.create({ name: name.trim(), avatar, color, class: childClass, pin });
     } catch (err) {
       showModal({ icon: '❌', title: 'Erreur', message: err instanceof ApiError ? err.message : 'Impossible de créer le profil.' });
       setLoading(false);
@@ -82,7 +83,7 @@ export default function CreateChildScreen() {
     showModal({
       icon: avatar,
       title: `${name} ajouté·e !`,
-      message: 'Le profil est créé. Tu peux maintenant lui assigner des tâches.',
+      message: `Profil créé en tant que ${CLASS_EMOJI[childClass]} ${CLASS_LABELS[childClass]}.`,
       buttons: [{ label: 'OK', style: 'default', onPress: () => router.back() }],
     });
   }
@@ -91,29 +92,38 @@ export default function CreateChildScreen() {
   const currentPin    = step === 'pin' ? pin : pinConfirm;
   const currentSetter = step === 'pin' ? 'pin' : 'confirm';
 
-  // ── Render ─────────────────────────────────────────────────────────
+  const stepIndex = { info: 0, class: 1, pin: 2, confirm: 3 };
+  const steps: Step[] = ['info', 'class', 'pin', 'confirm'];
+
+  function goBack() {
+    if (step === 'info')    router.back();
+    else if (step === 'class')   setStep('info');
+    else if (step === 'pin')     setStep('class');
+    else if (step === 'confirm') setStep('pin');
+  }
+
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
 
-        {/* Barre de navigation */}
         <View style={styles.navbar}>
-          <TouchableOpacity onPress={() => step === 'info' ? router.back() : setStep(step === 'confirm' ? 'pin' : 'info')}>
+          <TouchableOpacity onPress={goBack}>
             <Text style={styles.backBtn}>←</Text>
           </TouchableOpacity>
           <Text style={styles.navTitle}>
-            {step === 'info' ? 'Nouvel enfant' : step === 'pin' ? 'Code secret' : 'Confirmer le code'}
+            {step === 'info' ? 'Nouvel enfant' : step === 'class' ? 'Choisir une classe' : step === 'pin' ? 'Code secret' : 'Confirmer le code'}
           </Text>
           <View style={{ width: 40 }} />
         </View>
 
-        {/* Étapes */}
+        {/* Indicateur d'étapes */}
         <View style={styles.steps}>
-          {(['info','pin','confirm'] as Step[]).map((s, i) => (
-            <View key={s} style={[styles.stepDot, step === s && styles.stepDotActive, (step === 'confirm' && i < 2 || step === 'pin' && i < 1) && styles.stepDotDone]} />
+          {steps.map((s, i) => (
+            <View key={s} style={[
+              styles.stepDot,
+              step === s && styles.stepDotActive,
+              stepIndex[step] > i && styles.stepDotDone,
+            ]} />
           ))}
         </View>
 
@@ -135,12 +145,7 @@ export default function CreateChildScreen() {
             <Text style={styles.sectionLabel}>Avatar</Text>
             <View style={styles.avatarGrid}>
               {AVATARS.map(a => (
-                <TouchableOpacity
-                  key={a}
-                  style={[styles.avatarOption, avatar === a && styles.avatarSelected]}
-                  onPress={() => setAvatar(a)}
-                  activeOpacity={0.7}
-                >
+                <TouchableOpacity key={a} style={[styles.avatarOption, avatar === a && styles.avatarSelected]} onPress={() => setAvatar(a)} activeOpacity={0.7}>
                   <Text style={styles.avatarEmoji}>{a}</Text>
                 </TouchableOpacity>
               ))}
@@ -149,31 +154,57 @@ export default function CreateChildScreen() {
             <Text style={styles.sectionLabel}>Couleur</Text>
             <View style={styles.colorRow}>
               {COLORS.map(c => (
-                <TouchableOpacity
-                  key={c}
-                  style={[styles.colorDot, { backgroundColor: c }, color === c && styles.colorDotSelected]}
-                  onPress={() => setColor(c)}
-                  activeOpacity={0.7}
-                />
+                <TouchableOpacity key={c} style={[styles.colorDot, { backgroundColor: c }, color === c && styles.colorDotSelected]} onPress={() => setColor(c)} activeOpacity={0.7} />
               ))}
             </View>
 
-            {/* Prévisualisation */}
             <View style={styles.preview}>
               <View style={[styles.previewAvatar, { backgroundColor: color }]}><Text style={{ fontSize: 32 }}>{avatar}</Text></View>
               <View>
                 <Text style={styles.previewName}>{name || 'Prénom'}</Text>
-                <Text style={styles.previewPts}>⭐ 0 pts</Text>
+                <Text style={styles.previewSub}>Niveau 1 · Apprenti</Text>
               </View>
             </View>
 
             <TouchableOpacity style={styles.nextBtn} onPress={submitInfo} activeOpacity={0.85}>
+              <Text style={styles.nextBtnText}>Choisir une classe →</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        )}
+
+        {/* ── Étape 2 : classe ── */}
+        {step === 'class' && (
+          <ScrollView contentContainerStyle={styles.content}>
+            <Text style={styles.classIntro}>La classe définit l'univers du personnage et ses emojis de niveau. Tu pourras en changer plus tard.</Text>
+
+            {CLASSES.map(c => {
+              const selected = childClass === c.value;
+              return (
+                <TouchableOpacity
+                  key={c.value}
+                  style={[styles.classOption, selected && styles.classOptionActive]}
+                  onPress={() => setChildClass(c.value)}
+                  activeOpacity={0.75}
+                >
+                  <Text style={styles.classEmoji}>{CLASS_EMOJI[c.value]}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.classLabel, selected && styles.classLabelActive]}>{CLASS_LABELS[c.value]}</Text>
+                    <Text style={styles.classDesc}>{c.desc}</Text>
+                  </View>
+                  <View style={[styles.radioOuter, selected && styles.radioOuterActive]}>
+                    {selected && <View style={styles.radioInner} />}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+
+            <TouchableOpacity style={[styles.nextBtn, { marginTop: 8 }]} onPress={() => setStep('pin')} activeOpacity={0.85}>
               <Text style={styles.nextBtnText}>Choisir un code secret →</Text>
             </TouchableOpacity>
           </ScrollView>
         )}
 
-        {/* ── Étapes 2 & 3 : PIN ── */}
+        {/* ── Étapes 3 & 4 : PIN ── */}
         {(step === 'pin' || step === 'confirm') && (
           <View style={styles.pinContent}>
             <Text style={styles.pinTitle}>
@@ -183,7 +214,6 @@ export default function CreateChildScreen() {
               {step === 'pin' ? '4 chiffres que l\'enfant devra entrer pour se connecter' : 'Entre à nouveau le même code pour confirmer'}
             </Text>
 
-            {/* Avatar + dots */}
             <View style={[styles.pinAvatar, { backgroundColor: color }]}><Text style={{ fontSize: 40 }}>{avatar}</Text></View>
             <View style={styles.dots}>
               {[0,1,2,3].map(i => (
@@ -191,7 +221,6 @@ export default function CreateChildScreen() {
               ))}
             </View>
 
-            {/* Numpad */}
             <View style={styles.numpad}>
               {KEYS.map((k, i) => k === '' ? (
                 <View key={i} style={styles.keyEmpty} />
@@ -208,12 +237,7 @@ export default function CreateChildScreen() {
             </View>
 
             {step === 'confirm' && currentPin.length === 4 && (
-              <TouchableOpacity
-                style={[styles.nextBtn, loading && { opacity: 0.6 }]}
-                onPress={submitCreate}
-                disabled={loading}
-                activeOpacity={0.85}
-              >
+              <TouchableOpacity style={[styles.nextBtn, loading && { opacity: 0.6 }]} onPress={submitCreate} disabled={loading} activeOpacity={0.85}>
                 <Text style={styles.nextBtnText}>{loading ? 'Création…' : `Créer le profil de ${name} ✓`}</Text>
               </TouchableOpacity>
             )}
@@ -243,7 +267,6 @@ const styles = StyleSheet.create({
   stepDotDone:  { backgroundColor: 'rgba(255,184,0,0.3)', borderColor: 'rgba(255,184,0,0.4)' },
 
   content: { padding: Spacing.screen, gap: 16 },
-
   sectionLabel: { fontSize: 11, fontWeight: '900', color: Colors.textFaint, textTransform: 'uppercase', letterSpacing: 1.2 },
 
   input: {
@@ -270,39 +293,39 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bgCard, borderRadius: Radii.card,
     borderWidth: 1, borderColor: Colors.border, padding: 16,
   },
-  previewAvatar: {
-    width: 52, height: 52, borderRadius: 26,
-    backgroundColor: 'rgba(255,184,0,0.15)',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  previewName: { fontSize: 18, fontWeight: '900', color: Colors.textPrimary },
-  previewPts:  { fontSize: 13, fontWeight: '700', color: Colors.textFaint, marginTop: 2 },
+  previewAvatar: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
+  previewName:   { fontSize: 18, fontWeight: '900', color: Colors.textPrimary },
+  previewSub:    { fontSize: 12, fontWeight: '600', color: Colors.textFaint, marginTop: 2 },
 
-  nextBtn: {
-    backgroundColor: Colors.gold, borderRadius: Radii.md,
-    padding: 16, alignItems: 'center', marginTop: 8,
+  // Classe
+  classIntro: { fontSize: 13, fontWeight: '600', color: Colors.textDim, lineHeight: 18 },
+  classOption: {
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    backgroundColor: Colors.bgCard, borderRadius: Radii.card,
+    borderWidth: 1, borderColor: Colors.border, padding: 16,
   },
+  classOptionActive: { borderColor: 'rgba(255,184,0,0.4)', backgroundColor: 'rgba(255,184,0,0.06)' },
+  classEmoji:        { fontSize: 32, width: 40, textAlign: 'center' },
+  classLabel:        { fontSize: 16, fontWeight: '800', color: Colors.textDim },
+  classLabelActive:  { color: Colors.textPrimary },
+  classDesc:         { fontSize: 12, fontWeight: '600', color: Colors.textFaint, marginTop: 2 },
+  radioOuter:        { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: Colors.textFaint, alignItems: 'center', justifyContent: 'center' },
+  radioOuterActive:  { borderColor: Colors.gold },
+  radioInner:        { width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.gold },
+
+  nextBtn: { backgroundColor: Colors.gold, borderRadius: Radii.md, padding: 16, alignItems: 'center', marginTop: 8 },
   nextBtnText: { fontSize: 16, fontWeight: '900', color: '#1a1000' },
 
   // PIN
   pinContent: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 20, paddingHorizontal: 32 },
   pinTitle:   { fontSize: 20, fontWeight: '900', color: Colors.textPrimary, textAlign: 'center' },
   pinSub:     { fontSize: 13, fontWeight: '600', color: Colors.textDim, textAlign: 'center', lineHeight: 18, marginTop: -12 },
-  pinAvatar:  { width: 72, height: 72, borderRadius: 36, backgroundColor: 'rgba(255,184,0,0.12)', alignItems: 'center', justifyContent: 'center' },
-
+  pinAvatar:  { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },
   dots: { flexDirection: 'row', gap: 16 },
-  dot: {
-    width: 16, height: 16, borderRadius: 8,
-    borderWidth: 2, borderColor: Colors.textFaint, backgroundColor: 'transparent',
-  },
+  dot:       { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: Colors.textFaint, backgroundColor: 'transparent' },
   dotFilled: { backgroundColor: Colors.gold, borderColor: Colors.gold },
-
   numpad: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center', width: '100%' },
-  key: {
-    width: 84, height: 84, borderRadius: Radii.hero,
-    backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border,
-    alignItems: 'center', justifyContent: 'center',
-  },
+  key:       { width: 84, height: 84, borderRadius: Radii.hero, backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
   keyEmpty:  { width: 84, height: 84 },
   keyDelete: { backgroundColor: 'transparent', borderColor: 'transparent' },
   keyText:       { fontSize: 26, fontWeight: '800', color: Colors.textPrimary },

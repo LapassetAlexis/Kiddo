@@ -5,13 +5,17 @@ import { Reward }      from '../rewards/reward.entity';
 import { Transaction } from '../transactions/transaction.entity';
 import { PinAttempt }  from './pin-attempt.entity';
 
+export type ChildClass = 'warrior' | 'archer' | 'mage' | 'rogue' | 'paladin';
+
 @Entity('children')
 export class Child {
   @PrimaryGeneratedColumn('uuid') id: string;
   @Column()                       name: string;
-  @Column()                             avatar: string; // emoji
-  @Column({ default: '#FFB300' })       color: string;
-  @Column()                             pinHash: string;
+  @Column()                       avatar: string;
+  @Column({ default: '#FFB300' }) color: string;
+  @Column()                       pinHash: string;
+  @Column({ default: 0 })         xp: number;
+  @Column({ default: 'warrior' }) class: ChildClass;
   @Column({ nullable: true })     fcmToken: string;
   @ManyToOne(() => Family, f => f.children, { onDelete: 'CASCADE' }) family: Family;
   @OneToMany(() => Task, t => t.child)         tasks: Task[];

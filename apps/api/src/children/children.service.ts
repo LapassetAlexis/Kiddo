@@ -7,28 +7,41 @@ import { PinAttempt } from './pin-attempt.entity';
 import { Transaction } from '../transactions/transaction.entity';
 import { CreateChildDto } from './dto/create-child.dto';
 import { UpdateChildDto } from './dto/update-child.dto';
+import { getLevelFromXp, getLevelTitle, getLevelEmoji } from '../rpg/rpg.constants';
+
+function withLevel(child: Child) {
+  const level = getLevelFromXp(child.xp);
+  return {
+    ...child,
+    level,
+    levelTitle: getLevelTitle(level),
+    levelEmoji: getLevelEmoji(level, child.class),
+  };
+}
 
 @Injectable()
 export class ChildrenService {
   constructor(
-    @InjectRepository(Child)       private children: Repository<Child>,
-    @InjectRepository(PinAttempt) private pinAttempts: Repository<PinAttempt>,
-    @InjectRepository(Transaction) private transactions: Repository<Transaction>,
+    @InjectRepository(Child)        private children: Repository<Child>,
+    @InjectRepository(PinAttempt)   private pinAttempts: Repository<PinAttempt>,
+    @InjectRepository(Transaction)  private transactions: Repository<Transaction>,
   ) {}
 
-  findAllForFamily(familyId: string): Promise<Child[]> {
-    return this.children.find({
+  async findAllForFamily(familyId: string) {
+    const list = await this.children.find({
       where: { family: { id: familyId } },
       order: { createdAt: 'ASC' },
     });
+    return list.map(withLevel);
   }
 
   async create(dto: CreateChildDto, familyId: string): Promise<Child> {
     const pinHash = await bcrypt.hash(dto.pin, 12);
     const child = this.children.create({
-      name: dto.name,
+      name:   dto.name,
       avatar: dto.avatar,
-      color: dto.color ?? '#FFB300',
+      color:  dto.color ?? '#FFB300',
+      class:  dto.class ?? 'warrior',
       pinHash,
       family: { id: familyId } as any,
     });
@@ -41,26 +54,25 @@ export class ChildrenService {
     });
     if (!child) throw new NotFoundException('Child not found');
 
-    // Aggregate stats from the transactions ledger
-    const txRows = await this.transactions.find({ where: { child: { id } } });
-    const earnTxs = txRows.filter(t => t.type === 'earn');
-    const spendTxs = txRows.filter(t => t.type === 'spend');
-    const totalPtsEarned = earnTxs.reduce((sum, t) => sum + t.amount, 0);
-    const totalPtsSpent  = spendTxs.reduce((sum, t) => sum + t.amount, 0);
-    const balance        = totalPtsEarned - totalPtsSpent;
+    const txRows       = await this.transactions.find({ where: { child: { id } } });
+    const goldEarnTxs  = txRows.filter(t => t.type === 'earn'  && t.currency === 'gold');
+    const goldSpendTxs = txRows.filter(t => t.type === 'spend' && t.currency === 'gold');
 
-    // Count validated tasks and granted rewards from referenceId cross-ref is expensive
-    // so we use the transaction log as the source of truth for completed/claimed counts
-    const tasksCompleted   = earnTxs.length;   // each earn = 1 validated task
-    const rewardsClaimed   = spendTxs.length;  // each spend = 1 reward redemption
+    const totalGoldEarned = goldEarnTxs.reduce((s, t) => s + t.amount, 0);
+    const totalGoldSpent  = goldSpendTxs.reduce((s, t) => s + t.amount, 0);
+    const balance         = totalGoldEarned - totalGoldSpent;
+    const tasksCompleted  = goldEarnTxs.filter(t => !t.referenceId?.endsWith(':bonus')).length;
+    const rewardsClaimed  = goldSpendTxs.length;
 
     return {
-      ...child,
+      ...withLevel(child),
       stats: {
         balance,
-        totalPtsEarned,
+        totalGoldEarned,
         tasksCompleted,
         rewardsClaimed,
+        xp: child.xp,
+        level: getLevelFromXp(child.xp),
       },
     };
   }
@@ -80,7 +92,6 @@ export class ChildrenService {
     await this.assertOwnership(id, familyId);
     const pinHash = await bcrypt.hash(newPin, 12);
     await this.children.update(id, { pinHash });
-    // Clear any lockout state after parent-initiated reset
     const attempt = await this.pinAttempts.findOne({ where: { child: { id } } });
     if (attempt) {
       await this.pinAttempts.update(attempt.id, { attemptCount: 0, lockedUntil: undefined as any });
@@ -98,6 +109,7 @@ export class ChildrenService {
         'balance',
       )
       .where('tx.childId = :id', { id })
+      .andWhere("tx.currency = 'gold'")
       .getRawOne<{ balance: string }>();
 
     return { balance: Number(result?.balance ?? 0) };

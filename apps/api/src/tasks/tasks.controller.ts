@@ -27,8 +27,8 @@ export class TasksController {
   }
 
   @Post()
-  create(@Body() body: { childId: string; title: string; points: number; frequency?: string; weekDay?: number; timesPerDay?: number; bonusPoints?: number }) {
-    return this.svc.create(body);
+  create(@Body() body: { childId: string; title: string; goldReward: number; difficulty?: string; frequency?: string; timesPerDay?: number; bonusGold?: number }) {
+    return this.svc.create(body as any);
   }
 
   @Patch(':id/complete')

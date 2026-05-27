@@ -11,12 +11,16 @@ import { tasksApi, Task } from '@/lib/api/tasks';
 import { transactionsApi } from '@/lib/api/transactions';
 import { rewardsApi } from '@/lib/api/rewards';
 import { childrenApi } from '@/lib/api/children';
+import { XP_BY_DIFFICULTY, getXpProgress, type ChildClass, CLASS_EMOJI } from '@/lib/rpg';
 
 type TaskState = 'todo' | 'pending' | 'done';
-interface UITask { id: string; name: string; pts: number; state: TaskState; rejectionReason?: string; timesPerDay: number; completedToday: number; bonusPoints: number; }
+interface UITask {
+  id: string; name: string; gold: number; xp: number; state: TaskState;
+  rejectionReason?: string; timesPerDay: number; completedToday: number; bonusGold: number;
+}
 
 function apiStatusToState(status: string): TaskState {
-  if (status === 'validated') return 'done';
+  if (status === 'validated')        return 'done';
   if (status === 'pending_approval') return 'pending';
   return 'todo';
 }
@@ -25,12 +29,13 @@ function taskToUI(task: Task): UITask {
   return {
     id:    task.id,
     name:  task.title,
-    pts:   task.points,
+    gold:  task.goldReward,
+    xp:    XP_BY_DIFFICULTY[task.difficulty] ?? 10,
     state: apiStatusToState(task.status),
     rejectionReason: task.rejectionReason,
-    timesPerDay:    task.timesPerDay ?? 1,
-    completedToday: task.completedToday ?? 0,
-    bonusPoints:    task.bonusPoints ?? 0,
+    timesPerDay:     task.timesPerDay ?? 1,
+    completedToday:  task.completedToday ?? 0,
+    bonusGold:       task.bonusGold ?? 0,
   };
 }
 
@@ -38,75 +43,61 @@ export default function ChildHomeScreen() {
   const { fromParent } = useLocalSearchParams<{ fromParent?: string }>();
   const { user, switchToParent } = useAuth();
 
-  const {
-    data: tasksData,
-    loading: tasksLoading,
-    error: tasksError,
-    refresh: refreshTasks,
-  } = useApiData(() => tasksApi.list(user?.id), [user?.id]);
-
-  const {
-    data: balanceData,
-    loading: balanceLoading,
-    error: balanceError,
-    refresh: refreshBalance,
-  } = useApiData(() => transactionsApi.getBalance(user?.id ?? ''), [user?.id]);
-
-  const {
-    data: streakData,
-    loading: streakLoading,
-    error: streakError,
-    refresh: refreshStreak,
-  } = useApiData(() => transactionsApi.getStreak(user?.id ?? ''), [user?.id]);
-
-  const { data: statsData, refresh: refreshStats } = useApiData(() => childrenApi.get(user?.id ?? ''), [user?.id]);
+  const { data: tasksData,   loading: tasksLoading,   error: tasksError,   refresh: refreshTasks }   = useApiData(() => tasksApi.list(user?.id), [user?.id]);
+  const { data: balanceData, loading: balanceLoading, error: balanceError, refresh: refreshBalance } = useApiData(() => transactionsApi.getBalance(user?.id ?? ''), [user?.id]);
+  const { data: streakData,  loading: streakLoading,  error: streakError,  refresh: refreshStreak }  = useApiData(() => transactionsApi.getStreak(user?.id ?? ''), [user?.id]);
+  const { data: statsData,   refresh: refreshStats }  = useApiData(() => childrenApi.get(user?.id ?? ''), [user?.id]);
+  const { data: rewardsData } = useApiData(() => rewardsApi.list(), []);
 
   useFocusEffect(useCallback(() => {
-    refreshTasks();
-    refreshBalance();
-    refreshStreak();
-    refreshStats();
+    refreshTasks(); refreshBalance(); refreshStreak(); refreshStats();
   }, []));
 
   const [selectedTask, setSelectedTask] = useState<UITask | null>(null);
   const ptsAnim = useRef(new Animated.Value(1)).current;
 
-  const { data: rewardsData } = useApiData(() => rewardsApi.list(), []);
-
   const tasks: UITask[] = (tasksData ?? [])
     .filter(t => t.status === 'created' || t.status === 'pending_approval')
     .map(taskToUI);
-  const points   = balanceData?.balance ?? 0;
-  const streak   = streakData?.currentStreak ?? 0;
 
-  // Prochaine récompense : la moins chère que l'enfant ne peut pas encore payer
+  const gold       = balanceData?.balance ?? 0;
+  const streak     = streakData?.currentStreak ?? 0;
+  const xp         = statsData?.xp ?? 0;
+  const level      = statsData?.level ?? 1;
+  const levelTitle = statsData?.levelTitle ?? 'Apprenti';
+  const levelEmoji = statsData?.levelEmoji ?? '🧒';
+  const childClass = (statsData?.class ?? 'warrior') as ChildClass;
+
+  const xpProgress = getXpProgress(xp);
+  const xpPct = Math.round((xpProgress.current / xpProgress.total) * 100);
+
   const nextReward = (rewardsData ?? [])
-    .filter(r => r.status === 'available' && r.cost > points)
+    .filter(r => r.status === 'available' && r.cost > gold)
     .sort((a, b) => a.cost - b.cost)[0]
     ?? (rewardsData ?? []).sort((a, b) => a.cost - b.cost)[0];
-  const nextRewardName = nextReward?.title ?? '—';
-  const nextRewardCost = nextReward?.cost ?? 100;
+  const nextRewardName  = nextReward?.title ?? '—';
+  const nextRewardCost  = nextReward?.cost ?? 100;
   const nextRewardEmoji = nextReward?.emoji ?? '🎁';
-  const progress       = nextRewardCost > 0 ? Math.min(1, points / nextRewardCost) : 1;
-  const doneCount      = tasks.filter(t => t.state === 'done').length;
+  const goldProgress    = nextRewardCost > 0 ? Math.min(1, gold / nextRewardCost) : 1;
+  const doneCount       = tasks.filter(t => t.state === 'done').length;
 
   const earnedTotal    = balanceData?.earnedTotal ?? 0;
   const longestStreak  = streakData?.longestStreak ?? 0;
-  const tasksCompleted = statsData?.tasksCompleted ?? 0;
-  const rewardsClaimed = statsData?.rewardsClaimed ?? 0;
+  const tasksCompleted = statsData?.stats?.tasksCompleted ?? 0;
+  const rewardsClaimed = statsData?.stats?.rewardsClaimed ?? 0;
 
   const allObjectives = [
-    { emoji: '🥉', label: '100 pts gagnés',      current: earnedTotal,    target: 100  },
-    { emoji: '🥈', label: '500 pts gagnés',      current: earnedTotal,    target: 500  },
-    { emoji: '🥇', label: '1 000 pts gagnés',    current: earnedTotal,    target: 1000 },
-    { emoji: '👑', label: '1 500 pts gagnés',    current: earnedTotal,    target: 1500 },
+    { emoji: '🥉', label: '100 pièces gagnées',  current: earnedTotal,    target: 100  },
+    { emoji: '🥈', label: '500 pièces gagnées',  current: earnedTotal,    target: 500  },
+    { emoji: '🥇', label: '1 000 pièces',        current: earnedTotal,    target: 1000 },
+    { emoji: '👑', label: '1 500 pièces',        current: earnedTotal,    target: 1500 },
     { emoji: '🌱', label: 'Série de 3 jours',    current: longestStreak,  target: 3    },
     { emoji: '🔥', label: 'Série de 5 jours',    current: longestStreak,  target: 5    },
     { emoji: '⚡', label: 'Série de 10 jours',   current: longestStreak,  target: 10   },
     { emoji: '💎', label: 'Série de 30 jours',   current: longestStreak,  target: 30   },
-    { emoji: '💪', label: '10 tâches faites',    current: tasksCompleted, target: 10   },
-    { emoji: '🏅', label: '25 tâches faites',    current: tasksCompleted, target: 25   },
-    { emoji: '🏆', label: '50 tâches faites',    current: tasksCompleted, target: 50   },
+    { emoji: '💪', label: '10 quêtes faites',    current: tasksCompleted, target: 10   },
+    { emoji: '🏅', label: '25 quêtes faites',    current: tasksCompleted, target: 25   },
+    { emoji: '🏆', label: '50 quêtes faites',    current: tasksCompleted, target: 50   },
     { emoji: '🎊', label: '3 récompenses',       current: rewardsClaimed, target: 3    },
     { emoji: '🎉', label: '5 récompenses',       current: rewardsClaimed, target: 5    },
     { emoji: '🚀', label: '10 récompenses',      current: rewardsClaimed, target: 10   },
@@ -125,16 +116,12 @@ export default function ChildHomeScreen() {
   }
 
   async function submitTask(id: string, note: string, photoUri?: string) {
-    // Optimistically mark as pending
     setSelectedTask(null);
     try {
       await tasksApi.complete(id, note, photoUri);
-    } catch {
-      // error handled silently; refresh will restore server state
-    } finally {
-      refreshTasks();
-      refreshBalance();
-      refreshStreak();
+    } catch {}
+    finally {
+      refreshTasks(); refreshBalance(); refreshStreak(); refreshStats();
       bumpPts();
     }
   }
@@ -151,52 +138,69 @@ export default function ChildHomeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.avatarRow}>
-            <View style={[styles.avatar, { backgroundColor: user?.color ?? Colors.gold, shadowColor: user?.color ?? Colors.gold }]}><Text style={styles.avatarEmoji}>{user?.avatar ?? '🦊'}</Text></View>
+            <View style={[styles.avatar, { backgroundColor: user?.color ?? Colors.gold, shadowColor: user?.color ?? Colors.gold }]}>
+              <Text style={styles.avatarEmoji}>{user?.avatar ?? '🦊'}</Text>
+            </View>
             <View>
               <Text style={styles.greetingSub}>Bonjour,</Text>
-              <Text style={styles.greetingName}>{user?.name ?? 'Lucas'} 👋</Text>
+              <Text style={styles.greetingName}>{user?.name ?? 'Aventurier'} 👋</Text>
             </View>
           </View>
-          <View style={styles.headerRight}>
-            <TouchableOpacity
-              style={styles.parentBtn}
-              onPress={async () => {
-                const ok = await switchToParent();
-                router.replace(ok ? '/(parent)/dashboard' : '/(auth)/login');
-              }}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.parentBtnText}>👨‍👩‍👧</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={styles.parentBtn}
+            onPress={async () => { const ok = await switchToParent(); router.replace(ok ? '/(parent)/dashboard' : '/(auth)/login'); }}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.parentBtnText}>👨‍👩‍👧</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Points hero */}
+        {/* Carte héro : niveau + XP */}
         <View style={styles.hero}>
           <View style={styles.heroGlow} pointerEvents="none" />
-          <Text style={styles.ptsLabel}>⭐ Ton score</Text>
-          <View style={styles.ptsRow}>
-            <Animated.Text style={[styles.ptsValue, { transform: [{ scale: ptsAnim }] }]}>
-              {points}
-            </Animated.Text>
-            <Text style={styles.ptsSuffix}>pts</Text>
+
+          {/* Ligne niveau */}
+          <View style={styles.levelRow}>
+            <Text style={styles.levelEmoji}>{levelEmoji}</Text>
+            <View style={{ flex: 1 }}>
+              <View style={styles.levelMeta}>
+                <Text style={styles.levelBadge}>NIV. {level}</Text>
+                <Text style={styles.levelTitle}>{levelTitle}</Text>
+                <Text style={styles.classTag}>{CLASS_EMOJI[childClass]}</Text>
+              </View>
+              <View style={styles.xpTrack}>
+                <View style={[styles.xpFill, { width: `${xpPct}%` }]} />
+              </View>
+              <Text style={styles.xpLabel}>{xpProgress.current} / {xpProgress.total} XP</Text>
+            </View>
           </View>
-          {/* Progress to next reward */}
+
+          {/* Séparateur */}
+          <View style={styles.heroDivider} />
+
+          {/* Or */}
+          <Text style={styles.ptsLabel}>🪙 Pièces d'or</Text>
+          <View style={styles.ptsRow}>
+            <Animated.Text style={[styles.ptsValue, { transform: [{ scale: ptsAnim }] }]}>{gold}</Animated.Text>
+            <Text style={styles.ptsSuffix}>pièces</Text>
+          </View>
+
+          {/* Prochain marchand */}
           <View style={styles.progressWrap}>
             <Text style={{ fontSize: 18 }}>{nextRewardEmoji}</Text>
             <View style={styles.progressInfo}>
               <Text style={styles.progressName}>{nextRewardName}</Text>
               <View style={styles.progressTrack}>
-                <View style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` }]} />
+                <View style={[styles.progressFill, { width: `${Math.round(goldProgress * 100)}%` }]} />
               </View>
             </View>
-            <Text style={styles.progressPct}>{Math.round(progress * 100)}%</Text>
+            <Text style={styles.progressPct}>{Math.round(goldProgress * 100)}%</Text>
           </View>
         </View>
 
         {/* Streak */}
         <View style={styles.streak}>
-          <Text style={{ fontSize: 28, filter: 'drop-shadow(0 0 8px orange)' }}>🔥</Text>
+          <Text style={{ fontSize: 28 }}>🔥</Text>
           <View style={{ flex: 1 }}>
             <Text style={styles.streakNum}>{streak} jours</Text>
             <Text style={styles.streakSub}>consécutifs — continue ! 💪</Text>
@@ -225,9 +229,9 @@ export default function ChildHomeScreen() {
           </View>
         )}
 
-        {/* Tasks */}
+        {/* Quêtes */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>MISSIONS DU JOUR</Text>
+          <Text style={styles.sectionTitle}>QUÊTES DU JOUR</Text>
           <Text style={styles.sectionCount}>{doneCount}/{tasks.length}</Text>
         </View>
 
@@ -248,9 +252,7 @@ export default function ChildHomeScreen() {
               <Text style={[styles.taskName, task.state === 'done' && styles.taskNameDone]}>{task.name}</Text>
               {task.state === 'pending' && <Text style={styles.taskSub}>Ton gardien vérifie bientôt ! 🤞</Text>}
               {task.state === 'todo' && task.rejectionReason != null && (
-                <Text style={styles.taskRejected}>
-                  ↩ {task.rejectionReason || 'Réessaie, tu peux le faire !'}
-                </Text>
+                <Text style={styles.taskRejected}>↩ {task.rejectionReason || 'Réessaie, tu peux le faire !'}</Text>
               )}
             </View>
             {task.timesPerDay > 1 && (
@@ -258,8 +260,11 @@ export default function ChildHomeScreen() {
                 <Text style={styles.repBadgeText}>{task.completedToday}/{task.timesPerDay}</Text>
               </View>
             )}
-            <View style={[styles.ptsBadge, task.state === 'done' && styles.ptsBadgeDone]}>
-              <Text style={[styles.ptsBadgeText, task.state === 'done' && styles.ptsBadgeTextDone]}>+{task.pts} pts</Text>
+            <View style={[styles.rewardBadge, task.state === 'done' && styles.rewardBadgeDone]}>
+              <Text style={[styles.rewardText, task.state === 'done' && styles.rewardTextDone]}>
+                +{task.gold} 🪙
+              </Text>
+              <Text style={styles.rewardXp}>+{task.xp} ⭐</Text>
             </View>
           </TouchableOpacity>
         ))}
@@ -281,36 +286,37 @@ const styles = StyleSheet.create({
   scroll: { paddingBottom: 20 },
 
   header:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: Spacing.screen, paddingTop: 12 },
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  parentBtn:   { width: 44, height: 44, borderRadius: 14, backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
-  parentBtnText: { fontSize: 20 },
-  avatarRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.gold, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.gold, shadowOpacity: 0.4, shadowRadius: 8 },
+  avatarRow:   { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  avatar:      { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', shadowOpacity: 0.4, shadowRadius: 8 },
   avatarEmoji: { fontSize: 24 },
   greetingSub:  { fontSize: 13, fontWeight: '600', color: Colors.textDim },
   greetingName: { fontSize: 18, fontWeight: '900', color: Colors.textPrimary },
+  parentBtn:    { width: 44, height: 44, borderRadius: 14, backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
+  parentBtnText: { fontSize: 20 },
 
   hero: {
-    marginHorizontal: Spacing.screen,
-    backgroundColor: Colors.bgHero,
-    borderRadius: Radii.hero,
-    padding: 22,
-    borderWidth: 1,
-    borderColor: Colors.borderGold,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.45,
-    shadowRadius: 16,
+    marginHorizontal: Spacing.screen, backgroundColor: Colors.bgHero,
+    borderRadius: Radii.hero, padding: 18, borderWidth: 1, borderColor: Colors.borderGold,
+    overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.45, shadowRadius: 16,
   },
-  heroGlow: {
-    position: 'absolute', top: -60, right: -60,
-    width: 200, height: 200, borderRadius: 100,
-    backgroundColor: 'rgba(255,184,0,0.06)',
-  },
-  ptsLabel: { fontSize: 11, fontWeight: '700', color: Colors.textDim, letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 4 },
-  ptsRow:   { flexDirection: 'row', alignItems: 'flex-end', gap: 4, marginBottom: 2 },
-  ptsValue: { fontSize: 68, fontWeight: '900', color: Colors.gold, lineHeight: 62, letterSpacing: -3 },
-  ptsSuffix:{ fontSize: 20, fontWeight: '700', color: Colors.goldDim, marginBottom: 6 },
+  heroGlow: { position: 'absolute', top: -60, right: -60, width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(255,184,0,0.06)' },
+
+  levelRow:  { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 4 },
+  levelEmoji: { fontSize: 36 },
+  levelMeta: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
+  levelBadge:{ fontSize: 11, fontWeight: '900', color: Colors.gold, letterSpacing: 1 },
+  levelTitle:{ fontSize: 14, fontWeight: '800', color: Colors.textPrimary },
+  classTag:  { fontSize: 14 },
+  xpTrack:   { height: 5, borderRadius: Radii.pill, backgroundColor: 'rgba(255,255,255,0.1)', overflow: 'hidden' },
+  xpFill:    { height: '100%', borderRadius: Radii.pill, backgroundColor: Colors.gold },
+  xpLabel:   { fontSize: 10, fontWeight: '700', color: Colors.textFaint, marginTop: 4 },
+
+  heroDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.07)', marginVertical: 14 },
+
+  ptsLabel:  { fontSize: 11, fontWeight: '700', color: Colors.textDim, letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 4 },
+  ptsRow:    { flexDirection: 'row', alignItems: 'flex-end', gap: 4, marginBottom: 2 },
+  ptsValue:  { fontSize: 56, fontWeight: '900', color: Colors.gold, lineHeight: 52, letterSpacing: -2 },
+  ptsSuffix: { fontSize: 18, fontWeight: '700', color: Colors.goldDim, marginBottom: 4 },
 
   progressWrap: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 14, padding: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', marginTop: 12 },
   progressInfo: { flex: 1 },
@@ -340,11 +346,11 @@ const styles = StyleSheet.create({
   sectionTitle:  { fontSize: 11, fontWeight: '900', color: Colors.textFaint, textTransform: 'uppercase', letterSpacing: 1.2 },
   sectionCount:  { fontSize: 12, fontWeight: '700', color: Colors.textFaint },
 
-  taskCard: { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: Spacing.screen, marginBottom: 10, backgroundColor: Colors.bgCard, borderRadius: Radii.card, padding: 14, borderWidth: 1, borderColor: Colors.border, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 8 },
+  taskCard:    { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: Spacing.screen, marginBottom: 10, backgroundColor: Colors.bgCard, borderRadius: Radii.card, padding: 14, borderWidth: 1, borderColor: Colors.border, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 8 },
   taskDone:    { backgroundColor: Colors.bgCardDone,    borderColor: 'rgba(76,175,80,0.2)' },
   taskPending: { backgroundColor: Colors.bgCardPending, borderColor: 'rgba(255,184,0,0.2)' },
 
-  checkbox: { width: 30, height: 30, borderRadius: 10, borderWidth: 2, borderColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' },
+  checkbox:     { width: 30, height: 30, borderRadius: 10, borderWidth: 2, borderColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' },
   checkDone:    { backgroundColor: Colors.green, borderColor: Colors.green },
   checkPending: { backgroundColor: 'rgba(255,184,0,0.1)', borderColor: 'rgba(255,184,0,0.35)' },
 
@@ -355,8 +361,10 @@ const styles = StyleSheet.create({
 
   repBadge:     { backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', borderRadius: Radii.pill, paddingHorizontal: 8, paddingVertical: 4, marginRight: 4 },
   repBadgeText: { fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.5)' },
-  ptsBadge:     { backgroundColor: 'rgba(255,184,0,0.1)', borderWidth: 1, borderColor: 'rgba(255,184,0,0.18)', borderRadius: Radii.pill, paddingHorizontal: 11, paddingVertical: 5 },
-  ptsBadgeDone: { backgroundColor: 'rgba(76,175,80,0.08)', borderColor: 'rgba(76,175,80,0.18)' },
-  ptsBadgeText:     { fontSize: 13, fontWeight: '900', color: Colors.gold },
-  ptsBadgeTextDone: { color: Colors.greenDim },
+
+  rewardBadge:     { alignItems: 'flex-end', gap: 2 },
+  rewardBadgeDone: { opacity: 0.45 },
+  rewardText:      { fontSize: 13, fontWeight: '900', color: Colors.gold },
+  rewardTextDone:  { color: Colors.greenDim },
+  rewardXp:        { fontSize: 12, fontWeight: '800', color: '#a78bfa' },
 });
