@@ -1,13 +1,16 @@
 import { api } from '../api-client';
+import type { TaskDifficulty } from '../rpg';
 
-export type TaskStatus = 'created' | 'pending_approval' | 'validated' | 'rejected';
+export type TaskStatus    = 'created' | 'pending_approval' | 'validated' | 'rejected';
 export type TaskFrequency = 'once' | 'daily' | 'weekly';
+export { TaskDifficulty };
 
 export interface Task {
   id: string;
   title: string;
   description?: string;
-  points: number;
+  goldReward: number;
+  difficulty: TaskDifficulty;
   frequency: TaskFrequency;
   status: TaskStatus;
   photoUrl?: string;
@@ -18,7 +21,7 @@ export interface Task {
   approvedByName?: string;
   createdAt: string;
   timesPerDay: number;
-  bonusPoints: number;
+  bonusGold: number;
   completedToday: number;
   child: { id: string; name: string; avatar: string; color: string };
 }
@@ -37,9 +40,9 @@ export const tasksApi = {
   },
 
   create: (data: {
-    childId: string; title: string; points: number;
-    frequency?: TaskFrequency; weekDay?: number;
-    timesPerDay?: number; bonusPoints?: number;
+    childId: string; title: string; goldReward: number;
+    difficulty?: TaskDifficulty; frequency?: TaskFrequency;
+    weekDay?: number; timesPerDay?: number; bonusGold?: number;
   }) => api.post<Task>('/tasks', data),
 
   complete: (id: string, note?: string, photoUrl?: string) =>

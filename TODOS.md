@@ -1,5 +1,33 @@
 # Kiddo TODOs
 
+## Système RPG (Habitica-inspired)
+
+### ✅ Fait
+- [x] Migration DB prod + infrastructure TypeORM CLI (`migration:run`, `data-source.ts`)
+- [x] Entités : `goldReward` / `bonusGold` / `difficulty` sur Task, `xp` / `class` sur Child, `currency` sur Transaction
+- [x] Backend : XP attribué à l'approbation selon difficulté (`easy→10` … `legendary→200`)
+- [x] Backend : balance gold-only (filtre `currency = 'gold'`), stats `tasksCompleted` corrigées
+- [x] Courbe XP non-linéaire infinie : `floor(50 × N^1.6)`, niveau calculé dynamiquement
+- [x] Titres par palier (Apprenti / Aventurier / Héros / Champion / Légende)
+- [x] 5 classes (guerrier, archer, mage, voleur, paladin) — emoji set par classe et palier
+- [x] `lib/rpg.ts` — utilitaires frontend (getLevelFromXp, getXpProgress, labels, emojis)
+- [x] `create-child` — sélecteur de classe (étape 2 du flow 4 étapes)
+- [x] `create-task` — sélecteur de difficulté (5 niveaux, affiche XP gagné), or manuel
+- [x] `home.tsx` enfant — hero XP bar, badges `+X🪙 +Y⭐`, balance or
+- [x] `profile.tsx` enfant — carte niveau/classe/XP, badges pièces, stats "quêtes"
+- [x] `rewards.tsx` — pts → pièces 🪙 partout
+- [x] `dashboard.tsx` parent — cards enfants avec `levelEmoji + Niv. X`, or crédité en 🪙
+- [x] `edit-child.tsx` — carte read-only niveau / classe / XP total
+
+### 🔲 À faire — RPG
+- [ ] **Level-up** : détecter le franchissement de niveau à l'approbation → modal/animation côté enfant
+- [ ] **Historique XP** : l'enfant peut voir ses transactions XP (quelle quête → combien d'XP)
+- [ ] **Objectifs de niveau** : parent peut associer une récompense automatique à un niveau cible
+- [ ] **Shop cosmétique** : acheter des items visuels avec les pièces (avatar frames, badges) — v2
+- [ ] **Narration par classe** : quête principale différente selon classe (guerrier/mage/…) — v3
+
+---
+
 ## P1 — Bloquant pour le ship
 - [ ] Test concurrence reward redemption (SELECT FOR UPDATE) — deux enfants réclament même récompense "une seule fois" simultanément. Failure ici = double-debit silencieux.
 - [ ] Middleware IDOR sur toutes les routes child — vérifier que child.familyId === parent.familyId sur chaque request. Failure ici = fuite données cross-famille.

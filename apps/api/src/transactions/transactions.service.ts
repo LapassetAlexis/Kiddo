@@ -71,6 +71,7 @@ export class TransactionsService {
         `COALESCE(SUM(CASE WHEN tx.type = 'spend' AND tx."createdAt" >= :weekStart THEN tx.amount ELSE 0 END), 0) AS "spentThisWeek"`,
       ].join(', '))
       .where('tx.childId = :childId', { childId })
+      .andWhere("tx.currency = 'gold'")
       .setParameter('weekStart', weekStart.toISOString())
       .getRawOne<{
         earnedTotal: string;

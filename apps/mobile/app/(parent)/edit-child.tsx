@@ -8,6 +8,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
 import { childrenApi } from '@/lib/api/children';
+import { useApiData } from '@/lib/useApiData';
+import { CLASS_LABELS, CLASS_EMOJI } from '@/lib/rpg';
+import type { ChildClass } from '@/lib/rpg';
 
 const COLORS = [
   '#FFB300', '#E53935', '#8E24AA', '#1E88E5',
@@ -39,6 +42,8 @@ export default function EditChildScreen() {
   const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
+
+  const { data: statsData } = useApiData(() => childrenApi.get(childId), [childId]);
 
   async function save() {
     if (!name.trim()) { showModal({ icon: '✏️', title: 'Prénom requis', message: 'Entre le prénom de l\'enfant.' }); return; }
@@ -109,6 +114,24 @@ export default function EditChildScreen() {
               </View>
               <Text style={styles.childNameDisplay}>{name}</Text>
             </View>
+
+            {/* Niveau & classe (lecture seule) */}
+            {statsData && (
+              <View style={styles.rpgCard}>
+                <Text style={styles.rpgEmoji}>{statsData.levelEmoji}</Text>
+                <View style={styles.rpgInfo}>
+                  <View style={styles.rpgTitleRow}>
+                    <View style={styles.rpgLevelBadge}>
+                      <Text style={styles.rpgLevelText}>Niv. {statsData.level}</Text>
+                    </View>
+                    <Text style={styles.rpgTitle}>{statsData.levelTitle}</Text>
+                  </View>
+                  <Text style={styles.rpgClass}>
+                    {CLASS_EMOJI[statsData.class as ChildClass]} {CLASS_LABELS[statsData.class as ChildClass]}  ·  {statsData.xp} XP
+                  </Text>
+                </View>
+              </View>
+            )}
 
             {/* Prénom */}
             <Text style={styles.sectionLabel}>Prénom</Text>
@@ -224,6 +247,20 @@ const styles = StyleSheet.create({
   colorDot:        { width: 36, height: 36, borderRadius: 18 },
   colorDotSelected:{ borderWidth: 3, borderColor: '#fff', transform: [{ scale: 1.15 }] },
   childNameDisplay: { fontSize: 20, fontWeight: '900', color: Colors.textPrimary },
+
+  rpgCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: Colors.bgCard, borderRadius: Radii.card,
+    borderWidth: 1, borderColor: 'rgba(139,92,246,0.2)',
+    padding: 14,
+  },
+  rpgEmoji:      { fontSize: 34 },
+  rpgInfo:       { flex: 1, gap: 4 },
+  rpgTitleRow:   { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  rpgLevelBadge: { backgroundColor: 'rgba(139,92,246,0.15)', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2, borderWidth: 1, borderColor: 'rgba(139,92,246,0.3)' },
+  rpgLevelText:  { fontSize: 11, fontWeight: '900', color: '#a78bfa' },
+  rpgTitle:      { fontSize: 14, fontWeight: '800', color: Colors.textPrimary },
+  rpgClass:      { fontSize: 12, fontWeight: '600', color: Colors.textDim },
 
   sectionLabel: { fontSize: 11, fontWeight: '900', color: Colors.textFaint, textTransform: 'uppercase', letterSpacing: 1.1, marginTop: 4 },
   card:         { backgroundColor: Colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: Colors.border, padding: 16 },

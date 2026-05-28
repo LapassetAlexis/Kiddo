@@ -15,7 +15,7 @@ import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
 import { ApiError } from '@/lib/api-client';
 import { useAuth } from '@/contexts/AuthContext';
 
-type PendingTask = { id: string; childName: string; childEmoji: string; childColor: string; taskName: string; pts: number; ago: string; note?: string; photoUrl?: string; timesPerDay: number; completedToday: number; bonusPoints: number; };
+type PendingTask = { id: string; childName: string; childEmoji: string; childColor: string; taskName: string; goldReward: number; ago: string; note?: string; photoUrl?: string; timesPerDay: number; completedToday: number; bonusGold: number; };
 type RewardRequest = { id: string; childName: string; childEmoji: string; rewardName: string; emoji: string; pts: number; };
 
 function formatAgo(dateStr?: string): string {
@@ -92,13 +92,13 @@ export default function ParentDashboardScreen() {
     childEmoji: task.child.avatar,
     childColor: task.child.color ?? '#FFB300',
     taskName: task.title,
-    pts: task.points,
+    goldReward: task.goldReward,
     ago: formatAgo(task.submittedAt),
     note: task.note,
     photoUrl: task.photoUrl,
     timesPerDay:    task.timesPerDay ?? 1,
     completedToday: task.completedToday ?? 0,
-    bonusPoints:    task.bonusPoints ?? 0,
+    bonusGold:      task.bonusGold ?? 0,
   }));
 
   const rewards: RewardRequest[] = (rewardsData ?? [])
@@ -127,7 +127,7 @@ export default function ParentDashboardScreen() {
     showModal({
       icon: r.emoji,
       title: `Accorder "${r.rewardName}" ?`,
-      message: `${r.childEmoji} ${r.childName} recevra sa récompense.\nLes ${r.pts} pts seront débités.`,
+      message: `${r.childEmoji} ${r.childName} recevra sa récompense.\nLes ${r.pts} 🪙 seront débités.`,
       buttons: [
         { label: 'Accorder 🎉', style: 'default', onPress: async () => {
           try {
@@ -194,8 +194,8 @@ export default function ParentDashboardScreen() {
       refreshBalances(childrenData);
       showModal({
         icon: '✅',
-        title: 'Tâche validée !',
-        message: `${task.taskName} de ${task.childName} validée.\n+${task.pts} pts crédités.`,
+        title: 'Quête validée !',
+        message: `${task.taskName} de ${task.childName} validée.\n+${task.goldReward} 🪙 crédités.`,
         buttons: [{ label: 'Super !', style: 'default' }],
       });
     } catch (err) {
@@ -204,7 +204,7 @@ export default function ParentDashboardScreen() {
       showModal({
         icon: alreadyDone ? 'ℹ️' : '❌',
         title: alreadyDone ? 'Déjà validée' : 'Erreur',
-        message: alreadyDone ? 'L\'autre gardien a déjà validé cette tâche.' : 'Une erreur est survenue, réessaie.',
+        message: alreadyDone ? 'L\'autre gardien a déjà validé cette quête.' : 'Une erreur est survenue, réessaie.',
         buttons: [{ label: 'OK', style: 'default' }],
       });
     }
@@ -214,7 +214,7 @@ export default function ParentDashboardScreen() {
     setReviewTask(null);
     showModal({
       icon: '❌',
-      title: 'Rejeter la tâche ?',
+      title: 'Rejeter la quête ?',
       message: `${task.taskName} de ${task.childName} sera rejetée.`,
       buttons: [
         { label: 'Rejeter', style: 'destructive', onPress: async () => {
@@ -228,7 +228,7 @@ export default function ParentDashboardScreen() {
             showModal({
               icon: alreadyDone ? 'ℹ️' : '❌',
               title: alreadyDone ? 'Déjà traitée' : 'Erreur',
-              message: alreadyDone ? 'L\'autre gardien a déjà traité cette tâche.' : 'Une erreur est survenue, réessaie.',
+              message: alreadyDone ? 'L\'autre gardien a déjà traité cette quête.' : 'Une erreur est survenue, réessaie.',
               buttons: [{ label: 'OK', style: 'default' }],
             });
           }
@@ -253,13 +253,6 @@ export default function ParentDashboardScreen() {
           </View>
           <View style={styles.headerActions}>
             <TouchableOpacity
-              style={styles.switchBtn}
-              onPress={() => router.push({ pathname: '/(auth)/child-select', params: { fromParent: 'true' } })}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.switchBtnLabel}>Enfant</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
               style={styles.addBtn}
               onPress={openAddModal}
               activeOpacity={0.8}
@@ -274,7 +267,7 @@ export default function ParentDashboardScreen() {
           <View style={styles.urgentBanner}>
             <Text style={{ fontSize: 20 }}>⚡</Text>
             <View style={{ flex: 1 }}>
-              <Text style={styles.urgentCount}>{pending.length} tâche{pending.length > 1 ? 's' : ''} à valider</Text>
+              <Text style={styles.urgentCount}>{pending.length} quête{pending.length > 1 ? 's' : ''} à valider</Text>
               <Text style={styles.urgentSub}>{pending.map(p => p.childName).join(' et ')} attendent</Text>
             </View>
           </View>
@@ -286,12 +279,31 @@ export default function ParentDashboardScreen() {
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.childScroll}>
           {(childrenData ?? []).map((child) => (
-            <TouchableOpacity key={child.id} style={[styles.childCard, styles.childCardAlert]} onPress={() => router.push({ pathname: '/(parent)/edit-child', params: { childId: child.id, childName: child.name, childEmoji: child.avatar, childColor: child.color } })} activeOpacity={0.8}>
+            <TouchableOpacity
+              key={child.id}
+              style={[styles.childCard, styles.childCardAlert]}
+              onPress={() => router.push({ pathname: '/(auth)/child-pin', params: { name: child.name, childId: child.id, fromParent: 'true' } })}
+              activeOpacity={0.8}
+            >
+              <TouchableOpacity
+                style={styles.childEditBtn}
+                onPress={() => router.push({ pathname: '/(parent)/edit-child', params: { childId: child.id, childName: child.name, childEmoji: child.avatar, childColor: child.color } })}
+                hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.childEditIcon}>✏️</Text>
+              </TouchableOpacity>
               <View style={[styles.childAvatar, { backgroundColor: child.color ?? '#FFB300', shadowColor: child.color ?? '#FFB300' }]}>
                 <Text style={{ fontSize: 26 }}>{child.avatar}</Text>
               </View>
               <Text style={styles.childName}>{child.name}</Text>
-              <Text style={styles.childPts}>⭐ {balances[child.id] ?? 0} pts</Text>
+              <View style={styles.childLevelRow}>
+                <Text style={styles.childLevelEmoji}>{child.levelEmoji}</Text>
+                <View style={styles.childLevelBadge}>
+                  <Text style={styles.childLevelBadgeText}>Niv. {child.level}</Text>
+                </View>
+              </View>
+              <Text style={styles.childPts}>🪙 {balances[child.id] ?? 0}</Text>
             </TouchableOpacity>
           ))}
           <TouchableOpacity
@@ -304,7 +316,7 @@ export default function ParentDashboardScreen() {
           </TouchableOpacity>
         </ScrollView>
 
-        {/* Tâches à faire */}
+        {/* Quêtes en cours */}
         <View style={[styles.sectionHeader, { marginTop: 20 }]}>
           <Text style={styles.sectionTitle}>TÂCHES EN COURS</Text>
           {(todoData ?? []).length > 0 && <Text style={styles.todoCount}>{(todoData ?? []).length}</Text>}
@@ -317,7 +329,7 @@ export default function ParentDashboardScreen() {
         ) : (todoData ?? []).length === 0 ? (
           <View style={styles.emptyPending}>
             <Text style={{ fontSize: 28, marginBottom: 6 }}>📋</Text>
-            <Text style={styles.emptyText}>Aucune tâche active</Text>
+            <Text style={styles.emptyText}>Aucune quête active</Text>
           </View>
         ) : (
           <View style={styles.list}>
@@ -340,7 +352,7 @@ export default function ParentDashboardScreen() {
                     )}
                   </View>
                   <View style={styles.ptsBadge}>
-                    <Text style={styles.ptsBadgeText}>+{task.points} pts</Text>
+                    <Text style={styles.ptsBadgeText}>+{task.goldReward} 🪙</Text>
                   </View>
                 </View>
               );
@@ -381,7 +393,7 @@ export default function ParentDashboardScreen() {
                     <Text style={styles.repBadgeText}>{task.completedToday + 1}/{task.timesPerDay}</Text>
                   </View>
                 )}
-                <View style={styles.ptsBadge}><Text style={styles.ptsBadgeText}>+{task.pts} pts</Text></View>
+                <View style={styles.ptsBadge}><Text style={styles.ptsBadgeText}>+{task.goldReward} 🪙</Text></View>
                 <Text style={{ fontSize: 16, color: Colors.textFaint }}>›</Text>
               </TouchableOpacity>
             ))}
@@ -417,7 +429,7 @@ export default function ParentDashboardScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.pendingTask}>{r.rewardName}</Text>
                   <Text style={styles.pendingMeta}>
-                    {r.childEmoji} {r.childName} · {r.pts} pts débités
+                    {r.childEmoji} {r.childName} · {r.pts} 🪙 débités
                   </Text>
                 </View>
                 <TouchableOpacity style={styles.btnApprove} onPress={() => grantReward(r.id)} aria-label="Accorder">
@@ -436,7 +448,7 @@ export default function ParentDashboardScreen() {
 
       <AppModal config={modalCfg} onHide={hideModal} />
 
-      {/* ── Modal review tâche ── */}
+      {/* ── Modal review quête ── */}
       <Modal visible={!!reviewTask} transparent animationType="slide" onRequestClose={() => setReviewTask(null)}>
         <Pressable style={styles.modalOverlay} onPress={() => setReviewTask(null)}>
           <Pressable style={[styles.reviewSheet, { paddingBottom: 36 + bottom }]}>
@@ -449,7 +461,7 @@ export default function ParentDashboardScreen() {
                     <Text style={styles.reviewTaskName}>{reviewTask.taskName}</Text>
                     <Text style={styles.reviewMeta}>{reviewTask.childName} · {reviewTask.ago}</Text>
                   </View>
-                  <View style={styles.ptsBadge}><Text style={styles.ptsBadgeText}>+{reviewTask.pts} pts</Text></View>
+                  <View style={styles.ptsBadge}><Text style={styles.ptsBadgeText}>+{reviewTask.goldReward} 🪙</Text></View>
                 </View>
 
                 {reviewTask.note ? (
@@ -497,7 +509,7 @@ export default function ParentDashboardScreen() {
               >
                 <Text style={styles.modalBtnIcon}>📋</Text>
                 <View style={styles.modalBtnText}>
-                  <Text style={styles.modalBtnLabel}>Une tâche</Text>
+                  <Text style={styles.modalBtnLabel}>Une quête</Text>
                   <Text style={styles.modalBtnDesc}>Assigne une mission à tes enfants</Text>
                 </View>
                 <Text style={styles.modalBtnArrow}>›</Text>
@@ -557,6 +569,12 @@ const styles = StyleSheet.create({
   pendingDot: { position: 'absolute', top: 12, right: 12, width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.orange, borderWidth: 2, borderColor: Colors.bgCard },
   childAvatar: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', shadowOpacity: 0.3, shadowRadius: 6 },
   childName:  { fontSize: 15, fontWeight: '900', color: Colors.textPrimary },
+  childEditBtn: { position: 'absolute', top: 8, right: 8, zIndex: 1 },
+  childEditIcon: { fontSize: 13, opacity: 0.5 },
+  childLevelRow:       { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  childLevelEmoji:     { fontSize: 14 },
+  childLevelBadge:     { backgroundColor: 'rgba(139,92,246,0.15)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: 'rgba(139,92,246,0.3)' },
+  childLevelBadgeText: { fontSize: 10, fontWeight: '900', color: '#a78bfa' },
   childPts:   { fontSize: 13, fontWeight: '800', color: Colors.gold },
   childTrack: { height: 5, borderRadius: Radii.pill, backgroundColor: 'rgba(255,255,255,0.07)', overflow: 'hidden' },
   childFill:  { height: '100%', borderRadius: Radii.pill, backgroundColor: Colors.gold },

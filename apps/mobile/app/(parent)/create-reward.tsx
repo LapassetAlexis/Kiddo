@@ -57,7 +57,7 @@ export default function CreateRewardScreen() {
     }
     const pts = parseInt(cost, 10);
     if (!pts || pts < 1 || pts > 9999) {
-      showModal({ icon: '🔢', title: 'Coût invalide', message: 'Entre un nombre de points entre 1 et 9999.' });
+      showModal({ icon: '🔢', title: 'Coût invalide', message: 'Entre un nombre de pièces entre 1 et 9999.' });
       return;
     }
 
@@ -67,7 +67,7 @@ export default function CreateRewardScreen() {
       showModal({
         icon: emoji,
         title: 'Récompense créée !',
-        message: `"${title}" — ${pts} pts\n${availability === 'once' ? 'Une seule fois' : 'Illimitée'}.`,
+        message: `"${title}" — ${pts} 🪙\n${availability === 'once' ? 'Une seule fois' : 'Illimitée'}.`,
         buttons: [{ label: 'Super !', style: 'default', onPress: () => router.back() }],
       });
     } catch (err) {
@@ -119,7 +119,7 @@ export default function CreateRewardScreen() {
                   {q.label}
                 </Text>
                 <Text style={[styles.quickChipPts, title === q.label && styles.quickChipTextActive]}>
-                  {q.cost} pts
+                  {q.cost} 🪙
                 </Text>
               </TouchableOpacity>
             ))}
@@ -143,8 +143,8 @@ export default function CreateRewardScreen() {
             />
           </View>
 
-          {/* Coût en points */}
-          <Text style={styles.sectionLabel}>Coût en points</Text>
+          {/* Coût en pièces */}
+          <Text style={styles.sectionLabel}>Coût en pièces 🪙</Text>
           <View style={styles.ptsRow}>
             {[30, 50, 80, 100].map(p => (
               <TouchableOpacity
@@ -210,8 +210,7 @@ export default function CreateRewardScreen() {
                   </Text>
                 </View>
                 <View style={styles.previewCost}>
-                  <Text style={styles.previewCostText}>{cost}</Text>
-                  <Text style={styles.previewCostPts}>pts</Text>
+                  <Text style={styles.previewCostText}>{cost} 🪙</Text>
                 </View>
               </View>
             </View>

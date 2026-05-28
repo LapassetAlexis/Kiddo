@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               const parentToken = await getParentToken();
               const parentPayload = parentToken ? parseJwt(parentToken) : null;
               if (parentPayload && parentPayload.exp * 1000 > Date.now()) {
-                await saveToken(parentToken);
+                await saveToken(parentToken!);
                 await clearParentToken();
                 const me = await authApi.me().catch(() => null);
                 setUser({

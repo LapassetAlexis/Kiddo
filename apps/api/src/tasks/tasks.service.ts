@@ -1,11 +1,12 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository }  from '@nestjs/typeorm';
 import { DataSource, MoreThanOrEqual, Repository } from 'typeorm';
-import { Task }                from './task.entity';
-import { Transaction }         from '../transactions/transaction.entity';
-import { NotificationIntent }  from '../notifications/notification-intent.entity';
-import { Child }               from '../children/child.entity';
-import { FamiliesService }     from '../families/families.service';
+import { Task, TaskDifficulty }  from './task.entity';
+import { Transaction }           from '../transactions/transaction.entity';
+import { NotificationIntent }    from '../notifications/notification-intent.entity';
+import { Child }                 from '../children/child.entity';
+import { FamiliesService }       from '../families/families.service';
+import { XP_BY_DIFFICULTY }      from '../rpg/rpg.constants';
 
 @Injectable()
 export class TasksService {
@@ -26,7 +27,7 @@ export class TasksService {
 
   private async countTodayCompletions(taskId: string): Promise<number> {
     return this.txs.count({
-      where: { referenceId: taskId, type: 'earn', createdAt: MoreThanOrEqual(this.todayStart()) },
+      where: { referenceId: taskId, type: 'earn', currency: 'gold', createdAt: MoreThanOrEqual(this.todayStart()) },
     });
   }
 
@@ -54,14 +55,15 @@ export class TasksService {
     return this.getAll(childId);
   }
 
-  async create(body: { childId: string; title: string; points: number; frequency?: string; timesPerDay?: number; bonusPoints?: number }) {
+  async create(body: { childId: string; title: string; goldReward: number; difficulty?: TaskDifficulty; frequency?: string; timesPerDay?: number; bonusGold?: number }) {
     const child = await this.children.findOne({ where: { id: body.childId } }).then(c => { if (!c) throw new NotFoundException('Enfant introuvable'); return c; });
     const task  = this.tasks.create({
-      title: body.title,
-      points: body.points,
-      frequency: (body.frequency as any) ?? 'daily',
+      title:       body.title,
+      goldReward:  body.goldReward,
+      difficulty:  body.difficulty ?? 'easy',
+      frequency:   (body.frequency as any) ?? 'daily',
       timesPerDay: body.timesPerDay ?? 1,
-      bonusPoints: body.bonusPoints ?? 0,
+      bonusGold:   body.bonusGold ?? 0,
       child,
     });
     return this.tasks.save(task);
@@ -107,10 +109,11 @@ export class TasksService {
     const approverName = await this.familiesSvc.getDisplayName(accountId);
     const familyId = (task.child.family as any).id as string;
     const otherParentTokens = await this.familiesSvc.getFamilyParentTokens(familyId, { exclude: accountId });
+    const xpReward = XP_BY_DIFFICULTY[task.difficulty];
 
     await this.ds.transaction(async em => {
       const completedToday = await em.count(Transaction, {
-        where: { referenceId: id, type: 'earn', createdAt: MoreThanOrEqual(this.todayStart()) },
+        where: { referenceId: id, type: 'earn', currency: 'gold', createdAt: MoreThanOrEqual(this.todayStart()) },
       });
 
       const isLast = (completedToday + 1) >= task.timesPerDay;
@@ -134,28 +137,38 @@ export class TasksService {
 
       if (!result.affected) throw new ConflictException('Tâche déjà validée par l\'autre parent');
 
-      await em.save(Transaction, em.create(Transaction, { type: 'earn', amount: task.points, referenceId: id, child: task.child }));
+      // Gold reward
+      await em.save(Transaction, em.create(Transaction, {
+        type: 'earn', currency: 'gold', amount: task.goldReward, referenceId: id, child: task.child,
+      }));
 
-      if (isLast && task.bonusPoints > 0) {
+      // XP reward
+      await em.save(Transaction, em.create(Transaction, {
+        type: 'earn', currency: 'xp', amount: xpReward, referenceId: id, child: task.child,
+      }));
+      await em.createQueryBuilder().update(Child).set({ xp: () => `xp + ${xpReward}` }).where('id = :id', { id: task.child.id }).execute();
+
+      if (isLast && task.bonusGold > 0) {
         await em.save(Transaction, em.create(Transaction, {
-          type: 'earn', amount: task.bonusPoints, referenceId: `${id}:bonus`, child: task.child,
+          type: 'earn', currency: 'gold', amount: task.bonusGold, referenceId: `${id}:bonus`, child: task.child,
         }));
       }
 
       if (task.child.fcmToken) {
-        const notifBody = isLast && task.bonusPoints > 0
-          ? `+${task.points} pts pour ${task.title} + 🎁 bonus !`
-          : `+${task.points} pts pour ${task.title}`;
+        const hasBonus = isLast && task.bonusGold > 0;
+        const notifBody = hasBonus
+          ? `+${task.goldReward} pièces + ${xpReward} XP pour ${task.title} + bonus !`
+          : `+${task.goldReward} pièces + ${xpReward} XP pour ${task.title}`;
         await em.save(NotificationIntent, em.create(NotificationIntent, {
           fcmToken: task.child.fcmToken,
-          payload: { title: '🎉 Validé !', body: notifBody, data: { taskId: id } },
+          payload: { title: 'Validé !', body: notifBody, data: { taskId: id } },
         }));
       }
 
       for (const fcmToken of otherParentTokens) {
         await em.save(NotificationIntent, em.create(NotificationIntent, {
           fcmToken,
-          payload: { title: `✅ ${approverName} a validé`, body: task.title, data: { taskId: id } },
+          payload: { title: `${approverName} a validé`, body: task.title, data: { taskId: id } },
         }));
       }
     });
@@ -183,7 +196,7 @@ export class TasksService {
       for (const fcmToken of otherParentTokens) {
         await em.save(NotificationIntent, em.create(NotificationIntent, {
           fcmToken,
-          payload: { title: `↩️ ${approverName} a rejeté`, body: task.title, data: { taskId: id } },
+          payload: { title: `${approverName} a rejeté`, body: task.title, data: { taskId: id } },
         }));
       }
     });

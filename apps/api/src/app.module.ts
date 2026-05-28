@@ -1,3 +1,4 @@
+import { join } from 'path';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -34,13 +35,18 @@ const entities = [
     TypeOrmModule.forRootAsync({
       imports:    [ConfigModule],
       inject:     [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        type:        'postgres',
-        url:          config.get<string>('DATABASE_URL'),
-        entities,
-        synchronize:  config.get<string>('NODE_ENV') === 'development',
-        logging:      config.get<string>('NODE_ENV') === 'development',
-      }),
+      useFactory: (config: ConfigService) => {
+        const isDev = config.get<string>('NODE_ENV') === 'development';
+        return {
+          type:           'postgres',
+          url:             config.get<string>('DATABASE_URL'),
+          entities,
+          synchronize:     isDev,
+          logging:         isDev,
+          migrations:      [join(__dirname, 'migrations', '*.js')],
+          migrationsRun:   !isDev,
+        };
+      },
     }),
     AuthModule,
     FamiliesModule,
