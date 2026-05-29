@@ -1,0 +1,8 @@
+- Je vois les taches a valider d'autre comptes. Je suis connecté avec un compte A je crée une tache, mon enfant valide sa tache, je me connecte avec un compte B et je vois la tache a valider
+- Dans la partie parents, dans la partie quete, je vois l'enfant du compte A dans les filtre ainsi que son historique de tache
+- La card d'ajout d'un enfant sur le dashboard parent et plus petite que la card des enfants. Il faut aligner le tout.
+- Dans la creation d'un enfant, l'avatar a le soucis que l'on a deja rencontré, il est coupé en deux. Pareil dans l'ecran suivant pour le code secret.
+- Dans le dashboard enfant, le bouton de retour vers l'espace parent est pas claire. Il faut trouver une alternative plus fluide.
+- On se retrouve encore avec une modification, avec des emoji, couleur. Il faut supprimer toute notion de cela dans l'app ( mobile et API et BDD ). On ne peut modifier que le pseudo et le code secret de l'enfant pour le moment. Pour l'icone et la couleur lié a l'enfant dependra de l'avatar choisi.
+- Dans la modification d'un enfant j'ai cliqué sur supprimer le profile et quand j'accepte la modal rien ne se passe.
+- Dnas les parametres parent, dans la sectino Inviter un gardien, les deux bouton font la meme chose
