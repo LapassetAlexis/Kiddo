@@ -87,9 +87,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.kiddo.app'
+    namespace 'io.kiddo.app'
     defaultConfig {
-        applicationId 'com.kiddo.app'
+        applicationId 'io.kiddo.app'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

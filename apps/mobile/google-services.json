@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:487151542754:android:0d5c5ee4b59f189dd0d9bb",
         "android_client_info": {
-          "package_name": "com.kiddo.app"
+          "package_name": "io.kiddo.app"
         }
       },
       "oauth_client": [],
