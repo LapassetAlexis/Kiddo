@@ -10,6 +10,8 @@ import { childrenApi } from '@/lib/api/children';
 import { transactionsApi } from '@/lib/api/transactions';
 import { getXpProgress, CLASS_LABELS, CLASS_EMOJI } from '@/lib/rpg';
 import type { ChildClass } from '@/lib/rpg';
+import HeroSprite from '@/components/HeroSprite';
+import { DEFAULT_PRESET, getPresetById } from '@/lib/character-presets';
 
 interface BadgeGroup {
   title: string;
@@ -98,6 +100,8 @@ export default function ChildProfileScreen() {
 
   const childName       = statsData?.name       ?? user?.name   ?? '';
   const childEmoji      = statsData?.avatar     ?? user?.avatar ?? '🧒';
+  const childSprite     = statsData?.sprite     ?? DEFAULT_PRESET;
+  const childPreset     = getPresetById(childSprite) ?? getPresetById(DEFAULT_PRESET)!;
   const childColor      = user?.color           ?? '#FFB300';
   const childXp         = statsData?.xp         ?? 0;
   const childLevel      = statsData?.level      ?? 1;
@@ -166,8 +170,8 @@ export default function ChildProfileScreen() {
         {/* Avatar + nom */}
         <View style={styles.heroSection}>
           <View style={styles.avatarWrap}>
-            <View style={[styles.avatarCircle, { backgroundColor: childColor + '33', borderColor: childColor + '66' }]}>
-              <Text style={styles.avatarEmoji}>{childEmoji}</Text>
+            <View style={[styles.spriteContainer, { borderColor: childColor + '66', backgroundColor: childColor + '22' }]}>
+              <HeroSprite source={childPreset.walkStrip} size={100} direction="south" />
             </View>
             <View style={styles.streakBadge}>
               <Text style={styles.streakBadgeText}>🔥 {currentStreak}</Text>
@@ -185,7 +189,7 @@ export default function ChildProfileScreen() {
                   <Text style={styles.levelBadgeText}>Niv. {childLevel}</Text>
                 </View>
                 <Text style={styles.levelTitle}>{childTitle}</Text>
-                <Text style={styles.classChip}>{CLASS_EMOJI[childClass]} {CLASS_LABELS[childClass]}</Text>
+                <Text style={styles.classChip}>{CLASS_LABELS[childClass]}</Text>
               </View>
               <View style={styles.xpBarTrack}>
                 <View style={[styles.xpBarFill, { width: `${xpPercent}%` }]} />
@@ -262,6 +266,7 @@ const styles = StyleSheet.create({
   avatarWrap:   { position: 'relative', marginBottom: 4 },
   avatarCircle: { width: 100, height: 100, borderRadius: 50, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   avatarEmoji:  { fontSize: 56 },
+  spriteContainer: { width: 120, height: 120, borderRadius: 24, borderWidth: 2, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   streakBadge: {
     position: 'absolute', bottom: -4, right: -8,
     backgroundColor: 'rgba(255,107,53,0.15)',

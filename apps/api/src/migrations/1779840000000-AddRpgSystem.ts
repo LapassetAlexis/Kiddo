@@ -9,8 +9,20 @@ export class AddRpgSystem1779840000000 implements MigrationInterface {
     await queryRunner.query(`ALTER TABLE "children" ADD COLUMN IF NOT EXISTS "class" varchar NOT NULL DEFAULT 'warrior'`);
 
     // tasks: rename points → goldReward, bonusPoints → bonusGold, add difficulty
-    await queryRunner.query(`ALTER TABLE "tasks" RENAME COLUMN "points" TO "goldReward"`);
-    await queryRunner.query(`ALTER TABLE "tasks" RENAME COLUMN "bonusPoints" TO "bonusGold"`);
+    await queryRunner.query(`
+      DO $$ BEGIN
+        IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='tasks' AND column_name='points') THEN
+          ALTER TABLE "tasks" RENAME COLUMN "points" TO "goldReward";
+        END IF;
+      END $$
+    `);
+    await queryRunner.query(`
+      DO $$ BEGIN
+        IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='tasks' AND column_name='bonusPoints') THEN
+          ALTER TABLE "tasks" RENAME COLUMN "bonusPoints" TO "bonusGold";
+        END IF;
+      END $$
+    `);
     await queryRunner.query(`ALTER TABLE "tasks" ADD COLUMN IF NOT EXISTS "difficulty" varchar NOT NULL DEFAULT 'easy'`);
 
     // transactions: distinguish XP ledger from gold ledger (existing rows are gold)

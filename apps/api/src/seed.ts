@@ -71,19 +71,34 @@ async function seed() {
   }
 
   // ── Children ──────────────────────────────────────────────────────────────
+  // 5 enfants — un par chapitre pour tester chaque background et histoire
+  // Niveaux cibles : 1, 10, 20, 30, 40 (XP calculés depuis getLevelFromXp)
   const emma = await childRepo.save(childRepo.create({
-    name: 'Emma', avatar: '🦄', color: '#FF80AB', class: 'mage', xp: 145,
-    pinHash: await bcrypt.hash('1234', 12), family,
+    name: 'Emma',   avatar: '✨', color: '#FF80AB', class: 'mage',    sprite: 'f_1', xp: 50,
+    pinHash: await bcrypt.hash('1111', 12), family,
   }));
   const lucas = await childRepo.save(childRepo.create({
-    name: 'Lucas', avatar: '🚀', color: '#40C4FF', class: 'warrior', xp: 300,
-    pinHash: await bcrypt.hash('5678', 12), family,
+    name: 'Lucas',  avatar: '⚔️', color: '#40C4FF', class: 'warrior', sprite: 'm_1', xp: 6800,
+    pinHash: await bcrypt.hash('2222', 12), family,
   }));
   const zoe = await childRepo.save(childRepo.create({
-    name: 'Zoé', avatar: '🌈', color: '#69F0AE', class: 'archer', xp: 10,
-    pinHash: await bcrypt.hash('0000', 12), family,
+    name: 'Zoé',    avatar: '🌿', color: '#69F0AE', class: 'archer',  sprite: 'f_3', xp: 44000,
+    pinHash: await bcrypt.hash('3333', 12), family,
   }));
-  console.log('✓ 3 enfants — Emma (mage, PIN: 1234), Lucas (warrior, PIN: 5678), Zoé (archer, PIN: 0000)');
+  const nadia = await childRepo.save(childRepo.create({
+    name: 'Nadia',  avatar: '🔮', color: '#CE93D8', class: 'mage',    sprite: 'f_4', xp: 128000,
+    pinHash: await bcrypt.hash('4444', 12), family,
+  }));
+  const kwame = await childRepo.save(childRepo.create({
+    name: 'Kwame',  avatar: '🛡️', color: '#FFCC02', class: 'warrior', sprite: 'm_4', xp: 273000,
+    pinHash: await bcrypt.hash('5555', 12), family,
+  }));
+  console.log('✓ 5 enfants de test :');
+  console.log('   Emma/Lyra       PIN: 1111  (niv.~1  → ch.1 forêt verte)');
+  console.log('   Lucas/Aldric    PIN: 2222  (niv.~10 → ch.2 hiver bleu)');
+  console.log('   Zoé/Amara       PIN: 3333  (niv.~20 → ch.3 grotte sombre)');
+  console.log('   Nadia/Nadia     PIN: 4444  (niv.~30 → ch.4 ruines crépuscule)');
+  console.log('   Kwame/Kwame     PIN: 5555  (niv.~40 → ch.5 épique dorée)');
 
   // ── Tasks ─────────────────────────────────────────────────────────────────
   const now = new Date();

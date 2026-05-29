@@ -42,10 +42,11 @@ export class ChildrenService {
       avatar: dto.avatar,
       color:  dto.color ?? '#FFB300',
       class:  dto.class ?? 'warrior',
+      sprite: dto.sprite ?? undefined,
       pinHash,
       family: { id: familyId } as any,
     });
-    return this.children.save(child);
+    return this.children.save(child) as Promise<Child>;
   }
 
   async findOneWithStats(id: string, familyId: string) {

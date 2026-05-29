@@ -13,6 +13,7 @@ export class Child {
   @Column()                       name: string;
   @Column()                       avatar: string;
   @Column({ default: '#FFB300' }) color: string;
+  @Column({ type: 'varchar', nullable: true })  sprite: string | null;
   @Column()                       pinHash: string;
   @Column({ default: 0 })         xp: number;
   @Column({ default: 'warrior' }) class: ChildClass;

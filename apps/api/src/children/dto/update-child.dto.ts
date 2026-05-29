@@ -14,4 +14,8 @@ export class UpdateChildDto {
   @IsString()
   @IsOptional()
   color?: string;
+
+  @IsString()
+  @IsOptional()
+  sprite?: string;
 }
