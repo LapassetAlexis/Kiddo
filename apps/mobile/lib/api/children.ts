@@ -6,6 +6,7 @@ export interface Child {
   name: string;
   avatar: string;
   color: string;
+  sprite?: string;
   xp: number;
   class: ChildClass;
   level: number;
@@ -35,10 +36,10 @@ export const childrenApi = {
 
   get: (id: string) => api.get<ChildStats>(`/children/${id}`),
 
-  create: (data: { name: string; avatar: string; color: string; pin: string; class?: ChildClass }) =>
+  create: (data: { name: string; avatar: string; color: string; pin: string; class?: ChildClass; sprite?: string }) =>
     api.post<Child>('/children', data),
 
-  update: (id: string, data: { name?: string; avatar?: string; color?: string }) =>
+  update: (id: string, data: { name?: string; avatar?: string; color?: string; sprite?: string }) =>
     api.patch<Child>(`/children/${id}`, data),
 
   delete: (id: string) =>
