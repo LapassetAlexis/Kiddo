@@ -5,8 +5,8 @@
 | Champ | Valeur |
 |-------|--------|
 | Nom | Kiddo |
-| Package Android | `com.kiddo.app` |
-| Bundle iOS | `com.kiddo.app` |
+| Package Android | `io.kiddo.app` |
+| Bundle iOS | `io.kiddo.app` |
 | Version actuelle | 0.1.0 |
 | Version code Android | 1 |
 | Catégorie | Éducation / Famille |

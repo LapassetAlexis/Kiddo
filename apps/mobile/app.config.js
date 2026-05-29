@@ -14,7 +14,7 @@ export default {
     },
     ios: {
       supportsTablet: false,
-      bundleIdentifier: 'com.kiddo.app',
+      bundleIdentifier: 'io.kiddo.app',
       googleServicesFile: process.env.GOOGLE_SERVICES_PLIST ?? './GoogleService-Info.plist',
     },
     android: {
@@ -22,7 +22,7 @@ export default {
         foregroundImage: './assets/adaptive-icon.png',
         backgroundColor: '#18181e',
       },
-      package: 'com.kiddo.app',
+      package: 'io.kiddo.app',
       googleServicesFile: './google-services.json',
       permissions: ['android.permission.RECORD_AUDIO'],
     },
