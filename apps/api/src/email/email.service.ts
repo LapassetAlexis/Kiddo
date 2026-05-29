@@ -12,7 +12,7 @@ export class EmailService {
 
   constructor(private config: ConfigService) {
     const apiKey = this.config.get<string>('RESEND_API_KEY');
-    this.from    = this.config.get<string>('EMAIL_FROM') ?? 'Kiddo <noreply@kiddo.app>';
+    this.from = this.config.get<string>('EMAIL_FROM') ?? 'Kiddo <contact@kiddoapp.fr>';
 
     if (apiKey) {
       this.resend = new Resend(apiKey);
