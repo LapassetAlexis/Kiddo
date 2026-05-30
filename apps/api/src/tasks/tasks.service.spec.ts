@@ -616,10 +616,10 @@ describe('TasksService', () => {
       const tasks = [makeTask({ id: 'task-2' }), makeTask({ id: 'task-1' })];
       taskRepo.find.mockResolvedValue(tasks);
 
-      const result = await service.getForChild('child-1');
+      const result = await service.getForChild('child-1', 'fam-1');
 
       expect(taskRepo.find).toHaveBeenCalledWith({
-        where: { child: { id: 'child-1' } },
+        where: { child: { id: 'child-1', family: { id: 'fam-1' } } },
         relations: ['child'],
         order: { createdAt: 'DESC' },
       });
@@ -628,7 +628,7 @@ describe('TasksService', () => {
 
     it('returns empty array when child has no tasks', async () => {
       taskRepo.find.mockResolvedValue([]);
-      const result = await service.getForChild('child-1');
+      const result = await service.getForChild('child-1', 'fam-1');
       expect(result).toEqual([]);
     });
 
@@ -637,7 +637,7 @@ describe('TasksService', () => {
       taskRepo.find.mockResolvedValue(tasks);
       (txRepo.count as jest.Mock).mockResolvedValue(2);
 
-      const result = await service.getForChild('child-1');
+      const result = await service.getForChild('child-1', 'fam-1');
 
       expect((result[0] as any).completedToday).toBe(2);
     });

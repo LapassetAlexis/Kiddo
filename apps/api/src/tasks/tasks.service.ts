@@ -38,7 +38,7 @@ export class TasksService {
     }));
   }
 
-  async getForChild(childId: string, familyId: string) {
+  async getForChild(childId: string, familyId?: string) {
     const tasks = await this.tasks.find({
       where: { child: { id: childId, family: { id: familyId } } },
       relations: ['child'],
@@ -47,17 +47,17 @@ export class TasksService {
     return this.enrichTasks(tasks);
   }
 
-  async getAll(familyId: string, childId?: string, status?: string) {
+  async getAll(familyId?: string, childId?: string, status?: string) {
     const where: Record<string, any> = {};
     if (familyId) where.child = { family: { id: familyId } };
-    else return []; // safety: no family context
+    else return [];
     if (childId) where.child = { ...where.child, id: childId };
     if (status)  where.status = status;
     const tasks = await this.tasks.find({ where, relations: ['child'], order: { createdAt: 'DESC' } });
     return this.enrichTasks(tasks);
   }
 
-  getHistory(familyId: string, childId?: string) {
+  getHistory(familyId?: string, childId?: string) {
     return this.getAll(familyId, childId);
   }
 
