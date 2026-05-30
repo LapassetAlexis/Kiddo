@@ -10,7 +10,8 @@ import { childrenApi } from '@/lib/api/children';
 import { ApiError } from '@/lib/api-client';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 import SpriteAvatar from '@/components/SpriteAvatar';
-import { CHARACTER_PRESETS, DEFAULT_PRESET, getPresetById } from '@/lib/character-presets';
+import HeroSprite from '@/components/HeroSprite';
+import { CHARACTER_PRESETS, DEFAULT_PRESET, getPresetById, getPresetSprite } from '@/lib/character-presets';
 
 type Step = 'name' | 'character' | 'pin' | 'confirm';
 
@@ -219,7 +220,7 @@ export default function CreateChildScreen() {
 
             <View style={styles.pinCharPreview}>
               <View style={styles.spriteContainer}>
-                <SpriteAvatar presetId={character} level={1} size={80} />
+                <HeroSprite source={getPresetSprite(character).source} size={80} direction="south" />
               </View>
               <Text style={styles.pinCharName}>{selectedChar.name}</Text>
             </View>
@@ -303,7 +304,7 @@ const styles = StyleSheet.create({
   characterCardSelected: {
     borderColor: Colors.gold, backgroundColor: 'rgba(255,184,0,0.05)',
   },
-  spriteWrap:         { width: 72, height: 72, borderRadius: 16, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.04)' },
+  spriteWrap:         { width: 72, height: 90, borderRadius: 16, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.04)', alignItems: 'center', justifyContent: 'center' },
   spriteWrapSelected: { backgroundColor: 'rgba(255,184,0,0.1)' },
   characterInfo:     { flex: 1, gap: 4 },
   characterNameRow:  { gap: 2 },
@@ -322,7 +323,7 @@ const styles = StyleSheet.create({
   pinContent:     { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 18, paddingHorizontal: 32 },
   pinTitle:       { fontSize: 20, fontWeight: '900', color: Colors.textPrimary, textAlign: 'center' },
   pinSub:         { fontSize: 13, fontWeight: '600', color: Colors.textDim, textAlign: 'center', lineHeight: 18, marginTop: -10 },
-  spriteContainer: { width: 80, height: 80, borderRadius: 16, overflow: 'hidden' },
+  spriteContainer: { width: 100, height: 100, borderRadius: 16, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   pinCharPreview: { alignItems: 'center', gap: 6 },
   pinCharName:    { fontSize: 14, fontWeight: '800', color: Colors.textDim },
   dots: { flexDirection: 'row', gap: 16 },
