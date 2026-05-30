@@ -1,4 +1,4 @@
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, Image } from 'react-native';
 import { useState } from 'react';
 import { router } from 'expo-router';
 import { Colors, Radii, Spacing } from '@/constants/theme';
@@ -35,7 +35,11 @@ export default function LoginScreen() {
       <View style={styles.container}>
         {/* Logo */}
         <View style={styles.logoWrap}>
-          <Text style={styles.logoEmoji}>⭐</Text>
+          <Image
+            source={require('@/assets/icon.png')}
+            style={styles.logoImg}
+            resizeMode="contain"
+          />
           <Text style={styles.logoTitle}>Kiddo</Text>
           <Text style={styles.logoSub}>Espace parents</Text>
         </View>
@@ -118,6 +122,11 @@ const styles = StyleSheet.create({
   logoWrap: {
     alignItems: 'center',
     gap: 8,
+  },
+  logoImg: {
+    width: 80,
+    height: 80,
+    borderRadius: 20,
   },
   logoEmoji: {
     fontSize: 56,

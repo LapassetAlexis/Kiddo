@@ -218,7 +218,9 @@ export default function CreateChildScreen() {
             </Text>
 
             <View style={styles.pinCharPreview}>
-              <SpriteAvatar presetId={character} level={1} size={80} />
+              <View style={styles.spriteContainer}>
+                <SpriteAvatar presetId={character} level={1} size={80} />
+              </View>
               <Text style={styles.pinCharName}>{selectedChar.name}</Text>
             </View>
 
@@ -320,6 +322,7 @@ const styles = StyleSheet.create({
   pinContent:     { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 18, paddingHorizontal: 32 },
   pinTitle:       { fontSize: 20, fontWeight: '900', color: Colors.textPrimary, textAlign: 'center' },
   pinSub:         { fontSize: 13, fontWeight: '600', color: Colors.textDim, textAlign: 'center', lineHeight: 18, marginTop: -10 },
+  spriteContainer: { width: 80, height: 80, borderRadius: 16, overflow: 'hidden' },
   pinCharPreview: { alignItems: 'center', gap: 6 },
   pinCharName:    { fontSize: 14, fontWeight: '800', color: Colors.textDim },
   dots: { flexDirection: 'row', gap: 16 },

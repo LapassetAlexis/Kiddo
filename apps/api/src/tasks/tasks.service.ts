@@ -38,21 +38,27 @@ export class TasksService {
     }));
   }
 
-  async getForChild(childId: string) {
-    const tasks = await this.tasks.find({ where: { child: { id: childId } }, relations: ['child'], order: { createdAt: 'DESC' } });
+  async getForChild(childId: string, familyId: string) {
+    const tasks = await this.tasks.find({
+      where: { child: { id: childId, family: { id: familyId } } },
+      relations: ['child'],
+      order: { createdAt: 'DESC' },
+    });
     return this.enrichTasks(tasks);
   }
 
-  async getAll(childId?: string, status?: string) {
+  async getAll(familyId: string, childId?: string, status?: string) {
     const where: Record<string, any> = {};
-    if (childId) where.child = { id: childId };
+    if (familyId) where.child = { family: { id: familyId } };
+    else return []; // safety: no family context
+    if (childId) where.child = { ...where.child, id: childId };
     if (status)  where.status = status;
     const tasks = await this.tasks.find({ where, relations: ['child'], order: { createdAt: 'DESC' } });
     return this.enrichTasks(tasks);
   }
 
-  getHistory(childId?: string) {
-    return this.getAll(childId);
+  getHistory(familyId: string, childId?: string) {
+    return this.getAll(familyId, childId);
   }
 
   async create(body: { childId: string; title: string; goldReward: number; difficulty?: TaskDifficulty; frequency?: string; timesPerDay?: number; bonusGold?: number }) {

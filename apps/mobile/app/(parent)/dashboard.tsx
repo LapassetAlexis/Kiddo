@@ -247,9 +247,16 @@ export default function ParentDashboardScreen() {
 
         {/* Header */}
         <View style={styles.header}>
-          <View>
-            <Text style={styles.sub}>Bonjour,</Text>
-            <Text style={styles.title}>{parentName} 👋</Text>
+          <View style={styles.headerLeft}>
+            <Image
+              source={require('@/assets/icon.png')}
+              style={styles.headerLogo}
+              resizeMode="contain"
+            />
+            <View>
+              <Text style={styles.sub}>Bonjour,</Text>
+              <Text style={styles.title}>{parentName} 👋</Text>
+            </View>
           </View>
           <View style={styles.headerActions}>
             <TouchableOpacity
@@ -543,6 +550,8 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.bgScreen },
 
   header:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: Spacing.screen, paddingTop: 12 },
+  headerLeft:    { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  headerLogo:    { width: 32, height: 32, borderRadius: 8 },
   headerActions: { flexDirection: 'row', gap: 10, alignItems: 'center' },
   sub:           { fontSize: 13, fontWeight: '600', color: Colors.textDim },
   title:         { fontSize: 22, fontWeight: '900', color: Colors.textPrimary },
@@ -564,7 +573,7 @@ const styles = StyleSheet.create({
   todoRejectedLabel:{ fontSize: 11, fontWeight: '700', color: 'rgba(239,83,80,0.8)', marginTop: 2 },
 
   childScroll: { paddingHorizontal: Spacing.screen, gap: 12, paddingBottom: 4 },
-  childCard:   { backgroundColor: Colors.bgCard, borderRadius: 20, borderWidth: 1, borderColor: Colors.border, padding: 16, width: 150, gap: 8, marginBottom: 16, position: 'relative' },
+  childCard:   { backgroundColor: Colors.bgCard, borderRadius: 20, borderWidth: 1, borderColor: Colors.border, padding: 16, width: 150, minHeight: 160, gap: 8, marginBottom: 16, position: 'relative' },
   childCardAlert: { borderColor: 'rgba(255,184,0,0.2)' },
   pendingDot: { position: 'absolute', top: 12, right: 12, width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.orange, borderWidth: 2, borderColor: Colors.bgCard },
   childAvatar: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', shadowOpacity: 0.3, shadowRadius: 6 },
@@ -579,7 +588,7 @@ const styles = StyleSheet.create({
   childTrack: { height: 5, borderRadius: Radii.pill, backgroundColor: 'rgba(255,255,255,0.07)', overflow: 'hidden' },
   childFill:  { height: '100%', borderRadius: Radii.pill, backgroundColor: Colors.gold },
   childReward:{ fontSize: 10, fontWeight: '700', color: Colors.textFaint },
-  addChildCard: { backgroundColor: Colors.bgCard, borderRadius: 20, borderWidth: 1, borderColor: Colors.border, borderStyle: 'dashed', width: 150, height: 140, alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 16, opacity: 0.5 },
+  addChildCard: { backgroundColor: Colors.bgCard, borderRadius: 20, borderWidth: 1.5, borderColor: Colors.border, borderStyle: 'dashed', width: 150, minHeight: 160, alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 16, opacity: 0.5 },
   addChildText: { fontSize: 13, fontWeight: '800', color: Colors.textDim },
 
   list:       { paddingHorizontal: Spacing.screen, gap: 10 },
