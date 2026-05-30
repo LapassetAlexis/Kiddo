@@ -9,7 +9,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { childrenApi } from '@/lib/api/children';
 import { ApiError } from '@/lib/api-client';
 import { Colors, Radii, Spacing } from '@/constants/theme';
-import SpriteAvatar from '@/components/SpriteAvatar';
 import HeroSprite from '@/components/HeroSprite';
 import { CHARACTER_PRESETS, DEFAULT_PRESET, getPresetById, getPresetSprite } from '@/lib/character-presets';
 
@@ -184,7 +183,7 @@ export default function CreateChildScreen() {
                   activeOpacity={0.75}
                 >
                   <View style={[styles.spriteWrap, selected && styles.spriteWrapSelected]}>
-                    <SpriteAvatar presetId={item.id} level={1} size={72} />
+                    <HeroSprite source={getPresetSprite(item.id).source} size={64} direction="south" />
                   </View>
                   <View style={styles.characterInfo}>
                     <View style={styles.characterNameRow}>
@@ -304,7 +303,7 @@ const styles = StyleSheet.create({
   characterCardSelected: {
     borderColor: Colors.gold, backgroundColor: 'rgba(255,184,0,0.05)',
   },
-  spriteWrap:         { width: 72, height: 90, borderRadius: 16, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.04)', alignItems: 'center', justifyContent: 'center' },
+  spriteWrap:         { width: 72, height: 80, borderRadius: 16, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.04)', alignItems: 'center', justifyContent: 'center' },
   spriteWrapSelected: { backgroundColor: 'rgba(255,184,0,0.1)' },
   characterInfo:     { flex: 1, gap: 4 },
   characterNameRow:  { gap: 2 },
