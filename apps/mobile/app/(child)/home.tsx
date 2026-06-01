@@ -1,9 +1,10 @@
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Animated } from 'react-native';
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Radii, Spacing, Typography } from '@/constants/theme';
 import TaskCompleteSheet from '@/components/ui/TaskCompleteSheet';
+import LevelUpModal from '@/components/LevelUpModal';
 import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
 import { useAuth } from '@/contexts/AuthContext';
 import { useApiData } from '@/lib/useApiData';
@@ -53,7 +54,14 @@ export default function ChildHomeScreen() {
     refreshTasks(); refreshBalance(); refreshStreak(); refreshStats();
   }, []));
 
+  useEffect(() => {
+    if (statsData?.pendingLevelUp) {
+      setLevelUpData({ level: statsData.pendingLevelUp });
+    }
+  }, [statsData?.pendingLevelUp]);
+
   const [selectedTask, setSelectedTask] = useState<UITask | null>(null);
+  const [levelUpData, setLevelUpData] = useState<{ level: number } | null>(null);
   const ptsAnim = useRef(new Animated.Value(1)).current;
 
   const tasks: UITask[] = (tasksData ?? [])
@@ -113,6 +121,13 @@ export default function ChildHomeScreen() {
       Animated.spring(ptsAnim, { toValue: 1.08, useNativeDriver: true, speed: 40 }),
       Animated.spring(ptsAnim, { toValue: 1,    useNativeDriver: true, speed: 40 }),
     ]).start();
+  }
+
+  async function dismissLevelUp() {
+    setLevelUpData(null);
+    if (user?.id) {
+      try { await childrenApi.ackLevelUp(user.id); } catch {}
+    }
   }
 
   async function submitTask(id: string, note: string, photoUri?: string) {
@@ -187,16 +202,18 @@ export default function ChildHomeScreen() {
           </View>
 
           {/* Prochain marchand */}
-          <View style={styles.progressWrap}>
-            <Text style={{ fontSize: 18 }}>{nextRewardEmoji}</Text>
-            <View style={styles.progressInfo}>
-              <Text style={styles.progressName}>{nextRewardName}</Text>
-              <View style={styles.progressTrack}>
-                <View style={[styles.progressFill, { width: `${Math.round(goldProgress * 100)}%` }]} />
+          {nextReward && (
+            <View style={styles.progressWrap}>
+              <Text style={{ fontSize: 18 }}>{nextRewardEmoji}</Text>
+              <View style={styles.progressInfo}>
+                <Text style={styles.progressName}>{nextRewardName}</Text>
+                <View style={styles.progressTrack}>
+                  <View style={[styles.progressFill, { width: `${Math.round(goldProgress * 100)}%` }]} />
+                </View>
               </View>
+              <Text style={styles.progressPct}>{Math.round(goldProgress * 100)}%</Text>
             </View>
-            <Text style={styles.progressPct}>{Math.round(goldProgress * 100)}%</Text>
-          </View>
+          )}
         </View>
 
         {/* Streak */}
@@ -285,6 +302,14 @@ export default function ChildHomeScreen() {
         task={selectedTask}
         onConfirm={(id, note, photo) => submitTask(id, note, photo)}
         onClose={() => setSelectedTask(null)}
+      />
+
+      <LevelUpModal
+        visible={levelUpData !== null}
+        newLevel={levelUpData?.level ?? 1}
+        childClass={childClass}
+        childName={user?.name ?? 'Aventurier'}
+        onClose={dismissLevelUp}
       />
     </SafeAreaView>
   );

@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 const COLS       = 13;
 const ROWS       = 4;
 const FRAME_SIZE = 64;
-const FRAMES     = [1, 2, 3, 4, 5, 6, 7, 8]; // LPC walk cycle (skips frame 0)
+const FRAMES_ALL = [1, 2, 3, 4, 5, 6, 7, 8]; // full LPC walk cycle
 const FRAME_MS   = 100;
 
 const DIRECTION_ROW = { up: 0, left: 1, south: 2, right: 3 } as const;
@@ -14,39 +14,48 @@ type Direction = keyof typeof DIRECTION_ROW;
 
 interface Props {
   source: ImageSourcePropType;
+  items?: ImageSourcePropType[];
+  behindItems?: ImageSourcePropType[];
   size?: number;
   direction?: Direction;
+  frames?: number[];
 }
 
-export default function HeroSprite({ source, size = 64, direction = 'right' }: Props) {
+export default function HeroSprite({
+  source, items = [], behindItems = [], size = 64, direction = 'right', frames = FRAMES_ALL,
+}: Props) {
   const [tick, setTick] = useState(0);
   const row      = DIRECTION_ROW[direction];
-  const frameIdx = FRAMES[tick % FRAMES.length];
-  const scale    = size / FRAME_SIZE;
-
-  // At size=64: sheet = 832×256px — well within Android GL limits
-  // At size=96: sheet = 1248×384px — still fine
-  const sheetW = COLS * size;  // e.g. 832 at size=64
-  const sheetH = ROWS * size;  // e.g. 256 at size=64
+  const frameIdx = frames[tick % frames.length];
+  const sheetW   = COLS * size;
+  const sheetH   = ROWS * size;
+  const sheetStyle = {
+    position: 'absolute' as const,
+    width:  sheetW,
+    height: sheetH,
+    left: -frameIdx * size,
+    top:  -row * size,
+    backgroundColor: 'transparent',
+  };
 
   useEffect(() => {
     const id = setInterval(() => setTick(t => t + 1), FRAME_MS);
     return () => clearInterval(id);
-  }, []);
+  }, [frames]);
 
   return (
-    <View collapsable={false} style={{ width: size, height: size, overflow: 'hidden' }}>
-      <Image
-        source={source}
-        style={{
-          position: 'absolute',
-          width:  sheetW,
-          height: sheetH,
-          left: -frameIdx * size,
-          top:  -row * size,
-        }}
-        resizeMode="stretch"
-      />
+    <View
+      collapsable={false}
+      renderToHardwareTextureAndroid={false}
+      style={{ width: size, height: size, overflow: 'hidden', backgroundColor: 'transparent' }}
+    >
+      {behindItems.map((src, i) => (
+        <Image key={`b${i}`} source={src} style={sheetStyle} resizeMode="stretch" />
+      ))}
+      <Image source={source} style={sheetStyle} resizeMode="stretch" />
+      {items.map((src, i) => (
+        <Image key={i} source={src} style={sheetStyle} resizeMode="stretch" />
+      ))}
     </View>
   );
 }

@@ -17,6 +17,7 @@ export interface Child {
 }
 
 export interface ChildStats extends Child {
+  pendingLevelUp?: number | null;
   stats: {
     balance: number;
     totalGoldEarned: number;
@@ -50,4 +51,7 @@ export const childrenApi = {
 
   getBalance: (id: string) =>
     api.get<Balance>(`/children/${id}/balance`),
+
+  ackLevelUp: (id: string) =>
+    api.post<void>(`/children/${id}/ack-levelup`, {}),
 };

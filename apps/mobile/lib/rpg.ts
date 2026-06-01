@@ -56,6 +56,18 @@ export function getLevelFromXp(xp: number): number {
   }
 }
 
+const LEVEL_TIERS = [
+  { minLevel: 1,  title: 'Apprenti'  },
+  { minLevel: 5,  title: 'Aventurier' },
+  { minLevel: 10, title: 'Héros'     },
+  { minLevel: 20, title: 'Champion'  },
+  { minLevel: 35, title: 'Légende'   },
+];
+
+export function getLevelTitle(level: number): string {
+  return ([...LEVEL_TIERS].reverse().find(t => level >= t.minLevel) ?? LEVEL_TIERS[0]).title;
+}
+
 export function getXpProgress(xp: number): { current: number; total: number } {
   let level = 1;
   let spent = 0;

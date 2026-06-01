@@ -13,16 +13,177 @@ export interface StoryChapter {
   text: string;
 }
 
+export type CharacterClass = 'warrior' | 'archer' | 'mage';
+
+export const CLASS_META: Record<CharacterClass, { label: string; icon: string; color: string }> = {
+  warrior: { label: 'Guerrier', icon: '⚔️', color: '#ef4444' },
+  archer:  { label: 'Archer',   icon: '🏹', color: '#22c55e' },
+  mage:    { label: 'Mage',     icon: '✨', color: '#8b5cf6' },
+};
+
 export interface CharacterPreset {
   id: string;
   gender: 'male' | 'female';
+  class: CharacterClass;
   name: string;
   tagline: string;
   emoji: string;
   chapters: StoryChapter[];
   sprite: SpriteConfig;
-  // Walk-only strip (832×256): rows 0=up 1=left 2=south 3=right, 13 frames each
-  walkStrip: ImageSourcePropType;
+  // Naked base body strip (832×256) — no torso armor, just body/hair/legs/shoes
+  baseStrip: ImageSourcePropType;
+}
+
+// ── Equipment item registry ──────────────────────────────────────────────────
+// Each value is a transparent 832×256 walk strip (single LPC layer).
+// HeroSprite stacks them on top of baseStrip at render time.
+export const EQUIPMENT_ITEMS: Record<string, ImageSourcePropType> = {
+  // Torso — civilian
+  item_torso_shirt_blue:       require('@/assets/sprites/item_torso_shirt_blue.png'),
+  item_torso_shirt_brown:      require('@/assets/sprites/item_torso_shirt_brown.png'),
+  item_torso_shirt_forest:     require('@/assets/sprites/item_torso_shirt_forest.png'),
+  item_torso_shirt_white:      require('@/assets/sprites/item_torso_shirt_white.png'),
+  item_torso_blouse_blue:      require('@/assets/sprites/item_torso_blouse_blue.png'),
+  item_torso_blouse_red:       require('@/assets/sprites/item_torso_blouse_red.png'),
+  item_torso_blouse_purple:    require('@/assets/sprites/item_torso_blouse_purple.png'),
+  // Torso — leather (T2)
+  item_torso_leather_brown:    require('@/assets/sprites/item_torso_leather_brown.png'),
+  item_torso_leather_tan:      require('@/assets/sprites/item_torso_leather_tan.png'),
+  item_torso_leather_forest:   require('@/assets/sprites/item_torso_leather_forest.png'),
+  item_torso_leather_walnut:   require('@/assets/sprites/item_torso_leather_walnut.png'),
+  item_torso_leather_purple_f: require('@/assets/sprites/item_torso_leather_purple_f.png'),
+  item_torso_leather_red_f:    require('@/assets/sprites/item_torso_leather_red_f.png'),
+  item_torso_leather_green_f:  require('@/assets/sprites/item_torso_leather_green_f.png'),
+  item_torso_leather_lavender: require('@/assets/sprites/item_torso_leather_lavender.png'),
+  // Torso — plate (T3/T4)
+  item_torso_plate_iron:       require('@/assets/sprites/item_torso_plate_iron.png'),
+  item_torso_plate_bronze:     require('@/assets/sprites/item_torso_plate_bronze.png'),
+  item_torso_plate_steel:      require('@/assets/sprites/item_torso_plate_steel.png'),
+  item_torso_plate_brass:      require('@/assets/sprites/item_torso_plate_brass.png'),
+  item_torso_plate_gold:       require('@/assets/sprites/item_torso_plate_gold.png'),
+  item_torso_plate_iron_f:     require('@/assets/sprites/item_torso_plate_iron_f.png'),
+  item_torso_plate_gold_f:     require('@/assets/sprites/item_torso_plate_gold_f.png'),
+  // Legs — plate
+  item_legs_plate_iron:        require('@/assets/sprites/item_legs_plate_iron.png'),
+  item_legs_plate_bronze:      require('@/assets/sprites/item_legs_plate_bronze.png'),
+  item_legs_plate_steel:       require('@/assets/sprites/item_legs_plate_steel.png'),
+  item_legs_plate_gold:        require('@/assets/sprites/item_legs_plate_gold.png'),
+  item_legs_plate_iron_f:      require('@/assets/sprites/item_legs_plate_iron_f.png'),
+  item_legs_plate_gold_f:      require('@/assets/sprites/item_legs_plate_gold_f.png'),
+  item_legs_plate_brass:       require('@/assets/sprites/item_legs_plate_brass.png'),
+  // Weapons
+  item_weapon_dagger:                 require('@/assets/sprites/item_weapon_dagger.png'),
+  item_weapon_dagger_behind:          require('@/assets/sprites/item_weapon_dagger_behind.png'),
+  item_weapon_mace:                   require('@/assets/sprites/item_weapon_mace.png'),
+  item_weapon_arming_sword:           require('@/assets/sprites/item_weapon_arming_sword.png'),
+  item_weapon_longsword:              require('@/assets/sprites/item_weapon_longsword.png'),
+  item_weapon_longsword_front:        require('@/assets/sprites/item_weapon_longsword_front.png'),
+  item_weapon_crossbow:               require('@/assets/sprites/item_weapon_crossbow.png'),
+  item_weapon_boomerang:              require('@/assets/sprites/item_weapon_boomerang.png'),
+  item_weapon_staff_gnarled:          require('@/assets/sprites/item_weapon_staff_gnarled.png'),
+  item_weapon_staff_gnarled_behind:   require('@/assets/sprites/item_weapon_staff_gnarled_behind.png'),
+  item_weapon_staff_crystal:          require('@/assets/sprites/item_weapon_staff_crystal.png'),
+  item_weapon_staff_crystal_behind:   require('@/assets/sprites/item_weapon_staff_crystal_behind.png'),
+  item_weapon_staff_loop:             require('@/assets/sprites/item_weapon_staff_loop.png'),
+  item_weapon_staff_loop_behind:      require('@/assets/sprites/item_weapon_staff_loop_behind.png'),
+  item_weapon_staff_diamond:          require('@/assets/sprites/item_weapon_staff_diamond.png'),
+  item_weapon_staff_diamond_behind:   require('@/assets/sprites/item_weapon_staff_diamond_behind.png'),
+  // Shield
+  item_shield_heater_wood:     require('@/assets/sprites/item_shield_heater_wood.png'),
+  // Helms
+  item_helm_nasal_steel:       require('@/assets/sprites/item_helm_nasal_steel.png'),
+  item_helm_nasal_bronze:      require('@/assets/sprites/item_helm_nasal_bronze.png'),
+  item_helm_nasal_iron:        require('@/assets/sprites/item_helm_nasal_iron.png'),
+  item_helm_nasal_gold:        require('@/assets/sprites/item_helm_nasal_gold.png'),
+  item_helm_wizard_base:       require('@/assets/sprites/item_helm_wizard_base.png'),
+  item_helm_wizard_belt:       require('@/assets/sprites/item_helm_wizard_belt.png'),
+  item_helm_wizard_buckle:     require('@/assets/sprites/item_helm_wizard_buckle.png'),
+};
+
+// ── Level gear (auto-equip by level tier) ────────────────────────────────────
+// Keys match EQUIPMENT_ITEMS. Higher minLevel wins when multiple tiers match.
+const LEVEL_GEAR: Record<string, Record<number, string[]>> = {
+  // Weapon layers: longsword/dagger use behind+front split; arming_sword/mace/shield are universal front only
+  'm_1': {
+    1:  ['item_torso_shirt_blue',    'item_weapon_mace'],
+    10: ['item_torso_leather_brown', 'item_weapon_arming_sword'],
+    20: ['item_torso_plate_iron',    'item_legs_plate_iron',   'item_weapon_longsword', 'item_weapon_longsword_front'],
+    35: ['item_torso_plate_gold',    'item_legs_plate_gold',   'item_helm_nasal_gold',  'item_weapon_longsword', 'item_weapon_longsword_front', 'item_shield_heater_wood'],
+  },
+  'm_2': {
+    1:  ['item_torso_shirt_brown',   'item_weapon_mace'],
+    10: ['item_torso_leather_tan',   'item_weapon_arming_sword'],
+    20: ['item_torso_plate_bronze',  'item_legs_plate_bronze', 'item_weapon_longsword', 'item_weapon_longsword_front'],
+    35: ['item_torso_plate_gold',    'item_legs_plate_gold',   'item_helm_nasal_gold',  'item_weapon_longsword', 'item_weapon_longsword_front', 'item_shield_heater_wood'],
+  },
+  'm_3': {
+    1:  ['item_torso_shirt_forest',  'item_weapon_dagger_behind', 'item_weapon_dagger'],
+    10: ['item_torso_leather_forest','item_weapon_crossbow'],
+    20: ['item_torso_plate_brass',   'item_legs_plate_brass',  'item_weapon_crossbow'],
+    35: ['item_torso_plate_brass',   'item_legs_plate_brass',  'item_weapon_crossbow'],
+  },
+  'm_4': {
+    1:  ['item_torso_shirt_white',   'item_weapon_mace'],
+    10: ['item_torso_leather_walnut','item_weapon_arming_sword'],
+    20: ['item_torso_plate_steel',   'item_legs_plate_steel',  'item_weapon_longsword', 'item_weapon_longsword_front'],
+    35: ['item_torso_plate_gold',    'item_legs_plate_gold',   'item_helm_nasal_gold',  'item_weapon_longsword', 'item_weapon_longsword_front', 'item_shield_heater_wood'],
+  },
+  'f_1': {
+    1:  ['item_torso_blouse_blue',      'item_weapon_staff_gnarled_behind',  'item_weapon_staff_gnarled'],
+    10: ['item_torso_leather_purple_f', 'item_weapon_staff_crystal_behind',  'item_weapon_staff_crystal'],
+    20: ['item_torso_leather_purple_f', 'item_weapon_staff_loop_behind',     'item_weapon_staff_loop'],
+    35: ['item_torso_leather_lavender', 'item_weapon_staff_diamond_behind',  'item_weapon_staff_diamond'],
+  },
+  'f_2': {
+    1:  ['item_torso_blouse_red',    'item_weapon_mace'],
+    10: ['item_torso_leather_red_f', 'item_weapon_arming_sword'],
+    20: ['item_torso_plate_iron_f',  'item_legs_plate_iron_f', 'item_weapon_longsword', 'item_weapon_longsword_front'],
+    35: ['item_torso_plate_gold_f',  'item_legs_plate_gold_f', 'item_helm_nasal_gold',  'item_weapon_longsword', 'item_weapon_longsword_front', 'item_shield_heater_wood'],
+  },
+  'f_3': {
+    1:  ['item_torso_shirt_forest',  'item_weapon_dagger_behind', 'item_weapon_dagger'],
+    10: ['item_torso_leather_green_f','item_weapon_crossbow'],
+    20: ['item_torso_plate_brass',   'item_legs_plate_brass',  'item_weapon_crossbow'],
+    35: ['item_torso_plate_brass',   'item_legs_plate_brass',  'item_weapon_crossbow'],
+  },
+  'f_4': {
+    1:  ['item_torso_blouse_purple',    'item_weapon_staff_gnarled_behind',  'item_weapon_staff_gnarled'],
+    10: ['item_torso_leather_purple_f', 'item_weapon_staff_crystal_behind',  'item_weapon_staff_crystal'],
+    20: ['item_torso_leather_purple_f', 'item_weapon_staff_loop_behind',     'item_weapon_staff_loop'],
+    35: ['item_torso_leather_lavender', 'item_weapon_staff_diamond_behind',  'item_weapon_staff_diamond'],
+  },
+};
+
+// LPC universal_behind weapons — must render behind the body (zPos < body zPos=10)
+const BEHIND_ITEM_KEYS = new Set([
+  'item_weapon_longsword',
+  'item_weapon_dagger_behind',
+  'item_weapon_staff_gnarled_behind',
+  'item_weapon_staff_crystal_behind',
+  'item_weapon_staff_loop_behind',
+  'item_weapon_staff_diamond_behind',
+]);
+
+function resolveGearKeys(preset: CharacterPreset, level: number): string[] {
+  const tiers = LEVEL_GEAR[preset.id];
+  if (!tiers) return [];
+  return Object.entries(tiers)
+    .filter(([minLvl]) => level >= Number(minLvl))
+    .sort(([a], [b]) => Number(b) - Number(a))[0]?.[1] ?? [];
+}
+
+export function getEquippedItems(preset: CharacterPreset, level: number): ImageSourcePropType[] {
+  return resolveGearKeys(preset, level)
+    .filter(k => !BEHIND_ITEM_KEYS.has(k))
+    .map(k => EQUIPMENT_ITEMS[k])
+    .filter(Boolean);
+}
+
+export function getEquippedBehindItems(preset: CharacterPreset, level: number): ImageSourcePropType[] {
+  return resolveGearKeys(preset, level)
+    .filter(k => BEHIND_ITEM_KEYS.has(k))
+    .map(k => EQUIPMENT_ITEMS[k])
+    .filter(Boolean);
 }
 
 const LPC_M_1 = require('@/assets/sprites/lpc_m_1.png');
@@ -34,21 +195,21 @@ const LPC_F_2 = require('@/assets/sprites/lpc_f_2.png');
 const LPC_F_3 = require('@/assets/sprites/lpc_f_3.png');
 const LPC_F_4 = require('@/assets/sprites/lpc_f_4.png');
 
-// Walk strips: extracted rows 8-11 of LPC sheet → 832×256px, no GL texture issues
-const WALK_M_1 = require('@/assets/sprites/lpc_m_1_walk.png');
-const WALK_M_2 = require('@/assets/sprites/lpc_m_2_walk.png');
-const WALK_M_3 = require('@/assets/sprites/lpc_m_3_walk.png');
-const WALK_M_4 = require('@/assets/sprites/lpc_m_4_walk.png');
-const WALK_F_1 = require('@/assets/sprites/lpc_f_1_walk.png');
-const WALK_F_2 = require('@/assets/sprites/lpc_f_2_walk.png');
-const WALK_F_3 = require('@/assets/sprites/lpc_f_3_walk.png');
-const WALK_F_4 = require('@/assets/sprites/lpc_f_4_walk.png');
+// Base body strips — naked body, hair, legs, shoes (no torso armor)
+const BASE_M_1 = require('@/assets/sprites/lpc_m_1_base.png');
+const BASE_M_2 = require('@/assets/sprites/lpc_m_2_base.png');
+const BASE_M_3 = require('@/assets/sprites/lpc_m_3_base.png');
+const BASE_M_4 = require('@/assets/sprites/lpc_m_4_base.png');
+const BASE_F_1 = require('@/assets/sprites/lpc_f_1_base.png');
+const BASE_F_2 = require('@/assets/sprites/lpc_f_2_base.png');
+const BASE_F_3 = require('@/assets/sprites/lpc_f_3_base.png');
+const BASE_F_4 = require('@/assets/sprites/lpc_f_4_base.png');
 
 export const CHARACTER_PRESETS: CharacterPreset[] = [
   {
-    id: 'm_1', gender: 'male',
+    id: 'm_1', gender: 'male', class: 'warrior',
     name: 'Aldric', tagline: 'Le Chevalier Errant', emoji: '⚔️',
-    sprite: { format: 'lpc', source: LPC_M_1 }, walkStrip: WALK_M_1,
+    sprite: { format: 'lpc', source: LPC_M_1 }, baseStrip: BASE_M_1,
     chapters: [
       { minLevel: 1,  title: 'Les origines',         text: 'Aldric grandit dans un petit village des terres de l\'ouest, bercé par les récits de chevaliers que lui contait son grand-père chaque soir au coin du feu. Dès l\'enfance, il passait ses journées à s\'entraîner avec un bâton de bois dans la cour de la ferme, imaginant des dragons et des batailles épiques. Sa mère s\'inquiétait, mais son grand-père souriait toujours. « Ce garçon a quelque chose », disait-il. « Je le sens dans ses yeux. »' },
       { minLevel: 10, title: 'La première épreuve',   text: 'Son premier voyage l\'emmena seul vers les montagnes du Nord, à dix jours de marche du village. Les nuits étaient glaciales, les chemins traîtres, et plus d\'une fois il faillit rebrousser chemin. Mais c\'est là, dans une grotte battue par la tempête, qu\'il comprit quelque chose d\'essentiel : la peur n\'est pas l\'ennemi, elle est le signal. Elle indique l\'endroit précis où il faut avancer. Il repartit le lendemain, les mains gelées mais le cœur chaud.' },
@@ -58,9 +219,9 @@ export const CHARACTER_PRESETS: CharacterPreset[] = [
     ],
   },
   {
-    id: 'm_2', gender: 'male',
+    id: 'm_2', gender: 'male', class: 'warrior',
     name: 'Rajan', tagline: 'L\'Explorateur Curieux', emoji: '🗡️',
-    sprite: { format: 'lpc', source: LPC_M_2 }, walkStrip: WALK_M_2,
+    sprite: { format: 'lpc', source: LPC_M_2 }, baseStrip: BASE_M_2,
     chapters: [
       { minLevel: 1,  title: 'La cité des marchands', text: 'Rajan grandit au cœur de la plus grande cité marchande du monde connu, entouré de soieries, d\'épices rares et de langues qu\'il ne comprenait pas encore. Son père voulait en faire un commerçant prospère. Sa mère rêvait qu\'il reprenne la boutique familiale. Mais chaque soir, Rajan grimpait sur le toit de la maison pour regarder les bateaux disparaître à l\'horizon. C\'est là, dans ce silence, qu\'il comprit que l\'or ne l\'intéressait pas autant que ce qui se trouvait de l\'autre côté.' },
       { minLevel: 10, title: 'La première traversée', text: 'Sa première traversée maritime dura quarante jours et faillit tourner au désastre. Tempêtes, fièvres, provisions à moitié pourries — Rajan découvrit que les voyages de conte n\'avaient rien à voir avec la réalité. Pourtant, c\'est sur ce bateau qu\'il apprit à naviguer aux étoiles, à lire les courants dans la couleur de l\'eau, et surtout à s\'adapter. Quand il toucha enfin terre, il était sale, épuisé, et plus vivant qu\'il ne l\'avait jamais été.' },
@@ -70,9 +231,9 @@ export const CHARACTER_PRESETS: CharacterPreset[] = [
     ],
   },
   {
-    id: 'm_3', gender: 'male',
+    id: 'm_3', gender: 'male', class: 'archer',
     name: 'Zéphyr', tagline: 'Le Fils des Steppes', emoji: '🏹',
-    sprite: { format: 'lpc', source: LPC_M_3 }, walkStrip: WALK_M_3,
+    sprite: { format: 'lpc', source: LPC_M_3 }, baseStrip: BASE_M_3,
     chapters: [
       { minLevel: 1,  title: 'Né du vent',            text: 'Zéphyr naquit pendant une nuit de grand vent dans les steppes sans fin, et sa mère dit toujours que c\'est pour ça qu\'il ne tenait pas en place. Avant même de savoir parler, il passait ses journées à observer les nuages, à toucher la terre, à imiter les cris des oiseaux. Les autres enfants jouaient ensemble. Lui jouait avec la nature. Ce n\'était pas de la solitude — c\'était une conversation que les autres ne savaient pas encore entendre.' },
       { minLevel: 10, title: 'Maître de la steppe',   text: 'À quatorze ans, Zéphyr passa trois semaines seul dans la steppe comme épreuve de passage à l\'âge adulte. Il n\'emportait qu\'un couteau et une gourde. Il apprit à trouver l\'eau en creusant là où les insectes se rassemblent, à lire le vent pour anticiper les tempêtes, à approcher un faucon sauvage sans gestes brusques. Il revint au campement plus silencieux qu\'avant, les yeux plus calmes. On le regarda différemment après ça.' },
@@ -82,9 +243,9 @@ export const CHARACTER_PRESETS: CharacterPreset[] = [
     ],
   },
   {
-    id: 'm_4', gender: 'male',
+    id: 'm_4', gender: 'male', class: 'warrior',
     name: 'Kwame', tagline: 'Le Gardien Ancestral', emoji: '🛡️',
-    sprite: { format: 'lpc', source: LPC_M_4 }, walkStrip: WALK_M_4,
+    sprite: { format: 'lpc', source: LPC_M_4 }, baseStrip: BASE_M_4,
     chapters: [
       { minLevel: 1,  title: 'Le chant des tambours', text: 'Dans le village de Kwame, l\'histoire ne s\'écrivait pas dans des livres — elle se jouait dans les tambours. Chaque rythme racontait une bataille, une victoire, un sacrifice. Dès qu\'il fut assez grand pour rester assis le soir, Kwame écouta ces rythmes avec une attention que les adultes remarquèrent. Il apprit leurs noms, leurs significations, les histoires derrière chaque battement. Ses ancêtres n\'étaient pas morts. Ils vivaient dans le son.' },
       { minLevel: 10, title: 'Le rite de passage',    text: 'Le rite de passage exigeait trois jours seul dans la forêt profonde, sans feu, sans arme, sans nourriture apportée. La plupart des jeunes en revenaient amaigris mais soulagés que ce soit terminé. Kwame, lui, repartit dans la forêt le lendemain, de son propre chef. Il voulait comprendre ce qu\'il avait ressenti — cette étrange sensation que la forêt lui avait parlé. Ce deuxième séjour dura cinq jours. À son retour, son regard avait changé. Personne ne lui demanda ce qu\'il avait vu.' },
@@ -94,9 +255,9 @@ export const CHARACTER_PRESETS: CharacterPreset[] = [
     ],
   },
   {
-    id: 'f_1', gender: 'female',
+    id: 'f_1', gender: 'female', class: 'mage',
     name: 'Lyra', tagline: 'La Tisseuse de Sorts', emoji: '✨',
-    sprite: { format: 'lpc', source: LPC_F_1 }, walkStrip: WALK_F_1,
+    sprite: { format: 'lpc', source: LPC_F_1 }, baseStrip: BASE_F_1,
     chapters: [
       { minLevel: 1,  title: 'Les lucioles de minuit', text: 'Lyra avait quatre ans quand elle fit briller des lucioles dans sa chambre en murmurant des mots qu\'elle n\'avait jamais appris. Sa mère, qui était elle-même mage, s\'arrêta net sur le seuil de la porte. Elle ne dit rien ce soir-là. Mais le lendemain matin, elle s\'assit en face de sa fille et lui demanda doucement de recommencer. Lyra s\'exécuta, l\'air de rien, comme si c\'était la chose la plus naturelle du monde. Sa mère ferma les yeux et sourit.' },
       { minLevel: 10, title: 'L\'académie des mages',  text: 'L\'académie était impressionnante, avec ses tours de pierre et ses bibliothèques qui sentaient la cire et le vieux parchemin. Lyra avait été acceptée deux ans avant l\'âge habituel. Ses camarades la regardaient avec un mélange de curiosité et de méfiance. Elle n\'apprenait pas la magie comme eux — elle ne mémorisait pas les formules, elle les ressentait. Parfois elle modifiait un sort instinctivement, sans réfléchir, et ça fonctionnait mieux. Les professeurs ne savaient pas si c\'était du génie ou un danger.' },
@@ -106,9 +267,9 @@ export const CHARACTER_PRESETS: CharacterPreset[] = [
     ],
   },
   {
-    id: 'f_2', gender: 'female',
+    id: 'f_2', gender: 'female', class: 'warrior',
     name: 'Saoirse', tagline: 'L\'Intrépide', emoji: '🔥',
-    sprite: { format: 'lpc', source: LPC_F_2 }, walkStrip: WALK_F_2,
+    sprite: { format: 'lpc', source: LPC_F_2 }, baseStrip: BASE_F_2,
     chapters: [
       { minLevel: 1,  title: 'Fille de la tempête',   text: 'Saoirse grandit dans une famille de pêcheurs sur une île battue par les vents, là où la mer ne se calme que deux mois par an. Ses frères avaient peur des tempêtes. Pas elle. À sept ans, elle s\'asseyait sur les rochers pendant les grandes houles, les yeux grands ouverts, à regarder les vagues s\'écraser en riant. Sa grand-mère disait qu\'elle était née avec le sel dans les veines. Son père disait plutôt qu\'elle allait le rendre fou. Les deux avaient raison.' },
       { minLevel: 10, title: 'Les ruines hantées',    text: 'Les ruines de Craomor avaient mauvaise réputation depuis deux générations. On disait que ceux qui y entraient n\'en revenaient pas entiers. Saoirse y alla un dimanche matin, seule, avec une lanterne et un carnet. Elle y passa deux jours. Elle en revint avec quarante pages de relevés, des esquisses de salles souterraines inconnues, et les restes d\'un pique-nique. « Il n\'y avait rien de hanté, dit-elle. Juste de vieilles pierres et quelques chauves-souris. Les gens exagèrent. »' },
@@ -118,9 +279,9 @@ export const CHARACTER_PRESETS: CharacterPreset[] = [
     ],
   },
   {
-    id: 'f_3', gender: 'female',
+    id: 'f_3', gender: 'female', class: 'archer',
     name: 'Amara', tagline: 'La Gardienne des Forêts', emoji: '🌿',
-    sprite: { format: 'lpc', source: LPC_F_3 }, walkStrip: WALK_F_3,
+    sprite: { format: 'lpc', source: LPC_F_3 }, baseStrip: BASE_F_3,
     chapters: [
       { minLevel: 1,  title: 'L\'enfant de la lisière', text: 'La maison d\'Amara se trouvait exactement à la frontière entre le village et la grande forêt — comme si ses parents avaient voulu placer leur fille entre deux mondes. Elle choisit très vite le sien. Dès qu\'elle sut marcher, elle passa plus de temps sous les arbres que dans les rues. Les oiseaux atterrissaient sur son épaule sans qu\'elle les appelle. Un renard vint manger dans sa main un matin, au grand effroi de sa mère. Amara trouva ça parfaitement normal.' },
       { minLevel: 10, title: 'Le langage des plantes',  text: 'Ce que les autres appelaient « la forêt » était pour Amara une conversation permanente qu\'il fallait apprendre à écouter. La couleur des feuilles qui tourne avant la pluie. Le parfum de la mousse humide qui annonce un champignon médicinal. Le silence soudain des oiseaux qui précède un prédateur. Elle passa des années à noter, à tester, à comprendre. Ce n\'était pas de la magie — c\'était de l\'attention. Une attention si profonde qu\'elle finissait par ressembler à de la magie.' },
@@ -130,9 +291,9 @@ export const CHARACTER_PRESETS: CharacterPreset[] = [
     ],
   },
   {
-    id: 'f_4', gender: 'female',
+    id: 'f_4', gender: 'female', class: 'mage',
     name: 'Nadia', tagline: 'L\'Œil du Destin', emoji: '🔮',
-    sprite: { format: 'lpc', source: LPC_F_4 }, walkStrip: WALK_F_4,
+    sprite: { format: 'lpc', source: LPC_F_4 }, baseStrip: BASE_F_4,
     chapters: [
       { minLevel: 1,  title: 'Née sous l\'éclipse',    text: 'Nadia naquit pendant une éclipse totale, dans un village où les anciens prenaient ces choses-là au sérieux. Ils dirent que les étoiles elles-mêmes avaient guidé son âme jusqu\'à eux, et ils la regardèrent différemment depuis ce premier jour. Elle grandit entourée de cette réputation qu\'elle n\'avait pas choisie. Les enfants la craignaient un peu. Les adultes lui posaient parfois des questions étranges, comme si elle était censée avoir les réponses. Elle apprit très tôt à écouter avant de parler.' },
       { minLevel: 10, title: 'Les rêves des autres',   text: 'Nadia découvrit son don par accident, en dormant chez une amie : elle se réveilla en connaissant un secret que son amie n\'avait jamais dit à voix haute, mais qui flottait dans ses rêves. Elle apprit à naviguer dans les songes des autres comme on explore une maison inconnue — avec respect, sans ouvrir les portes fermées. Ce qu\'elle y trouvait n\'était jamais aussi simple que prévu. Les gens rêvaient de ce qu\'ils désiraient, de ce qu\'ils craignaient, et souvent des deux en même temps.' },

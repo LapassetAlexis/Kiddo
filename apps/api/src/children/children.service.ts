@@ -121,6 +121,11 @@ export class ChildrenService {
     return { balance: Number(result?.balance ?? 0) };
   }
 
+  async ackLevelUp(id: string, familyId: string): Promise<void> {
+    await this.assertOwnership(id, familyId);
+    await this.children.update(id, { pendingLevelUp: null as any });
+  }
+
   private async assertOwnership(childId: string, familyId: string): Promise<Child> {
     const child = await this.children.findOne({
       where: { id: childId, family: { id: familyId } },
