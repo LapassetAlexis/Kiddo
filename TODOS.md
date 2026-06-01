@@ -28,33 +28,76 @@
 
 ---
 
-## P1 — Bloquant pour le ship
-- [ ] Test concurrence reward redemption (SELECT FOR UPDATE) — deux enfants réclament même récompense "une seule fois" simultanément. Failure ici = double-debit silencieux.
-- [ ] Middleware IDOR sur toutes les routes child — vérifier que child.familyId === parent.familyId sur chaque request. Failure ici = fuite données cross-famille.
+## Avatars & UI
 
-## P2 — Même branche idéalement
-- [ ] Photo storage: choisir S3 (ou DigitalOcean Spaces) pour photo proof. Plan ne le spécifie pas. Railway n'a pas de persistent file storage.
-- [ ] Polling client fallback FCM (30s interval quand app en foreground) — si FCM delivery fail après validation parent, enfant ne voit pas ses points sans refresh.
-- [ ] Empty states UX: (a) parent sans tâches créées → CTA "Créez votre première tâche", (b) enfant first-time → écran de bienvenue avec avatar.
-- [ ] Réjection state UI: push notification vers enfant avec message de rejection personnalisé du parent.
+### ✅ Fait
+- [x] Système de sprites LPC — `HeroSprite` animé (walk strip 832×256px, 13 cols × 4 rows)
+- [x] 8 personnages avec walkStrip + sprite LPC complet (Aldric, Rajan, Zéphyr, Kwame, Lyra, Saoirse, Amara, Nadia)
+- [x] `create-child` — sélecteur d'avatar avec `HeroSprite` + `item.walkStrip` (fix rendu)
+- [x] PIN screen — preview avatar avec `selectedChar.walkStrip` (fix rendu)
+- [x] Suppression profil enfant — `childrenApi.delete()` réellement appelé (était no-op)
+- [x] `edit-child` — suppression sélecteur emoji/couleur (piloté par le sprite choisi à la création)
+- [x] Logo Kiddo réel dans l'app (login + header dashboard) — remplace placeholder Expo
 
-## P3 — Follow-up
-- [ ] Admin tooling (reset streak, voir historique famille) — nécessaire pour le support
-- [ ] Analytics parentaux (taux completion, heures pics, progression semaine) — Phase 2
-- [ ] Financial rails exploration (Greenlight/BusyKid competitive risk) — évaluer si allowance + virtual wallet est la prochaine expansion naturelle
-- [ ] Crédit provisoire + clawback parent A/B test (v1.2) — le subagent a fait un argument valide, tester en production
-- [ ] Leaderboard entre frères/sœurs — scope expansion v2
-- [ ] Admin dashboard familles (outil de support)
-- [ ] Task marketplace (catalogue de tâches prédéfinies par âge et type)
-- [ ] API publique — intégrations tierces potentielles
+---
 
-## Ajouts post-revue Eng (P1 critiques)
+## Store & Release
 
-- [ ] Outbox pattern pour FCM : table `notification_intents` + worker async — voir Section Eng Architecture
-- [ ] Streak timezone : families.timezone field + calcul de date en timezone famille — voir Eng edge cases
-- [ ] PIN lockout en PostgreSQL (pas en mémoire) : table pin_attempts — voir Eng Security
-- [ ] QR code : table qr_tokens(token_hash, child_id, expires_at, used_at) TTL 30s one-time — voir Eng Security
-- [ ] Notification JWT scoped task (24h, approve/reject seul) : pour deep-link depuis push notif — voir Eng Security
-- [ ] Ledger checkpoint : table ledger_snapshots + cron minuit — voir Eng Performance
-- [ ] Child IDOR sur endpoints child-auth : task.child_id === authenticatedChildId — voir Eng Security critique
-- [ ] Index PostgreSQL sur tasks/transactions/rewards — voir Eng Performance
+### ✅ Fait
+- [x] Fiche Play Store : description courte/longue, mots-clés ASO (`store/listing/description.md`)
+- [x] Politique de confidentialité RGPD/COPPA (`store/listing/privacy-policy.md`)
+- [x] GitHub Pages activé sur `LapassetAlexis/Kiddo` — privacy policy URL publique
+- [x] Icônes générées depuis SVG : 512 opaque, 1024 opaque, 1024 transparent
+- [x] Screenshots capturés et intégrés (`store/graphics/screenshots/`)
+- [x] Package ID migré `com.kiddo.app` → `io.kiddo.app`
+- [x] Scripts npm : `build:dev` (APK dev EAS) + `build:prod` (AAB + submit auto)
+- [x] `scripts/bump-version.js` — incrémente `version` (patch) + `versionCode` avant chaque build prod
+- [x] Checklist release (`store/release/checklist.md`)
+
+### 🔲 À faire — Store
+- [ ] **Feature Graphic** Play Store (1024×500px) — à créer
+- [ ] Soumettre la fiche complète sur Play Console (catégorie, rating, privacy policy URL)
+- [ ] Tagger le premier release : `git tag v0.1.3 && git push --tags`
+
+---
+
+## Sécurité & Isolation
+
+### ✅ Fait
+- [x] `GET /tasks` + `GET /tasks/history` + `GET /tasks/child/:id` filtrés par `familyId` JWT — isolation cross-famille
+- [x] `UpdateChildDto` whitelist `name` + `sprite` uniquement
+- [x] expo-clipboard — import propre (suppression `@ts-ignore` + `require` dynamique)
+
+### 🔲 À faire — Sécurité
+- [ ] **IDOR complet** : vérifier toutes les routes parent/child (rewards, transactions, notifications) — P1
+- [ ] Test concurrence reward redemption (`SELECT FOR UPDATE`) — double-debit silencieux possible — P1
+- [ ] PIN lockout en PostgreSQL (`pin_attempts` table, pas en mémoire) — P1
+- [ ] Child IDOR sur endpoints child-auth : `task.child_id === authenticatedChildId` — P1
+
+---
+
+## Infrastructure & DevX
+
+### ✅ Fait
+- [x] `GET /api/health` endpoint — utilisé pour le wake-up screen
+- [x] Wake-up screen : logo animé (pulse + dots) pendant réveil serveur Render — timeout 5s par ping, retry 2.5s
+- [x] Scripts build EAS dans `package.json`
+
+### 🔲 À faire
+- [ ] Outbox pattern FCM : table `notification_intents` + worker async
+- [ ] Streak timezone : `families.timezone` + calcul date en timezone famille
+- [ ] QR code : `qr_tokens(token_hash, child_id, expires_at, used_at)` TTL 30s one-time
+- [ ] Ledger checkpoint : `ledger_snapshots` + cron minuit
+- [ ] Index PostgreSQL sur tasks/transactions/rewards
+- [ ] Polling client fallback FCM (30s interval foreground)
+
+---
+
+## P3 — Backlog
+- [ ] Admin tooling (reset streak, historique famille)
+- [ ] Analytics parentaux (taux completion, heures pics, progression semaine)
+- [ ] Empty states UX : parent sans tâches → CTA, enfant first-time → écran bienvenue
+- [ ] Réjection state UI : push notif enfant avec message rejection parent
+- [ ] Leaderboard frères/sœurs
+- [ ] Task marketplace (catalogue prédéfini par âge)
+- [ ] API publique — intégrations tierces
