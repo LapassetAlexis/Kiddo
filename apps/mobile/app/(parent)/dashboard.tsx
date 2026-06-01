@@ -337,6 +337,10 @@ export default function ParentDashboardScreen() {
           <View style={styles.emptyPending}>
             <Text style={{ fontSize: 28, marginBottom: 6 }}>📋</Text>
             <Text style={styles.emptyText}>Aucune quête active</Text>
+            <Text style={styles.emptySubText}>Crée des tâches pour que tes héros puissent gagner de l'XP !</Text>
+            <TouchableOpacity style={styles.emptyCTA} onPress={() => goTo('/(parent)/create-task')} activeOpacity={0.8}>
+              <Text style={styles.emptyCTAText}>+ Créer une quête</Text>
+            </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.list}>
@@ -604,8 +608,11 @@ const styles = StyleSheet.create({
   btnReject:  { width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(239,83,80,0.1)',  borderWidth: 1, borderColor: 'rgba(239,83,80,0.2)',  alignItems: 'center', justifyContent: 'center' },
   grantBtn:   { backgroundColor: Colors.gold, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 9 },
   grantBtnText: { fontSize: 13, fontWeight: '900', color: '#1a1000' },
-  emptyPending: { alignItems: 'center', padding: 32 },
-  emptyText:    { fontSize: 15, fontWeight: '800', color: Colors.textDim },
+  emptyPending:  { alignItems: 'center', padding: 32, gap: 8 },
+  emptyText:     { fontSize: 15, fontWeight: '800', color: Colors.textDim },
+  emptySubText:  { fontSize: 13, fontWeight: '600', color: Colors.textFaint, textAlign: 'center', lineHeight: 18 },
+  emptyCTA:      { marginTop: 8, backgroundColor: Colors.gold, borderRadius: Radii.md, paddingHorizontal: 24, paddingVertical: 12 },
+  emptyCTAText:  { fontSize: 14, fontWeight: '900', color: '#1a1000' },
   // Review modal
   reviewSheet: {
     backgroundColor: '#1e1e26', borderTopLeftRadius: 28, borderTopRightRadius: 28,

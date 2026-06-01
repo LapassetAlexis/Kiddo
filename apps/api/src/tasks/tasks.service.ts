@@ -207,6 +207,16 @@ export class TasksService {
           payload: { title: `${approverName} a rejeté`, body: task.title, data: { taskId: id } },
         }));
       }
+
+      if (task.child.fcmToken) {
+        const body = reason
+          ? `${task.title} — ${reason}`
+          : `${task.title} — Réessaie, tu peux le faire !`;
+        await em.save(NotificationIntent, em.create(NotificationIntent, {
+          fcmToken: task.child.fcmToken,
+          payload: { title: '↩ Quête rejetée', body, data: { taskId: id } },
+        }));
+      }
     });
 
     return this.tasks.findOneOrFail({ where: { id } });
