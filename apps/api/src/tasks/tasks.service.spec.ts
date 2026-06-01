@@ -167,9 +167,9 @@ describe('TasksService', () => {
       taskRepo.create.mockReturnValue(savedTask);
       taskRepo.save.mockResolvedValue(savedTask);
 
-      const result = await service.create({ childId: 'child-1', title: 'Clean room', goldReward: 10 });
+      const result = await service.create({ childId: 'child-1', title: 'Clean room', goldReward: 10 }, 'fam-1');
 
-      expect(childRepo.findOne).toHaveBeenCalledWith({ where: { id: 'child-1' } });
+      expect(childRepo.findOne).toHaveBeenCalledWith({ where: { id: 'child-1', family: { id: 'fam-1' } }, relations: ['family'] });
       expect(taskRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({ title: 'Clean room', goldReward: 10 }),
       );
@@ -183,7 +183,7 @@ describe('TasksService', () => {
       taskRepo.create.mockReturnValue(makeTask({ frequency: 'daily' }));
       taskRepo.save.mockResolvedValue(makeTask({ frequency: 'daily' }));
 
-      await service.create({ childId: 'child-1', title: 'Task', goldReward: 5 });
+      await service.create({ childId: 'child-1', title: 'Task', goldReward: 5 }, 'fam-1');
 
       expect(taskRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({ frequency: 'daily' }),
@@ -196,7 +196,7 @@ describe('TasksService', () => {
       taskRepo.create.mockReturnValue(makeTask({ frequency: 'weekly' }));
       taskRepo.save.mockResolvedValue(makeTask({ frequency: 'weekly' }));
 
-      await service.create({ childId: 'child-1', title: 'Weekly chore', goldReward: 20, frequency: 'weekly' });
+      await service.create({ childId: 'child-1', title: 'Weekly chore', goldReward: 20, frequency: 'weekly' }, 'fam-1');
 
       expect(taskRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({ frequency: 'weekly' }),
@@ -210,7 +210,7 @@ describe('TasksService', () => {
       taskRepo.create.mockReturnValue(savedTask);
       taskRepo.save.mockResolvedValue(savedTask);
 
-      await service.create({ childId: 'child-1', title: 'Débarrasser', goldReward: 10, timesPerDay: 3, bonusGold: 10 });
+      await service.create({ childId: 'child-1', title: 'Débarrasser', goldReward: 10, timesPerDay: 3, bonusGold: 10 }, 'fam-1');
 
       expect(taskRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({ timesPerDay: 3, bonusGold: 10 }),
@@ -223,7 +223,7 @@ describe('TasksService', () => {
       taskRepo.create.mockReturnValue(makeTask());
       taskRepo.save.mockResolvedValue(makeTask());
 
-      await service.create({ childId: 'child-1', title: 'Task', goldReward: 10 });
+      await service.create({ childId: 'child-1', title: 'Task', goldReward: 10 }, 'fam-1');
 
       expect(taskRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({ timesPerDay: 1, bonusGold: 0 }),
@@ -241,7 +241,7 @@ describe('TasksService', () => {
       taskRepo.findOne.mockResolvedValue(task);
       taskRepo.findOneOrFail.mockResolvedValue(updatedTask);
 
-      const result = await service.complete('task-1');
+      const result = await service.complete('task-1', 'child-1');
 
       expect(ds.transaction).toHaveBeenCalled();
       expect(em.createQueryBuilder).toHaveBeenCalled();
@@ -260,7 +260,7 @@ describe('TasksService', () => {
       taskRepo.findOneOrFail.mockResolvedValue(updatedTask);
       familiesSvc.getFamilyParentTokens.mockResolvedValue(['parent-fcm-token']);
 
-      await service.complete('task-1');
+      await service.complete('task-1', 'child-1');
 
       const saveCalls = (em.save as jest.Mock).mock.calls;
       const notifCall = saveCalls.find(([cls]) => cls === NotificationIntent);
@@ -276,7 +276,7 @@ describe('TasksService', () => {
       taskRepo.findOneOrFail.mockResolvedValue(updatedTask);
       familiesSvc.getFamilyParentTokens.mockResolvedValue([]);
 
-      await service.complete('task-1');
+      await service.complete('task-1', 'child-1');
 
       const saveCalls = (em.save as jest.Mock).mock.calls;
       const notifCall = saveCalls.find(([cls]) => cls === NotificationIntent);
@@ -285,12 +285,12 @@ describe('TasksService', () => {
 
     it('throws ConflictException when task is already in pending_approval', async () => {
       taskRepo.findOne.mockResolvedValue(makeTask({ status: 'pending_approval' }));
-      await expect(service.complete('task-1')).rejects.toThrow(ConflictException);
+      await expect(service.complete('task-1', 'child-1')).rejects.toThrow(ConflictException);
     });
 
     it('throws ConflictException when task is already validated', async () => {
       taskRepo.findOne.mockResolvedValue(makeTask({ status: 'validated' }));
-      await expect(service.complete('task-1')).rejects.toThrow(ConflictException);
+      await expect(service.complete('task-1', 'child-1')).rejects.toThrow(ConflictException);
     });
 
     it('throws ConflictException when concurrent complete beats us (affected=0)', async () => {
@@ -299,7 +299,7 @@ describe('TasksService', () => {
       familiesSvc.getFamilyParentTokens.mockResolvedValue([]);
       em._qb.execute.mockResolvedValue({ affected: 0 });
 
-      await expect(service.complete('task-1')).rejects.toThrow(ConflictException);
+      await expect(service.complete('task-1', 'child-1')).rejects.toThrow(ConflictException);
     });
 
     it('throws ConflictException when daily limit already reached for repeating task', async () => {
@@ -307,7 +307,7 @@ describe('TasksService', () => {
       taskRepo.findOne.mockResolvedValue(task);
       (txRepo.count as jest.Mock).mockResolvedValue(3);
 
-      await expect(service.complete('task-1')).rejects.toThrow(ConflictException);
+      await expect(service.complete('task-1', 'child-1')).rejects.toThrow(ConflictException);
     });
 
     it('allows completion when under daily limit for repeating task', async () => {
@@ -317,7 +317,7 @@ describe('TasksService', () => {
       taskRepo.findOneOrFail.mockResolvedValue(updatedTask);
       (txRepo.count as jest.Mock).mockResolvedValue(2);
 
-      const result = await service.complete('task-1');
+      const result = await service.complete('task-1', 'child-1');
       expect(result.status).toBe('pending_approval');
     });
   });
@@ -332,7 +332,7 @@ describe('TasksService', () => {
       taskRepo.findOne.mockResolvedValue(task);
       taskRepo.findOneOrFail.mockResolvedValue(validatedTask);
 
-      const result = await service.approve('task-1', 'acc-1');
+      const result = await service.approve('task-1', 'acc-1', 'fam-1');
 
       expect(ds.transaction).toHaveBeenCalled();
       expect(em._qb.set).toHaveBeenCalledWith(
@@ -349,7 +349,7 @@ describe('TasksService', () => {
       taskRepo.findOne.mockResolvedValue(task);
       taskRepo.findOneOrFail.mockResolvedValue(validatedTask);
 
-      await service.approve('task-1', 'acc-1');
+      await service.approve('task-1', 'acc-1', 'fam-1');
 
       expect(em.save).toHaveBeenCalledWith(
         Transaction,
@@ -363,7 +363,7 @@ describe('TasksService', () => {
       taskRepo.findOne.mockResolvedValue(task);
       taskRepo.findOneOrFail.mockResolvedValue(makeTask({ status: 'validated' }));
 
-      await service.approve('task-1', 'acc-1');
+      await service.approve('task-1', 'acc-1', 'fam-1');
 
       expect(em.save).toHaveBeenCalledWith(
         Transaction,
@@ -379,7 +379,7 @@ describe('TasksService', () => {
       taskRepo.findOne.mockResolvedValue(task);
       taskRepo.findOneOrFail.mockResolvedValue(validatedTask);
 
-      await service.approve('task-1', 'acc-1');
+      await service.approve('task-1', 'acc-1', 'fam-1');
 
       const saveCalls = (em.save as jest.Mock).mock.calls;
       const notifCall = saveCalls.find(
@@ -396,7 +396,7 @@ describe('TasksService', () => {
       taskRepo.findOneOrFail.mockResolvedValue(validatedTask);
       familiesSvc.getFamilyParentTokens.mockResolvedValue(['other-parent-token']);
 
-      await service.approve('task-1', 'acc-1');
+      await service.approve('task-1', 'acc-1', 'fam-1');
 
       const saveCalls = (em.save as jest.Mock).mock.calls;
       const notifCall = saveCalls.find(
@@ -415,7 +415,7 @@ describe('TasksService', () => {
       taskRepo.findOneOrFail.mockResolvedValue(makeTask({ status: 'validated' }));
       familiesSvc.getDisplayName.mockResolvedValue('Marie Lapasset');
 
-      await service.approve('task-1', 'acc-1');
+      await service.approve('task-1', 'acc-1', 'fam-1');
 
       expect(familiesSvc.getDisplayName).toHaveBeenCalledWith('acc-1');
       expect(em._qb.set).toHaveBeenCalledWith(
@@ -425,13 +425,13 @@ describe('TasksService', () => {
 
     it('throws ConflictException when task is not pending_approval', async () => {
       taskRepo.findOne.mockResolvedValue(makeTask({ status: 'created' }));
-      await expect(service.approve('task-1', 'acc-1')).rejects.toThrow(ConflictException);
+      await expect(service.approve('task-1', 'acc-1', 'fam-1')).rejects.toThrow(ConflictException);
     });
 
     it('throws ConflictException when concurrent approve beats us (affected=0)', async () => {
       taskRepo.findOne.mockResolvedValue(makeTask({ status: 'pending_approval' }));
       em._qb.execute.mockResolvedValue({ affected: 0 });
-      await expect(service.approve('task-1', 'acc-1')).rejects.toThrow(ConflictException);
+      await expect(service.approve('task-1', 'acc-1', 'fam-1')).rejects.toThrow(ConflictException);
     });
 
     // ── repeating task logic ──────────────────────────────────────────────────
@@ -444,7 +444,7 @@ describe('TasksService', () => {
       taskRepo.findOneOrFail.mockResolvedValue(resetTask);
       (em.count as jest.Mock).mockResolvedValue(1);
 
-      const result = await service.approve('task-1', 'acc-1');
+      const result = await service.approve('task-1', 'acc-1', 'fam-1');
 
       expect(em._qb.set).toHaveBeenCalledWith(
         expect.objectContaining({ status: 'created' }),
@@ -458,7 +458,7 @@ describe('TasksService', () => {
       taskRepo.findOneOrFail.mockResolvedValue(makeTask({ status: 'created' }));
       (em.count as jest.Mock).mockResolvedValue(0);
 
-      await service.approve('task-1', 'acc-1');
+      await service.approve('task-1', 'acc-1', 'fam-1');
 
       expect(em._qb.set).toHaveBeenCalledWith(
         expect.objectContaining({ submittedAt: null, photoUrl: null, note: null }),
@@ -473,7 +473,7 @@ describe('TasksService', () => {
       taskRepo.findOneOrFail.mockResolvedValue(validatedTask);
       (em.count as jest.Mock).mockResolvedValue(2);
 
-      const result = await service.approve('task-1', 'acc-1');
+      const result = await service.approve('task-1', 'acc-1', 'fam-1');
 
       expect(em._qb.set).toHaveBeenCalledWith(
         expect.objectContaining({ status: 'validated' }),
@@ -488,7 +488,7 @@ describe('TasksService', () => {
       taskRepo.findOneOrFail.mockResolvedValue(makeTask({ status: 'validated' }));
       (em.count as jest.Mock).mockResolvedValue(2);
 
-      await service.approve('task-1', 'acc-1');
+      await service.approve('task-1', 'acc-1', 'fam-1');
 
       expect(em.save).toHaveBeenCalledWith(
         Transaction,
@@ -502,7 +502,7 @@ describe('TasksService', () => {
       taskRepo.findOneOrFail.mockResolvedValue(makeTask({ status: 'created' }));
       (em.count as jest.Mock).mockResolvedValue(1);
 
-      await service.approve('task-1', 'acc-1');
+      await service.approve('task-1', 'acc-1', 'fam-1');
 
       const saveCalls = (em.save as jest.Mock).mock.calls;
       const bonusCall = saveCalls.find(([, data]) => data?.referenceId === 'task-1:bonus');
@@ -515,7 +515,7 @@ describe('TasksService', () => {
       taskRepo.findOneOrFail.mockResolvedValue(makeTask({ status: 'validated' }));
       (em.count as jest.Mock).mockResolvedValue(1);
 
-      await service.approve('task-1', 'acc-1');
+      await service.approve('task-1', 'acc-1', 'fam-1');
 
       const saveCalls = (em.save as jest.Mock).mock.calls;
       const bonusCall = saveCalls.find(([, data]) => data?.referenceId === 'task-1:bonus');
@@ -529,7 +529,7 @@ describe('TasksService', () => {
       taskRepo.findOneOrFail.mockResolvedValue(makeTask({ status: 'created' }));
       (em.count as jest.Mock).mockResolvedValue(0);
 
-      await service.approve('task-1', 'acc-1');
+      await service.approve('task-1', 'acc-1', 'fam-1');
 
       expect(em.save).toHaveBeenCalledWith(
         Transaction,
@@ -548,7 +548,7 @@ describe('TasksService', () => {
       taskRepo.findOne.mockResolvedValue(task);
       taskRepo.findOneOrFail.mockResolvedValue(resetTask);
 
-      const result = await service.reject('task-1', 'acc-1', 'Not done well');
+      const result = await service.reject('task-1', 'acc-1', 'fam-1', 'Not done well');
 
       expect(ds.transaction).toHaveBeenCalled();
       expect(em._qb.set).toHaveBeenCalledWith(
@@ -561,7 +561,7 @@ describe('TasksService', () => {
       taskRepo.findOne.mockResolvedValue(makeTask({ status: 'pending_approval' }));
       taskRepo.findOneOrFail.mockResolvedValue(makeTask({ status: 'created', rejectionReason: '' }));
 
-      await service.reject('task-1', 'acc-1');
+      await service.reject('task-1', 'acc-1', 'fam-1');
 
       expect(em._qb.set).toHaveBeenCalledWith(
         expect.objectContaining({ rejectionReason: '' }),
@@ -572,7 +572,7 @@ describe('TasksService', () => {
       taskRepo.findOne.mockResolvedValue(makeTask({ status: 'pending_approval' }));
       taskRepo.findOneOrFail.mockResolvedValue(makeTask({ status: 'created' }));
 
-      await service.reject('task-1', 'acc-1', 'reason');
+      await service.reject('task-1', 'acc-1', 'fam-1', 'reason');
 
       const saveCalls = (em.save as jest.Mock).mock.calls;
       expect(saveCalls.find(([cls]) => cls === Transaction)).toBeUndefined();
@@ -583,7 +583,7 @@ describe('TasksService', () => {
       taskRepo.findOneOrFail.mockResolvedValue(makeTask({ status: 'created' }));
       familiesSvc.getFamilyParentTokens.mockResolvedValue(['other-parent-token']);
 
-      await service.reject('task-1', 'acc-1', 'reason');
+      await service.reject('task-1', 'acc-1', 'fam-1', 'reason');
 
       const saveCalls = (em.save as jest.Mock).mock.calls;
       const notifCall = saveCalls.find(
@@ -594,18 +594,18 @@ describe('TasksService', () => {
 
     it('throws ConflictException when task is not pending_approval', async () => {
       taskRepo.findOne.mockResolvedValue(makeTask({ status: 'created' }));
-      await expect(service.reject('task-1', 'acc-1', 'reason')).rejects.toThrow(ConflictException);
+      await expect(service.reject('task-1', 'acc-1', 'fam-1', 'reason')).rejects.toThrow(ConflictException);
     });
 
     it('throws ConflictException when task is already validated', async () => {
       taskRepo.findOne.mockResolvedValue(makeTask({ status: 'validated' }));
-      await expect(service.reject('task-1', 'acc-1')).rejects.toThrow(ConflictException);
+      await expect(service.reject('task-1', 'acc-1', 'fam-1')).rejects.toThrow(ConflictException);
     });
 
     it('throws ConflictException when concurrent action beats us (affected=0)', async () => {
       taskRepo.findOne.mockResolvedValue(makeTask({ status: 'pending_approval' }));
       em._qb.execute.mockResolvedValue({ affected: 0 });
-      await expect(service.reject('task-1', 'acc-1', 'reason')).rejects.toThrow(ConflictException);
+      await expect(service.reject('task-1', 'acc-1', 'fam-1', 'reason')).rejects.toThrow(ConflictException);
     });
   });
 

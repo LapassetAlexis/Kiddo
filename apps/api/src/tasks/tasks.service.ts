@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository }  from '@nestjs/typeorm';
 import { DataSource, MoreThanOrEqual, Repository } from 'typeorm';
 import { Task, TaskDifficulty }  from './task.entity';
@@ -61,8 +61,9 @@ export class TasksService {
     return this.getAll(familyId, childId);
   }
 
-  async create(body: { childId: string; title: string; goldReward: number; difficulty?: TaskDifficulty; frequency?: string; timesPerDay?: number; bonusGold?: number }) {
-    const child = await this.children.findOne({ where: { id: body.childId } }).then(c => { if (!c) throw new NotFoundException('Enfant introuvable'); return c; });
+  async create(body: { childId: string; title: string; goldReward: number; difficulty?: TaskDifficulty; frequency?: string; timesPerDay?: number; bonusGold?: number }, familyId: string) {
+    const child = await this.children.findOne({ where: { id: body.childId, family: { id: familyId } }, relations: ['family'] })
+      .then(c => { if (!c) throw new ForbiddenException('Enfant introuvable dans cette famille'); return c; });
     const task  = this.tasks.create({
       title:       body.title,
       goldReward:  body.goldReward,
@@ -75,9 +76,10 @@ export class TasksService {
     return this.tasks.save(task);
   }
 
-  async complete(id: string, photoUrl?: string, note?: string) {
+  async complete(id: string, childId: string, photoUrl?: string, note?: string) {
     const task = await this.tasks.findOne({ where: { id }, relations: ['child', 'child.family'] });
     if (!task) throw new NotFoundException('Tâche introuvable');
+    if (task.child.id !== childId) throw new ForbiddenException('Cette tâche ne t\'appartient pas');
     if (task.status !== 'created') throw new ConflictException('Tâche déjà soumise');
 
     if (task.timesPerDay > 1) {
@@ -107,13 +109,13 @@ export class TasksService {
     return this.tasks.findOneOrFail({ where: { id } });
   }
 
-  async approve(id: string, accountId: string) {
+  async approve(id: string, accountId: string, familyId: string) {
     const task = await this.tasks.findOne({ where: { id }, relations: ['child', 'child.family'] });
     if (!task) throw new NotFoundException('Tâche introuvable');
+    if ((task.child.family as any).id !== familyId) throw new ForbiddenException('Accès refusé');
     if (task.status !== 'pending_approval') throw new ConflictException('Tâche déjà traitée');
 
     const approverName = await this.familiesSvc.getDisplayName(accountId);
-    const familyId = (task.child.family as any).id as string;
     const otherParentTokens = await this.familiesSvc.getFamilyParentTokens(familyId, { exclude: accountId });
     const xpReward = XP_BY_DIFFICULTY[task.difficulty];
 
@@ -181,13 +183,13 @@ export class TasksService {
     return this.tasks.findOneOrFail({ where: { id } });
   }
 
-  async reject(id: string, accountId: string, reason?: string) {
+  async reject(id: string, accountId: string, familyId: string, reason?: string) {
     const task = await this.tasks.findOne({ where: { id }, relations: ['child', 'child.family'] });
     if (!task) throw new NotFoundException('Tâche introuvable');
+    if ((task.child.family as any).id !== familyId) throw new ForbiddenException('Accès refusé');
     if (task.status !== 'pending_approval') throw new ConflictException('Tâche déjà traitée');
 
     const approverName = await this.familiesSvc.getDisplayName(accountId);
-    const familyId = (task.child.family as any).id as string;
     const otherParentTokens = await this.familiesSvc.getFamilyParentTokens(familyId, { exclude: accountId });
 
     await this.ds.transaction(async em => {
