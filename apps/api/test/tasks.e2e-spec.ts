@@ -169,13 +169,13 @@ describe('Tasks E2E', () => {
       expect(res.body.goldReward).toBe(10);
     });
 
-    it('returns 404 when the child does not exist', async () => {
+    it('returns 403 when the child does not belong to the parent family', async () => {
       const res = await request(app.getHttpServer())
         .post('/api/tasks')
         .set('Authorization', `Bearer ${parentTokenA}`)
         .send({ childId: '00000000-0000-0000-0000-000000000000', title: 'Ghost task', goldReward: 5 });
 
-      expect(res.status).toBe(404);
+      expect(res.status).toBe(403);
     });
   });
 
