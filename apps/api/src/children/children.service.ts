@@ -80,7 +80,12 @@ export class ChildrenService {
 
   async update(id: string, familyId: string, dto: UpdateChildDto): Promise<Child> {
     await this.assertOwnership(id, familyId);
-    await this.children.update(id, dto);
+    // N'autoriser que la mise à jour du nom et du sprite (pas d'emoji/couleur modifiable)
+    const allowed: Record<string, any> = {};
+    if (dto.name !== undefined) allowed.name = dto.name;
+    if (dto.sprite !== undefined) allowed.sprite = dto.sprite;
+    if (Object.keys(allowed).length === 0) return this.children.findOneOrFail({ where: { id } });
+    await this.children.update(id, allowed);
     return this.children.findOneOrFail({ where: { id } });
   }
 

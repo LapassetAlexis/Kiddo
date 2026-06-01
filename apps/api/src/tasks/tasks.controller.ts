@@ -9,21 +9,28 @@ export class TasksController {
   constructor(private svc: TasksService) {}
 
   @Get()
+  @UseGuards(JwtAuthGuard)
   getAll(
     @Query('childId') childId?: string,
     @Query('status')  status?: string,
+    @CurrentUser()    user?: JwtPayload,
   ) {
-    return this.svc.getAll(childId, status);
+    return this.svc.getAll(user?.familyId, childId, status);
   }
 
   @Get('history')
-  getHistory(@Query('childId') childId?: string) {
-    return this.svc.getHistory(childId);
+  @UseGuards(JwtAuthGuard)
+  getHistory(
+    @Query('childId') childId?: string,
+    @CurrentUser()    user?: JwtPayload,
+  ) {
+    return this.svc.getHistory(user?.familyId, childId);
   }
 
   @Get('child/:childId')
-  getForChild(@Param('childId') childId: string) {
-    return this.svc.getAll(childId);
+  @UseGuards(JwtAuthGuard)
+  getForChild(@Param('childId') childId: string, @CurrentUser() user: JwtPayload) {
+    return this.svc.getAll(user?.familyId, childId);
   }
 
   @Post()

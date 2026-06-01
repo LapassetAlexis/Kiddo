@@ -2,7 +2,7 @@ export default {
   expo: {
     name: 'Kiddo',
     slug: 'kiddo',
-    version: '0.1.0',
+    version: '0.1.3',
     orientation: 'portrait',
     icon: './assets/icon.png',
     userInterfaceStyle: 'dark',
@@ -23,6 +23,7 @@ export default {
         backgroundColor: '#18181e',
       },
       package: 'io.kiddo.app',
+      versionCode: 3,
       googleServicesFile: './google-services.json',
       permissions: ['android.permission.RECORD_AUDIO'],
     },

@@ -12,31 +12,12 @@ import { useApiData } from '@/lib/useApiData';
 import { CLASS_LABELS, CLASS_EMOJI } from '@/lib/rpg';
 import type { ChildClass } from '@/lib/rpg';
 
-const COLORS = [
-  '#FFB300', '#E53935', '#8E24AA', '#1E88E5',
-  '#00897B', '#43A047', '#FB8C00', '#F06292',
-  '#5C6BC0', '#26C6DA',
-];
-
-const AVATARS = [
-  // Animaux universels
-  '🦊','🐺','🦁','🐯','🦅','🐉','🦈','🦋',
-  // Sports & action
-  '⚽','🏀','🎯','🏄','🏂','🤸','🎾','🥊',
-  // Gaming, musique & créa
-  '🎮','👾','🎸','🎧','🎨','🤖','🎤','🥁',
-  // Attitude & cool
-  '😎','⚡','🔥','🚀',
-];
-
 export default function EditChildScreen() {
   const { childId, childName, childEmoji, childColor } = useLocalSearchParams<{
     childId: string; childName: string; childEmoji: string; childColor?: string;
   }>();
 
   const [name,    setName]    = useState(childName ?? '');
-  const [emoji,   setEmoji]   = useState(childEmoji ?? '🦊');
-  const [color,   setColor]   = useState(childColor ?? '#FFB300');
   const [pinMode, setPinMode] = useState(false);
   const [newPin,  setNewPin]  = useState('');
   const [confirm, setConfirm] = useState('');
@@ -49,7 +30,7 @@ export default function EditChildScreen() {
     if (!name.trim()) { showModal({ icon: '✏️', title: 'Prénom requis', message: 'Entre le prénom de l\'enfant.' }); return; }
     setLoading(true);
     try {
-      await childrenApi.update(childId, { name: name.trim(), avatar: emoji, color });
+      await childrenApi.update(childId, { name: name.trim() });
       showModal({ icon: '✅', title: 'Profil mis à jour', message: `Le profil de ${name} a été enregistré.`, buttons: [{ label: 'OK', style: 'default', onPress: () => router.back() }] });
     } catch {
       showModal({ icon: '❌', title: 'Erreur', message: 'Impossible de sauvegarder. Réessaie.' });
@@ -78,8 +59,13 @@ export default function EditChildScreen() {
       icon: '⚠️', title: `Supprimer ${name} ?`,
       message: `Toutes les tâches, récompenses et points de ${name} seront définitivement supprimés.`,
       buttons: [
-        { label: `Supprimer ${name}`, style: 'destructive', onPress: () => {
-          showModal({ icon: '✅', title: 'Profil supprimé', message: `Le profil de ${name} a été supprimé.`, buttons: [{ label: 'OK', style: 'default', onPress: () => router.back() }] });
+        { label: `Supprimer ${name}`, style: 'destructive', onPress: async () => {
+          try {
+            await childrenApi.delete(childId);
+            showModal({ icon: '✅', title: 'Profil supprimé', message: `Le profil de ${name} a été supprimé.`, buttons: [{ label: 'OK', style: 'default', onPress: () => router.back() }] });
+          } catch {
+            showModal({ icon: '❌', title: 'Erreur', message: 'Impossible de supprimer le profil. Réessaie.' });
+          }
         }},
         { label: 'Annuler', style: 'cancel' },
       ],
@@ -109,8 +95,8 @@ export default function EditChildScreen() {
 
             {/* Avatar preview */}
             <View style={styles.avatarSection}>
-              <View style={[styles.avatarPreviewCircle, { backgroundColor: color + '33', borderColor: color + '66' }]}>
-                <Text style={styles.bigEmoji}>{emoji}</Text>
+              <View style={[styles.avatarPreviewCircle, { backgroundColor: (childColor ?? '#FFB300') + '33', borderColor: (childColor ?? '#FFB300') + '66' }]}>
+                <Text style={styles.bigEmoji}>{childEmoji ?? '🦊'}</Text>
               </View>
               <Text style={styles.childNameDisplay}>{name}</Text>
             </View>
@@ -139,29 +125,6 @@ export default function EditChildScreen() {
               <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Prénom de l'enfant" placeholderTextColor={Colors.textFaint} />
             </View>
 
-            {/* Avatar */}
-            <Text style={styles.sectionLabel}>Avatar</Text>
-            <View style={styles.avatarGrid}>
-              {AVATARS.map(a => (
-                <TouchableOpacity key={a} style={[styles.avatarOption, emoji === a && styles.avatarSelected]} onPress={() => setEmoji(a)} activeOpacity={0.7}>
-                  <Text style={{ fontSize: 28 }}>{a}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Couleur */}
-            <Text style={styles.sectionLabel}>Couleur</Text>
-            <View style={styles.colorRow}>
-              {COLORS.map(c => (
-                <TouchableOpacity
-                  key={c}
-                  style={[styles.colorDot, { backgroundColor: c }, color === c && styles.colorDotSelected]}
-                  onPress={() => setColor(c)}
-                  activeOpacity={0.7}
-                />
-              ))}
-            </View>
-
             {/* Actions */}
             <Text style={styles.sectionLabel}>Sécurité</Text>
             <TouchableOpacity style={styles.actionRow} onPress={() => setPinMode(true)} activeOpacity={0.7}>
@@ -184,8 +147,8 @@ export default function EditChildScreen() {
           <View style={styles.pinContent}>
             <Text style={styles.pinTitle}>Nouveau code pour {name}</Text>
             <Text style={styles.pinSub}>4 chiffres que {name} devra entrer</Text>
-            <View style={[styles.avatarPreviewCircle, { backgroundColor: color + '33', borderColor: color + '66' }]}>
-              <Text style={styles.bigEmoji}>{emoji}</Text>
+            <View style={[styles.avatarPreviewCircle, { backgroundColor: (childColor ?? '#FFB300') + '33', borderColor: (childColor ?? '#FFB300') + '66' }]}>
+              <Text style={styles.bigEmoji}>{childEmoji ?? '🦊'}</Text>
             </View>
 
             {/* Étape */}
@@ -243,9 +206,6 @@ const styles = StyleSheet.create({
   avatarPreviewCircle: { width: 96, height: 96, borderRadius: 48, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   bigEmoji:      { fontSize: 52 },
 
-  colorRow:        { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  colorDot:        { width: 36, height: 36, borderRadius: 18 },
-  colorDotSelected:{ borderWidth: 3, borderColor: '#fff', transform: [{ scale: 1.15 }] },
   childNameDisplay: { fontSize: 20, fontWeight: '900', color: Colors.textPrimary },
 
   rpgCard: {
@@ -265,10 +225,6 @@ const styles = StyleSheet.create({
   sectionLabel: { fontSize: 11, fontWeight: '900', color: Colors.textFaint, textTransform: 'uppercase', letterSpacing: 1.1, marginTop: 4 },
   card:         { backgroundColor: Colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: Colors.border, padding: 16 },
   input:        { fontSize: 17, fontWeight: '700', color: Colors.textPrimary },
-
-  avatarGrid:    { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  avatarOption:  { width: 58, height: 58, borderRadius: 16, backgroundColor: Colors.bgCard, borderWidth: 1.5, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
-  avatarSelected:{ borderColor: Colors.gold, backgroundColor: 'rgba(255,184,0,0.1)' },
 
   actionRow:  { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: Colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: Colors.border, padding: 16 },
   deleteRow:  { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: 'rgba(239,83,80,0.06)', borderRadius: Radii.card, borderWidth: 1, borderColor: 'rgba(239,83,80,0.18)', padding: 16 },

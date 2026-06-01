@@ -7,15 +7,6 @@ export class UpdateChildDto {
   name?: string;
 
   @IsString()
-  @IsNotEmpty()
-  @IsOptional()
-  avatar?: string;
-
-  @IsString()
-  @IsOptional()
-  color?: string;
-
-  @IsString()
   @IsOptional()
   sprite?: string;
 }

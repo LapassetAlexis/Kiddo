@@ -13,6 +13,7 @@ import { familiesApi } from '@/lib/api/families';
 import { formatName } from '@/lib/formatName';
 import { useApiData } from '@/lib/useApiData';
 import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
+import * as Clipboard from 'expo-clipboard';
 
 export default function SettingsScreen() {
   const [notifTask,      setNotifTask]      = useState(true);
@@ -220,23 +221,24 @@ export default function SettingsScreen() {
               <Text style={styles.codeText}>{profileData?.inviteCode ?? '——————'}</Text>
             </View>
             <View style={styles.inviteBtns}>
-              <TouchableOpacity
-                style={styles.inviteBtn}
-                activeOpacity={0.7}
-                onPress={() => Share.share({ message: `Code famille Kiddo : ${profileData?.inviteCode}` })}
-              >
-                <Text style={styles.inviteBtnText}>Copier / Partager</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.inviteBtn, styles.inviteBtnSecondary]}
-                activeOpacity={0.7}
-                onPress={() => Share.share({
-                  message: `Rejoins notre famille sur Kiddo avec le code : ${profileData?.inviteCode}\n\nTélécharge l'app et va dans "Rejoindre une famille".`,
-                })}
-              >
-                <Text style={[styles.inviteBtnText, { color: Colors.textDim }]}>Envoyer le lien</Text>
-              </TouchableOpacity>
-            </View>
+                          <TouchableOpacity
+                            style={styles.inviteBtn}
+                            activeOpacity={0.7}
+                            onPress={() => Share.share({ message: `Code famille Kiddo : ${profileData?.inviteCode}` })}
+                          >
+                            <Text style={styles.inviteBtnText}>Partager le code</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.inviteBtn, styles.inviteBtnSecondary]}
+                            activeOpacity={0.7}
+                            onPress={async () => {
+                              await Clipboard.setStringAsync(profileData?.inviteCode ?? '');
+                              showModal({ icon: '✅', title: 'Code copié !', message: `Le code ${profileData?.inviteCode} a été copié dans le presse-papier.`, buttons: [{ label: 'OK', style: 'default' }] });
+                            }}
+                          >
+                            <Text style={[styles.inviteBtnText, { color: Colors.textDim }]}>Copier le code</Text>
+                          </TouchableOpacity>
+                        </View>
             <TouchableOpacity
               style={styles.regenerateBtn}
               activeOpacity={0.7}

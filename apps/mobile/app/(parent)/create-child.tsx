@@ -9,7 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { childrenApi } from '@/lib/api/children';
 import { ApiError } from '@/lib/api-client';
 import { Colors, Radii, Spacing } from '@/constants/theme';
-import SpriteAvatar from '@/components/SpriteAvatar';
+import HeroSprite from '@/components/HeroSprite';
 import { CHARACTER_PRESETS, DEFAULT_PRESET, getPresetById } from '@/lib/character-presets';
 
 type Step = 'name' | 'character' | 'pin' | 'confirm';
@@ -183,7 +183,7 @@ export default function CreateChildScreen() {
                   activeOpacity={0.75}
                 >
                   <View style={[styles.spriteWrap, selected && styles.spriteWrapSelected]}>
-                    <SpriteAvatar presetId={item.id} level={1} size={72} />
+                    <HeroSprite source={item.walkStrip} size={64} direction="south" />
                   </View>
                   <View style={styles.characterInfo}>
                     <View style={styles.characterNameRow}>
@@ -193,7 +193,7 @@ export default function CreateChildScreen() {
                       <Text style={styles.characterTagline}>{item.tagline}</Text>
                     </View>
                     {selected && (
-                      <Text style={styles.characterStory}>{item.story}</Text>
+                      <Text style={styles.characterStory}>{item.chapters[0]?.text}</Text>
                     )}
                   </View>
                   <View style={[styles.radioOuter, selected && styles.radioOuterActive]}>
@@ -218,7 +218,9 @@ export default function CreateChildScreen() {
             </Text>
 
             <View style={styles.pinCharPreview}>
-              <SpriteAvatar presetId={character} level={1} size={80} />
+              <View style={styles.spriteContainer}>
+                <HeroSprite source={selectedChar.walkStrip} size={80} direction="south" />
+              </View>
               <Text style={styles.pinCharName}>{selectedChar.name}</Text>
             </View>
 
@@ -301,7 +303,7 @@ const styles = StyleSheet.create({
   characterCardSelected: {
     borderColor: Colors.gold, backgroundColor: 'rgba(255,184,0,0.05)',
   },
-  spriteWrap:         { width: 72, height: 72, borderRadius: 16, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.04)' },
+  spriteWrap:         { width: 72, height: 80, borderRadius: 16, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.04)', alignItems: 'center', justifyContent: 'center' },
   spriteWrapSelected: { backgroundColor: 'rgba(255,184,0,0.1)' },
   characterInfo:     { flex: 1, gap: 4 },
   characterNameRow:  { gap: 2 },
@@ -320,6 +322,7 @@ const styles = StyleSheet.create({
   pinContent:     { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 18, paddingHorizontal: 32 },
   pinTitle:       { fontSize: 20, fontWeight: '900', color: Colors.textPrimary, textAlign: 'center' },
   pinSub:         { fontSize: 13, fontWeight: '600', color: Colors.textDim, textAlign: 'center', lineHeight: 18, marginTop: -10 },
+  spriteContainer: { width: 100, height: 100, borderRadius: 16, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   pinCharPreview: { alignItems: 'center', gap: 6 },
   pinCharName:    { fontSize: 14, fontWeight: '800', color: Colors.textDim },
   dots: { flexDirection: 'row', gap: 16 },
