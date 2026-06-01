@@ -34,24 +34,29 @@ export class TasksController {
   }
 
   @Post()
-  create(@Body() body: { childId: string; title: string; goldReward: number; difficulty?: string; frequency?: string; timesPerDay?: number; bonusGold?: number }) {
-    return this.svc.create(body as any);
+  @UseGuards(JwtAuthGuard)
+  create(
+    @Body() body: { childId: string; title: string; goldReward: number; difficulty?: string; frequency?: string; timesPerDay?: number; bonusGold?: number },
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.svc.create(body as any, user.familyId!);
   }
 
   @Patch(':id/complete')
-  complete(@Param('id') id: string, @Body() body: { note?: string; photoUrl?: string }) {
-    return this.svc.complete(id, body.photoUrl, body.note);
+  @UseGuards(JwtAuthGuard)
+  complete(@Param('id') id: string, @Body() body: { note?: string; photoUrl?: string }, @CurrentUser() user: JwtPayload) {
+    return this.svc.complete(id, user.sub, body.photoUrl, body.note);
   }
 
   @Patch(':id/approve')
   @UseGuards(JwtAuthGuard)
   approve(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    return this.svc.approve(id, user.sub);
+    return this.svc.approve(id, user.sub, user.familyId!);
   }
 
   @Patch(':id/reject')
   @UseGuards(JwtAuthGuard)
   reject(@Param('id') id: string, @Body() body: { reason?: string }, @CurrentUser() user: JwtPayload) {
-    return this.svc.reject(id, user.sub, body.reason);
+    return this.svc.reject(id, user.sub, user.familyId!, body.reason);
   }
 }
