@@ -9,9 +9,11 @@ import WakeUpScreen from '@/components/WakeUpScreen';
 async function pingUntilAlive(signal: AbortSignal) {
   while (!signal.aborted) {
     try {
-      const res = await fetch(`${BASE_URL}/health`, { signal });
+      const timeout = AbortSignal.timeout(5000);
+      const res = await fetch(`${BASE_URL}/health`, { signal: timeout });
       if (res.ok) return;
     } catch {}
+    if (signal.aborted) return;
     await new Promise(r => setTimeout(r, 2500));
   }
 }
