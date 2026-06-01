@@ -71,4 +71,11 @@ export class ChildrenController {
   getBalance(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.svc.getBalance(id, user.familyId!);
   }
+
+  @Post(':id/ack-levelup')
+  @Roles('parent', 'child')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  ackLevelUp(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.svc.ackLevelUp(id, user.familyId!);
+  }
 }

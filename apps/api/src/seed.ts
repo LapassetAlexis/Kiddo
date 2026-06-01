@@ -203,6 +203,35 @@ async function seed() {
   ]);
   console.log('✓ Soldes — Emma: 70 pièces | Lucas: 105 pièces | Zoé: 10 pièces');
 
+  // ── Compte équipement (pour tester l'évolution des tiers de walk strip) ──
+  const tierEmail = 'tiers@kiddo.test';
+  const existingTier = await accountRepo.findOne({ where: { email: tierEmail } });
+  if (!existingTier) {
+    const tierFamily = await familyRepo.save(
+      familyRepo.create({ name: 'Famille Aldric', inviteCode: 'TIER001' }),
+    );
+    await accountRepo.save(accountRepo.create({
+      email:        tierEmail,
+      passwordHash: await bcrypt.hash('Test1234!', 12),
+      name:         'Parent Tier',
+      family:       tierFamily,
+    }));
+
+    // 4 enfants — même sprite m_1 (Aldric), un par tier d'équipement
+    await childRepo.save(childRepo.create({ name: 'Aldric T1', avatar: '⚔️', color: '#40C4FF', class: 'warrior', sprite: 'm_1', xp: 0,      pinHash: await bcrypt.hash('1111', 12), family: tierFamily }));
+    await childRepo.save(childRepo.create({ name: 'Aldric T2', avatar: '⚔️', color: '#40C4FF', class: 'warrior', sprite: 'm_1', xp: 6681,   pinHash: await bcrypt.hash('2222', 12), family: tierFamily }));
+    await childRepo.save(childRepo.create({ name: 'Aldric T3', avatar: '⚔️', color: '#40C4FF', class: 'warrior', sprite: 'm_1', xp: 43429,  pinHash: await bcrypt.hash('3333', 12), family: tierFamily }));
+    await childRepo.save(childRepo.create({ name: 'Aldric T4', avatar: '⚔️', color: '#40C4FF', class: 'warrior', sprite: 'm_1', xp: 191525, pinHash: await bcrypt.hash('4444', 12), family: tierFamily }));
+
+    console.log('✓ Compte tiers créé — tiers@kiddo.test / Test1234!');
+    console.log('   Aldric T1 PIN: 1111  (niv.1  → tier 1)');
+    console.log('   Aldric T2 PIN: 2222  (niv.10 → tier 2)');
+    console.log('   Aldric T3 PIN: 3333  (niv.20 → tier 3)');
+    console.log('   Aldric T4 PIN: 4444  (niv.35 → tier 4)');
+  } else {
+    console.log('✓ Compte tiers déjà existant — tiers@kiddo.test');
+  }
+
   // ── Compte vide (pour tester les empty states) ────────────────────────────
   const emptyEmail = 'nouveau@kiddo.test';
   const existingEmpty = await accountRepo.findOne({ where: { email: emptyEmail } });

@@ -11,7 +11,7 @@ import { transactionsApi } from '@/lib/api/transactions';
 import { getXpProgress, CLASS_LABELS, CLASS_EMOJI } from '@/lib/rpg';
 import type { ChildClass } from '@/lib/rpg';
 import HeroSprite from '@/components/HeroSprite';
-import { DEFAULT_PRESET, getPresetById } from '@/lib/character-presets';
+import { DEFAULT_PRESET, getPresetById, getEquippedItems } from '@/lib/character-presets';
 
 interface BadgeGroup {
   title: string;
@@ -171,7 +171,7 @@ export default function ChildProfileScreen() {
         <View style={styles.heroSection}>
           <View style={styles.avatarWrap}>
             <View style={[styles.spriteContainer, { borderColor: childColor + '66', backgroundColor: childColor + '22' }]}>
-              <HeroSprite source={childPreset.walkStrip} size={100} direction="south" />
+              <HeroSprite source={childPreset.baseStrip} items={getEquippedItems(childPreset, childLevel)} size={100} direction="south" />
             </View>
             <View style={styles.streakBadge}>
               <Text style={styles.streakBadgeText}>🔥 {currentStreak}</Text>

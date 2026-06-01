@@ -12,7 +12,7 @@ import { useApiData } from '@/lib/useApiData';
 import { childrenApi } from '@/lib/api/children';
 import { getXpProgress } from '@/lib/rpg';
 import HeroSprite from '@/components/HeroSprite';
-import { getPresetById, getUnlockedChapters, DEFAULT_PRESET } from '@/lib/character-presets';
+import { getPresetById, getUnlockedChapters, getEquippedItems, getEquippedBehindItems, DEFAULT_PRESET } from '@/lib/character-presets';
 
 // Chapter backgrounds — one per story milestone
 const BG_BY_CHAPTER = [
@@ -69,7 +69,7 @@ function HeroScene({ preset, level, chapterIndex }: { preset: ReturnType<typeof 
 
       {/* Character walking right, feet on the ground */}
       <View style={styles.spriteAnchor}>
-        <HeroSprite source={preset.walkStrip} size={SPRITE_SIZE} direction="right" />
+        <HeroSprite source={preset.baseStrip} items={getEquippedItems(preset, level)} behindItems={getEquippedBehindItems(preset, level)} size={SPRITE_SIZE} direction="right" />
       </View>
     </View>
   );

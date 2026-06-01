@@ -180,7 +180,7 @@ describe('AuthService', () => {
         transactions: [],
         pinAttempts: [],
         createdAt: new Date(),
-        sprite: null,
+        sprite: null, pendingLevelUp: null,
       } as Child;
     }
 
@@ -460,7 +460,7 @@ describe('AuthService', () => {
         transactions: [],
         pinAttempts: [],
         createdAt: new Date(),
-        sprite: null,
+        sprite: null, pendingLevelUp: null,
       };
       childRepo.findOne.mockResolvedValue(mockChild);
 

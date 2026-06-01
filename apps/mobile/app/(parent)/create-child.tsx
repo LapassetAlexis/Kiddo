@@ -10,7 +10,7 @@ import { childrenApi } from '@/lib/api/children';
 import { ApiError } from '@/lib/api-client';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 import HeroSprite from '@/components/HeroSprite';
-import { CHARACTER_PRESETS, DEFAULT_PRESET, getPresetById } from '@/lib/character-presets';
+import { CHARACTER_PRESETS, DEFAULT_PRESET, getPresetById, CLASS_META } from '@/lib/character-presets';
 
 type Step = 'name' | 'character' | 'pin' | 'confirm';
 
@@ -183,7 +183,7 @@ export default function CreateChildScreen() {
                   activeOpacity={0.75}
                 >
                   <View style={[styles.spriteWrap, selected && styles.spriteWrapSelected]}>
-                    <HeroSprite source={item.walkStrip} size={64} direction="south" />
+                    <HeroSprite source={item.baseStrip} size={64} direction="south" />
                   </View>
                   <View style={styles.characterInfo}>
                     <View style={styles.characterNameRow}>
@@ -191,6 +191,11 @@ export default function CreateChildScreen() {
                         {item.name}
                       </Text>
                       <Text style={styles.characterTagline}>{item.tagline}</Text>
+                    </View>
+                    <View style={[styles.classBadge, { backgroundColor: CLASS_META[item.class].color + '22', borderColor: CLASS_META[item.class].color + '55' }]}>
+                      <Text style={[styles.classBadgeText, { color: CLASS_META[item.class].color }]}>
+                        {CLASS_META[item.class].icon} {CLASS_META[item.class].label}
+                      </Text>
                     </View>
                     {selected && (
                       <Text style={styles.characterStory}>{item.chapters[0]?.text}</Text>
@@ -219,7 +224,7 @@ export default function CreateChildScreen() {
 
             <View style={styles.pinCharPreview}>
               <View style={styles.spriteContainer}>
-                <HeroSprite source={selectedChar.walkStrip} size={80} direction="south" />
+                <HeroSprite source={selectedChar.baseStrip} size={80} direction="south" />
               </View>
               <Text style={styles.pinCharName}>{selectedChar.name}</Text>
             </View>
@@ -310,6 +315,8 @@ const styles = StyleSheet.create({
   characterName:     { fontSize: 17, fontWeight: '900', color: Colors.textDim },
   characterNameSelected: { color: Colors.textPrimary },
   characterTagline:  { fontSize: 12, fontWeight: '700', color: Colors.textFaint },
+  classBadge:        { alignSelf: 'flex-start', borderRadius: 99, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 2, marginTop: 6 },
+  classBadgeText:    { fontSize: 11, fontWeight: '800' },
   characterStory:    { fontSize: 13, fontWeight: '500', color: Colors.textDim, lineHeight: 18, marginTop: 4 },
   radioOuter:        { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: Colors.textFaint, alignItems: 'center', justifyContent: 'center' },
   radioOuterActive:  { borderColor: Colors.gold },

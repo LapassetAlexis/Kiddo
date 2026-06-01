@@ -6,7 +6,7 @@ import { Transaction }           from '../transactions/transaction.entity';
 import { NotificationIntent }    from '../notifications/notification-intent.entity';
 import { Child }                 from '../children/child.entity';
 import { FamiliesService }       from '../families/families.service';
-import { XP_BY_DIFFICULTY }      from '../rpg/rpg.constants';
+import { XP_BY_DIFFICULTY, getLevelFromXp } from '../rpg/rpg.constants';
 
 @Injectable()
 export class TasksService {
@@ -118,6 +118,7 @@ export class TasksService {
     const approverName = await this.familiesSvc.getDisplayName(accountId);
     const otherParentTokens = await this.familiesSvc.getFamilyParentTokens(familyId, { exclude: accountId });
     const xpReward = XP_BY_DIFFICULTY[task.difficulty];
+    const oldLevel = getLevelFromXp(task.child.xp);
 
     await this.ds.transaction(async em => {
       const completedToday = await em.count(Transaction, {
@@ -155,6 +156,11 @@ export class TasksService {
         type: 'earn', currency: 'xp', amount: xpReward, referenceId: id, child: task.child,
       }));
       await em.createQueryBuilder().update(Child).set({ xp: () => `xp + ${xpReward}` }).where('id = :id', { id: task.child.id }).execute();
+
+      const newLevel = getLevelFromXp(task.child.xp + xpReward);
+      if (newLevel > oldLevel) {
+        await em.createQueryBuilder().update(Child).set({ pendingLevelUp: newLevel }).where('id = :id', { id: task.child.id }).execute();
+      }
 
       if (isLast && task.bonusGold > 0) {
         await em.save(Transaction, em.create(Transaction, {
