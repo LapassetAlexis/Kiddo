@@ -236,6 +236,14 @@ export default function ChildHomeScreen() {
           <Text style={styles.sectionCount}>{doneCount}/{tasks.length}</Text>
         </View>
 
+        {tasks.length === 0 && (
+          <View style={styles.emptyTasks}>
+            <Text style={styles.emptyTasksEmoji}>{levelEmoji}</Text>
+            <Text style={styles.emptyTasksTitle}>Aucune quête pour l'instant !</Text>
+            <Text style={styles.emptyTasksSub}>Ton gardien va bientôt te confier des aventures. Prépare-toi ! ⚔️</Text>
+          </View>
+        )}
+
         {tasks.map(task => (
           <TouchableOpacity
             key={task.id}
@@ -347,6 +355,11 @@ const styles = StyleSheet.create({
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginHorizontal: Spacing.screen, marginTop: 18, marginBottom: 10 },
   sectionTitle:  { fontSize: 11, fontWeight: '900', color: Colors.textFaint, textTransform: 'uppercase', letterSpacing: 1.2 },
   sectionCount:  { fontSize: 12, fontWeight: '700', color: Colors.textFaint },
+
+  emptyTasks:      { alignItems: 'center', marginHorizontal: Spacing.screen, marginTop: 8, marginBottom: 16, padding: 28, backgroundColor: Colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: Colors.border, gap: 8 },
+  emptyTasksEmoji: { fontSize: 40 },
+  emptyTasksTitle: { fontSize: 16, fontWeight: '900', color: Colors.textPrimary, textAlign: 'center' },
+  emptyTasksSub:   { fontSize: 13, fontWeight: '600', color: Colors.textDim, textAlign: 'center', lineHeight: 18 },
 
   taskCard:    { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: Spacing.screen, marginBottom: 10, backgroundColor: Colors.bgCard, borderRadius: Radii.card, padding: 14, borderWidth: 1, borderColor: Colors.border, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 8 },
   taskDone:    { backgroundColor: Colors.bgCardDone,    borderColor: 'rgba(76,175,80,0.2)' },

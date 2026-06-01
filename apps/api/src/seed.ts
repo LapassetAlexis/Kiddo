@@ -203,6 +203,24 @@ async function seed() {
   ]);
   console.log('✓ Soldes — Emma: 70 pièces | Lucas: 105 pièces | Zoé: 10 pièces');
 
+  // ── Compte vide (pour tester les empty states) ────────────────────────────
+  const emptyEmail = 'nouveau@kiddo.test';
+  const existingEmpty = await accountRepo.findOne({ where: { email: emptyEmail } });
+  if (!existingEmpty) {
+    const emptyFamily = await familyRepo.save(
+      familyRepo.create({ name: 'Famille Vide', inviteCode: 'EMPTY01' }),
+    );
+    await accountRepo.save(accountRepo.create({
+      email:        emptyEmail,
+      passwordHash: await bcrypt.hash('Test1234!', 12),
+      name:         'Nouveau Parent',
+      family:       emptyFamily,
+    }));
+    console.log('✓ Compte vide créé — nouveau@kiddo.test / Test1234!  (aucun enfant, aucune tâche)');
+  } else {
+    console.log('✓ Compte vide déjà existant — nouveau@kiddo.test');
+  }
+
   await ds.destroy();
   console.log('\n🎉 Seed terminé !');
   console.log('   Emma PIN: 1234  |  Lucas PIN: 5678  |  Zoé PIN: 0000');
