@@ -1,46 +1,56 @@
 import { Stack, router, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import { useEffect, useState } from 'react';
 import { Colors } from '@/constants/theme';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
-import { getToken } from '@/lib/api-client';
+import { BASE_URL } from '@/lib/api-client';
+import WakeUpScreen from '@/components/WakeUpScreen';
+
+async function pingUntilAlive(signal: AbortSignal) {
+  while (!signal.aborted) {
+    try {
+      const res = await fetch(`${BASE_URL}/health`, { signal });
+      if (res.ok) return;
+    } catch {}
+    await new Promise(r => setTimeout(r, 2500));
+  }
+}
 
 function RootNavigator() {
   const { user, loading } = useAuth();
   const segments = useSegments();
+  const [awake, setAwake] = useState(false);
 
   useEffect(() => {
-    if (loading) return;
+    const ctrl = new AbortController();
+    pingUntilAlive(ctrl.signal).then(() => setAwake(true));
+    return () => ctrl.abort();
+  }, []);
+
+  useEffect(() => {
+    if (loading || !awake) return;
 
     const inAuth   = segments[0] === '(auth)';
     const inParent = segments[0] === '(parent)';
     const inChild  = segments[0] === '(child)';
 
     const currentScreen = (segments as string[])[1];
-    // child-select et child-pin sont accessibles à un parent connecté (switch de mode)
     const isSwitchingToChild = inAuth &&
       (currentScreen === 'child-select' || currentScreen === 'child-pin');
 
     if (!user) {
-      // Pas connecté → login
       if (!inAuth) router.replace('/(auth)/login');
     } else if (isSwitchingToChild) {
-      // Parent en train de basculer vers un enfant → laisser passer
+      // parent switching to child mode — let through
     } else if (user.role === 'parent' && !inParent) {
       router.replace('/(parent)/dashboard');
     } else if (user.role === 'child' && !inChild) {
       router.replace('/(child)/home');
     }
-  }, [user, loading, segments[0]]);
+  }, [user, loading, awake, segments[0]]);
 
-  // Pendant le chargement du token, afficher un spinner plutôt que de flasher login
-  if (loading) {
-    return (
-      <View style={{ flex: 1, backgroundColor: Colors.bgScreen, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color={Colors.gold} size="large" />
-      </View>
-    );
+  if (!awake || loading) {
+    return <WakeUpScreen />;
   }
 
   return (

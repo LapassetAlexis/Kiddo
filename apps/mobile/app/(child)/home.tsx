@@ -151,7 +151,8 @@ export default function ChildHomeScreen() {
             onPress={async () => { const ok = await switchToParent(); router.replace(ok ? '/(parent)/dashboard' : '/(auth)/login'); }}
             activeOpacity={0.8}
           >
-            <Text style={styles.parentBtnText}>👨‍👩‍👧</Text>
+            <Text style={styles.parentBtnLabel}>Espace parent</Text>
+            <Text style={styles.parentBtnArrow}>›</Text>
           </TouchableOpacity>
         </View>
 
@@ -291,8 +292,9 @@ const styles = StyleSheet.create({
   avatarEmoji: { fontSize: 24 },
   greetingSub:  { fontSize: 13, fontWeight: '600', color: Colors.textDim },
   greetingName: { fontSize: 18, fontWeight: '900', color: Colors.textPrimary },
-  parentBtn:    { width: 44, height: 44, borderRadius: 14, backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
-  parentBtnText: { fontSize: 20 },
+  parentBtn:    { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 10 },
+  parentBtnLabel: { fontSize: 12, fontWeight: '800', color: Colors.textDim },
+  parentBtnArrow: { fontSize: 18, color: Colors.textFaint, fontWeight: '300' },
 
   hero: {
     marginHorizontal: Spacing.screen, backgroundColor: Colors.bgHero,
