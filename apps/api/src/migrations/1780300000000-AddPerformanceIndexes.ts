@@ -1,6 +1,8 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class AddPerformanceIndexes1780300000000 implements MigrationInterface {
+  public transaction = false; // CONCURRENTLY interdit dans une transaction
+
   public async up(queryRunner: QueryRunner): Promise<void> {
     // tasks: filtres fréquents par enfant, statut, et date validation (streak query)
     await queryRunner.query(`
