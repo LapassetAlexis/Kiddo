@@ -13,6 +13,7 @@ import { Child } from '../children/child.entity';
 import { PinAttempt } from '../children/pin-attempt.entity';
 import { EmailVerification } from './entities/email-verification.entity';
 import { PasswordReset } from './entities/password-reset.entity';
+import { QrToken } from './qr-token.entity';
 
 // ── Repository mock factory ─────────────────────────────────────────────────
 
@@ -62,6 +63,7 @@ describe('AuthService', () => {
   let emailVerifRepo: jest.Mocked<Repository<EmailVerification>>;
   let pwdResetRepo: jest.Mocked<Repository<PasswordReset>>;
   let jwtService: jest.Mocked<Pick<JwtService, 'sign'>>;
+  let qrTokenRepo: jest.Mocked<Repository<QrToken>>;
 
   beforeEach(async () => {
     familyRepo    = mockRepo<Family>();
@@ -70,6 +72,7 @@ describe('AuthService', () => {
     pinAttemptRepo = mockRepo<PinAttempt>();
     emailVerifRepo = mockRepo<EmailVerification>();
     pwdResetRepo   = mockRepo<PasswordReset>();
+    qrTokenRepo    = mockRepo<QrToken>();
 
     jwtService = { sign: jest.fn().mockReturnValue('signed-token') };
 
@@ -88,6 +91,7 @@ describe('AuthService', () => {
         { provide: getRepositoryToken(PinAttempt),        useValue: pinAttemptRepo },
         { provide: getRepositoryToken(EmailVerification), useValue: emailVerifRepo },
         { provide: getRepositoryToken(PasswordReset),     useValue: pwdResetRepo },
+        { provide: getRepositoryToken(QrToken),           useValue: qrTokenRepo },
         { provide: JwtService,                            useValue: jwtService },
         { provide: EmailService,                          useValue: emailSvc },
       ],

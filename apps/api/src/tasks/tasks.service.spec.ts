@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ConflictException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 
 import { TasksService } from './tasks.service';
@@ -137,8 +138,9 @@ describe('TasksService', () => {
     ds        = mockDataSource(em);
 
     familiesSvc = {
-      getFamilyParentTokens: jest.fn().mockResolvedValue([]),
-      getDisplayName:        jest.fn().mockResolvedValue('Alice Parent'),
+      getFamilyParentTokens:    jest.fn().mockResolvedValue([]),
+      getFamilyParentsForNotif: jest.fn().mockResolvedValue([]),
+      getDisplayName:           jest.fn().mockResolvedValue('Alice Parent'),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -150,6 +152,7 @@ describe('TasksService', () => {
         { provide: getRepositoryToken(Child),              useValue: childRepo },
         { provide: DataSource,                             useValue: ds },
         { provide: FamiliesService,                        useValue: familiesSvc },
+        { provide: JwtService,                             useValue: { sign: jest.fn().mockReturnValue('scoped-token') } },
       ],
     }).compile();
 
