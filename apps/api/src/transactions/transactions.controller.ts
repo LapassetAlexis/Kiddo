@@ -24,7 +24,8 @@ export class TransactionsController {
     @Query('page') page: string,
     @CurrentUser() user: JwtPayload,
   ) {
-    return this.svc.getHistory(childId, user.familyId!, page ? parseInt(page, 10) : 1);
+    const resolvedChildId = user.role === 'child' ? user.sub : childId;
+    return this.svc.getHistory(resolvedChildId, user.familyId!, page ? parseInt(page, 10) : 1);
   }
 
   @Get('balance/:childId')
@@ -33,7 +34,8 @@ export class TransactionsController {
     @Param('childId') childId: string,
     @CurrentUser() user: JwtPayload,
   ) {
-    return this.svc.getBalance(childId, user.familyId!);
+    const resolvedChildId = user.role === 'child' ? user.sub : childId;
+    return this.svc.getBalance(resolvedChildId, user.familyId!);
   }
 
   @Get('streak/:childId')
@@ -43,6 +45,7 @@ export class TransactionsController {
     @Query('timezone') timezone: string | undefined,
     @CurrentUser() user: JwtPayload,
   ) {
-    return this.svc.getStreak(childId, user.familyId!, timezone);
+    const resolvedChildId = user.role === 'child' ? user.sub : childId;
+    return this.svc.getStreak(resolvedChildId, user.familyId!, timezone);
   }
 }

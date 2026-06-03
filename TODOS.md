@@ -18,9 +18,10 @@
 - [x] `rewards.tsx` — pts → pièces 🪙 partout
 - [x] `dashboard.tsx` parent — cards enfants avec `levelEmoji + Niv. X`, or crédité en 🪙
 - [x] `edit-child.tsx` — carte read-only niveau / classe / XP total
+- [x] **Level-up** : détection franchissement niveau à l'approbation → modal animé (reanimated v4) + endpoint `POST /children/:id/ack-levelup` — PR #13
+- [x] Équipement LPC par couches : HeroSprite layers, progression par archétype (guerrier/archer/mage), badge classe avatar — PR #13
 
 ### 🔲 À faire — RPG
-- [ ] **Level-up** : détecter le franchissement de niveau à l'approbation → modal/animation côté enfant
 - [ ] **Historique XP** : l'enfant peut voir ses transactions XP (quelle quête → combien d'XP)
 - [ ] **Objectifs de niveau** : parent peut associer une récompense automatique à un niveau cible
 - [ ] **Shop cosmétique** : acheter des items visuels avec les pièces (avatar frames, badges) — v2
@@ -29,20 +30,18 @@
 ---
 
 ## P1 — Bloquant pour le ship
-- [ ] Test concurrence reward redemption (SELECT FOR UPDATE) — deux enfants réclament même récompense "une seule fois" simultanément. Failure ici = double-debit silencieux.
-- [ ] Middleware IDOR sur toutes les routes child — vérifier que child.familyId === parent.familyId sur chaque request. Failure ici = fuite données cross-famille.
+
+_Tout résolu._
 
 ## P2 — Même branche idéalement
-- [ ] Photo storage: choisir S3 (ou DigitalOcean Spaces) pour photo proof. Plan ne le spécifie pas. Railway n'a pas de persistent file storage.
+- [ ] Photo storage: choisir S3 (ou DigitalOcean Spaces) pour photo proof. Railway n'a pas de persistent file storage.
 - [ ] Polling client fallback FCM (30s interval quand app en foreground) — si FCM delivery fail après validation parent, enfant ne voit pas ses points sans refresh.
-- [ ] Empty states UX: (a) parent sans tâches créées → CTA "Créez votre première tâche", (b) enfant first-time → écran de bienvenue avec avatar.
-- [ ] Réjection state UI: push notification vers enfant avec message de rejection personnalisé du parent.
 
 ## P3 — Follow-up
 - [ ] Admin tooling (reset streak, voir historique famille) — nécessaire pour le support
 - [ ] Analytics parentaux (taux completion, heures pics, progression semaine) — Phase 2
 - [ ] Financial rails exploration (Greenlight/BusyKid competitive risk) — évaluer si allowance + virtual wallet est la prochaine expansion naturelle
-- [ ] Crédit provisoire + clawback parent A/B test (v1.2) — le subagent a fait un argument valide, tester en production
+- [ ] Crédit provisoire + clawback parent A/B test (v1.2) — tester en production
 - [ ] Leaderboard entre frères/sœurs — scope expansion v2
 - [ ] Admin dashboard familles (outil de support)
 - [ ] Task marketplace (catalogue de tâches prédéfinies par âge et type)
@@ -50,11 +49,18 @@
 
 ## Ajouts post-revue Eng (P1 critiques)
 
-- [ ] Outbox pattern pour FCM : table `notification_intents` + worker async — voir Section Eng Architecture
-- [ ] Streak timezone : families.timezone field + calcul de date en timezone famille — voir Eng edge cases
-- [ ] PIN lockout en PostgreSQL (pas en mémoire) : table pin_attempts — voir Eng Security
-- [ ] QR code : table qr_tokens(token_hash, child_id, expires_at, used_at) TTL 30s one-time — voir Eng Security
-- [ ] Notification JWT scoped task (24h, approve/reject seul) : pour deep-link depuis push notif — voir Eng Security
-- [ ] Ledger checkpoint : table ledger_snapshots + cron minuit — voir Eng Performance
-- [ ] Child IDOR sur endpoints child-auth : task.child_id === authenticatedChildId — voir Eng Security critique
-- [ ] Index PostgreSQL sur tasks/transactions/rewards — voir Eng Performance
+- [ ] Outbox pattern pour FCM : table `notification_intents` + worker async
+- [ ] Streak timezone : `families.timezone` field + calcul de date en timezone famille
+- [ ] PIN lockout en PostgreSQL (pas en mémoire) : table `pin_attempts`
+- [ ] QR code : table `qr_tokens(token_hash, child_id, expires_at, used_at)` TTL 30s one-time
+- [ ] Notification JWT scoped task (24h, approve/reject seul) : pour deep-link depuis push notif
+- [ ] Ledger checkpoint : table `ledger_snapshots` + cron minuit
+- [ ] Index PostgreSQL sur tasks/transactions/rewards
+
+## ✅ Fait récemment (post-v1)
+
+- [x] IDOR guards tasks + uploads : vérification `familyId`/`childId` sur create/complete/approve/reject — PR #11
+- [x] Empty states parent/enfant, CTA "créer quête" — PR #12
+- [x] Notification FCM rejet vers enfant — PR #12
+- [x] Migrations colonnes manquantes prod (`pendingLevelUp`, colonnes RPG) — PR #14
+- [x] Child IDOR endpoints child-auth : `resolvedId = child ? user.sub : param` sur transactions + children routes — PR #15
