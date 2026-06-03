@@ -39,7 +39,8 @@ export class ChildrenController {
   @Get(':id')
   @Roles('parent', 'child')
   findOne(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    return this.svc.findOneWithStats(id, user.familyId!);
+    const resolvedId = user.role === 'child' ? user.sub : id;
+    return this.svc.findOneWithStats(resolvedId, user.familyId!);
   }
 
   @Patch(':id')
@@ -76,6 +77,7 @@ export class ChildrenController {
   @Roles('parent', 'child')
   @HttpCode(HttpStatus.NO_CONTENT)
   ackLevelUp(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    return this.svc.ackLevelUp(id, user.familyId!);
+    const resolvedId = user.role === 'child' ? user.sub : id;
+    return this.svc.ackLevelUp(resolvedId, user.familyId!);
   }
 }
