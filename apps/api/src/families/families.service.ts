@@ -124,6 +124,13 @@ export class FamiliesService {
     familyId: string,
     opts: { exclude?: string; event?: 'task' | 'reward' | 'streak' } = {},
   ): Promise<string[]> {
+    return (await this.getFamilyParentsForNotif(familyId, opts)).map(p => p.fcmToken);
+  }
+
+  async getFamilyParentsForNotif(
+    familyId: string,
+    opts: { exclude?: string; event?: 'task' | 'reward' | 'streak' } = {},
+  ): Promise<{ id: string; fcmToken: string }[]> {
     const accounts = await this.accounts.find({ where: { family: { id: familyId } } });
     return accounts
       .filter(a => {
@@ -131,9 +138,8 @@ export class FamiliesService {
         if (opts.event === 'task'   && !a.notifTaskSubmitted) return false;
         if (opts.event === 'reward' && !a.notifRewardClaimed) return false;
         if (opts.event === 'streak' && !a.notifStreakAlert)   return false;
-        return true;
+        return !!a.fcmToken;
       })
-      .map(a => a.fcmToken)
-      .filter(Boolean) as string[];
+      .map(a => ({ id: a.id, fcmToken: a.fcmToken! }));
   }
 }

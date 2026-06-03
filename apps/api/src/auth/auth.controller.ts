@@ -3,12 +3,15 @@ import {
   Controller,
   Get,
   HttpCode,
+  Param,
   Post,
   UseGuards,
 } from '@nestjs/common';
 import { IsEmail, IsString, Length, MinLength } from 'class-validator';
 import { AuthService }    from './auth.service';
 import { JwtAuthGuard }   from './guards/jwt-auth.guard';
+import { RolesGuard }     from './guards/roles.guard';
+import { Roles }          from './decorators/roles.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
 import type { JwtPayload } from '../auth/decorators/current-user.decorator';
 
@@ -43,6 +46,10 @@ class ParentLoginDto {
 class ChildPinDto {
   @IsString() childId: string;
   @IsString() pin:     string;
+}
+
+class QrLoginDto {
+  @IsString() token: string;
 }
 
 class JoinFamilyDto {
@@ -109,6 +116,20 @@ export class AuthController {
   @HttpCode(200)
   childPin(@Body() dto: ChildPinDto) {
     return this.auth.childPin(dto.childId, dto.pin);
+  }
+
+  @Post('child/:id/qr-generate')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('parent')
+  @HttpCode(200)
+  generateQr(@Param('id') childId: string, @CurrentUser() user: JwtPayload) {
+    return this.auth.generateQr(childId, user.familyId!);
+  }
+
+  @Post('child/qr-login')
+  @HttpCode(200)
+  qrLogin(@Body() dto: QrLoginDto) {
+    return this.auth.loginQr(dto.token);
   }
 
   @Post('join-family')

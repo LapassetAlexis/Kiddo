@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { TasksService } from './tasks.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { TasksService }     from './tasks.service';
+import { JwtAuthGuard }     from '../auth/guards/jwt-auth.guard';
+import { ScopedTaskGuard }  from '../auth/guards/scoped-task.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../auth/decorators/current-user.decorator';
 
@@ -49,13 +50,13 @@ export class TasksController {
   }
 
   @Patch(':id/approve')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(ScopedTaskGuard)
   approve(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.svc.approve(id, user.sub, user.familyId!);
   }
 
   @Patch(':id/reject')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(ScopedTaskGuard)
   reject(@Param('id') id: string, @Body() body: { reason?: string }, @CurrentUser() user: JwtPayload) {
     return this.svc.reject(id, user.sub, user.familyId!, body.reason);
   }

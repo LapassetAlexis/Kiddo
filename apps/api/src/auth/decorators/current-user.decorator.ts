@@ -6,6 +6,8 @@ export interface JwtPayload {
   email?:   string;           // present for parent tokens
   name?:    string;           // parent display name (from ParentAccount.name)
   familyId?: string;          // present for both parent and child tokens
+  scope?:   'task:action';    // present only on scoped deep-link tokens
+  taskId?:  string;           // taskId bound to scoped token
   iat?:     number;
   exp?:     number;
 }

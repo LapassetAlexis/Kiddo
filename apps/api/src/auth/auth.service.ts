@@ -4,6 +4,7 @@ import {
   BadRequestException,
   ConflictException,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository }       from 'typeorm';
@@ -19,6 +20,7 @@ import { Child }              from '../children/child.entity';
 import { PinAttempt }         from '../children/pin-attempt.entity';
 import { EmailVerification }  from './entities/email-verification.entity';
 import { PasswordReset }      from './entities/password-reset.entity';
+import { QrToken }            from './qr-token.entity';
 import { JwtPayload }         from './decorators/current-user.decorator';
 import { EmailService }       from '../email/email.service';
 
@@ -28,6 +30,7 @@ const PIN_MAX_ATTEMPTS  = 5;
 const PIN_LOCK_MINUTES  = 15;
 const CODE_EXPIRES_MIN  = 15;
 const BCRYPT_ROUNDS     = 12;
+const QR_TTL_SECONDS    = 30;
 
 
 // ─── JWT Strategy (lives here to keep the module lean) ───────────────────────
@@ -58,6 +61,7 @@ export class AuthService {
     @InjectRepository(PinAttempt)         private pinAttempts:   Repository<PinAttempt>,
     @InjectRepository(EmailVerification)  private emailVerifs:   Repository<EmailVerification>,
     @InjectRepository(PasswordReset)      private pwdResets:     Repository<PasswordReset>,
+    @InjectRepository(QrToken)            private qrTokens:      Repository<QrToken>,
     private jwt:    JwtService,
     private email:  EmailService,
   ) {}
@@ -287,6 +291,40 @@ export class AuthService {
       color:    child.color,
       familyId: child.family.id,
     };
+  }
+
+  // ── QR Login ───────────────────────────────────────────────────────────────
+
+  async generateQr(childId: string, familyId: string) {
+    const child = await this.children.findOne({ where: { id: childId }, relations: ['family'] });
+    if (!child || (child.family as any).id !== familyId) throw new ForbiddenException('Enfant introuvable');
+
+    const plainToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash  = crypto.createHash('sha256').update(plainToken).digest('hex');
+    const expiresAt  = new Date(Date.now() + QR_TTL_SECONDS * 1_000);
+
+    await this.qrTokens.save(this.qrTokens.create({ tokenHash, childId, expiresAt }));
+    return { token: plainToken, expiresAt };
+  }
+
+  async loginQr(plainToken: string) {
+    const tokenHash = crypto.createHash('sha256').update(plainToken).digest('hex');
+    const record    = await this.qrTokens.findOne({ where: { tokenHash } });
+
+    if (!record)           throw new UnauthorizedException('QR invalide');
+    if (record.usedAt)     throw new UnauthorizedException('QR déjà utilisé');
+    if (record.expiresAt < new Date()) throw new UnauthorizedException('QR expiré');
+
+    await this.qrTokens.update(record.id, { usedAt: new Date() });
+
+    const child = await this.children.findOne({ where: { id: record.childId }, relations: ['family'] });
+    if (!child) throw new UnauthorizedException();
+
+    const accessToken = this.jwt.sign(
+      { sub: child.id, familyId: (child.family as any).id, role: 'child' },
+      { expiresIn: '8h' },
+    );
+    return { accessToken };
   }
 
   // ── Private helpers ────────────────────────────────────────────────────────
