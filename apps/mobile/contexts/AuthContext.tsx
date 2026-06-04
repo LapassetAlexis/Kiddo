@@ -22,6 +22,7 @@ interface AuthContextType {
   loading: boolean;
   loginParent: (email: string, password: string) => Promise<void>;
   loginChild: (childId: string, pin: string) => Promise<void>;
+  loginChildQr: (token: string) => Promise<void>;
   joinFamily: (name: string, email: string, password: string, inviteCode: string) => Promise<void>;
   switchToParent: () => Promise<boolean>;
   logout: () => Promise<void>;
@@ -118,6 +119,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }
 
+  async function loginChildQr(token: string) {
+    const { accessToken } = await authApi.loginQr(token);
+    await authApi.saveToken(accessToken);
+    const payload = parseJwt(accessToken);
+    const me = await authApi.me().catch(() => null);
+    setUser({ id: payload.sub, role: 'child', familyId: payload.familyId, name: me?.name, avatar: me?.avatar, color: (me as any)?.color });
+    registerForPushNotifications().then(t => {
+      if (t) notificationsApi.registerToken(t).catch(() => null);
+    });
+  }
+
   async function joinFamily(name: string, email: string, password: string, inviteCode: string) {
     await authApi.joinFamily(name, email, password, inviteCode);
   }
@@ -159,7 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, loginParent, loginChild, joinFamily, switchToParent, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, loginParent, loginChild, loginChildQr, joinFamily, switchToParent, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

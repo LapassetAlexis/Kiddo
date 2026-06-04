@@ -102,6 +102,16 @@ export default function LoginScreen() {
               <Text style={{ color: Colors.gold, fontWeight: '900' }}>Rejoindre</Text>
             </Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.registerBtn, { borderColor: 'rgba(255,184,0,0.3)', backgroundColor: 'rgba(255,184,0,0.08)' }]}
+            onPress={() => router.push('/(auth)/child-qr-scan')}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.registerText}>
+              👋 Tu es un enfant ?{' '}
+              <Text style={{ color: Colors.gold, fontWeight: '900' }}>Scanner le QR</Text>
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
     </KeyboardAvoidingView>

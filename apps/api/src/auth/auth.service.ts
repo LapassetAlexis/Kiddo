@@ -320,9 +320,10 @@ export class AuthService {
     const child = await this.children.findOne({ where: { id: record.childId }, relations: ['family'] });
     if (!child) throw new UnauthorizedException();
 
+    // Session longue : le scan QR est réservé au téléphone personnel de l'enfant
     const accessToken = this.jwt.sign(
       { sub: child.id, familyId: (child.family as any).id, role: 'child' },
-      { expiresIn: '8h' },
+      { expiresIn: '30d' },
     );
     return { accessToken };
   }
