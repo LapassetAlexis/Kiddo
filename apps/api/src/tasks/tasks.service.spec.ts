@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ConflictException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 
 import { TasksService } from './tasks.service';
@@ -126,7 +127,7 @@ describe('TasksService', () => {
   let childRepo: jest.Mocked<Repository<Child>>;
   let em: jest.Mocked<EntityManager> & { _qb: ReturnType<typeof mockQueryBuilder> };
   let ds: jest.Mocked<DataSource>;
-  let familiesSvc: jest.Mocked<Pick<FamiliesService, 'getFamilyParentTokens' | 'getDisplayName'>>;
+  let familiesSvc: jest.Mocked<Pick<FamiliesService, 'getFamilyParentTokens' | 'getFamilyParentsForNotif' | 'getDisplayName'>>;
 
   beforeEach(async () => {
     taskRepo  = mockRepo<Task>();
@@ -137,8 +138,9 @@ describe('TasksService', () => {
     ds        = mockDataSource(em);
 
     familiesSvc = {
-      getFamilyParentTokens: jest.fn().mockResolvedValue([]),
-      getDisplayName:        jest.fn().mockResolvedValue('Alice Parent'),
+      getFamilyParentTokens:    jest.fn().mockResolvedValue([]),
+      getFamilyParentsForNotif: jest.fn().mockResolvedValue([]),
+      getDisplayName:           jest.fn().mockResolvedValue('Alice Parent'),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -150,6 +152,7 @@ describe('TasksService', () => {
         { provide: getRepositoryToken(Child),              useValue: childRepo },
         { provide: DataSource,                             useValue: ds },
         { provide: FamiliesService,                        useValue: familiesSvc },
+        { provide: JwtService,                             useValue: { sign: jest.fn().mockReturnValue('scoped-token') } },
       ],
     }).compile();
 
@@ -258,7 +261,7 @@ describe('TasksService', () => {
 
       taskRepo.findOne.mockResolvedValue(task);
       taskRepo.findOneOrFail.mockResolvedValue(updatedTask);
-      familiesSvc.getFamilyParentTokens.mockResolvedValue(['parent-fcm-token']);
+      familiesSvc.getFamilyParentsForNotif.mockResolvedValue([{ id: 'acc-1', fcmToken: 'parent-fcm-token' }]);
 
       await service.complete('task-1', 'child-1');
 
@@ -274,7 +277,7 @@ describe('TasksService', () => {
 
       taskRepo.findOne.mockResolvedValue(task);
       taskRepo.findOneOrFail.mockResolvedValue(updatedTask);
-      familiesSvc.getFamilyParentTokens.mockResolvedValue([]);
+      familiesSvc.getFamilyParentsForNotif.mockResolvedValue([]);
 
       await service.complete('task-1', 'child-1');
 
@@ -296,7 +299,7 @@ describe('TasksService', () => {
     it('throws ConflictException when concurrent complete beats us (affected=0)', async () => {
       const task = makeTask({ status: 'created' });
       taskRepo.findOne.mockResolvedValue(task);
-      familiesSvc.getFamilyParentTokens.mockResolvedValue([]);
+      familiesSvc.getFamilyParentsForNotif.mockResolvedValue([]);
       em._qb.execute.mockResolvedValue({ affected: 0 });
 
       await expect(service.complete('task-1', 'child-1')).rejects.toThrow(ConflictException);

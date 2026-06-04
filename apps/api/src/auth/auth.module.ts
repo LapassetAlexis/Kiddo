@@ -12,12 +12,13 @@ import { Child }               from '../children/child.entity';
 import { PinAttempt }          from '../children/pin-attempt.entity';
 import { EmailVerification }   from './entities/email-verification.entity';
 import { PasswordReset }       from './entities/password-reset.entity';
+import { QrToken }             from './qr-token.entity';
 
 @Module({
   imports: [
     EmailModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
-    TypeOrmModule.forFeature([Family, ParentAccount, Child, PinAttempt, EmailVerification, PasswordReset]),
+    TypeOrmModule.forFeature([Family, ParentAccount, Child, PinAttempt, EmailVerification, PasswordReset, QrToken]),
     JwtModule.registerAsync({
       imports:    [ConfigModule],
       inject:     [ConfigService],

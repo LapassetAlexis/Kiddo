@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository }  from '@nestjs/typeorm';
 import { DataSource, MoreThanOrEqual, Repository } from 'typeorm';
+import { JwtService }            from '@nestjs/jwt';
 import { Task, TaskDifficulty }  from './task.entity';
 import { Transaction }           from '../transactions/transaction.entity';
 import { NotificationIntent }    from '../notifications/notification-intent.entity';
@@ -17,6 +18,7 @@ export class TasksService {
     @InjectRepository(Child)              private children: Repository<Child>,
     private ds: DataSource,
     private familiesSvc: FamiliesService,
+    private jwtSvc: JwtService,
   ) {}
 
   private todayStart(): Date {
@@ -88,7 +90,7 @@ export class TasksService {
     }
 
     const familyId = (task.child.family as any).id as string;
-    const parentTokens = await this.familiesSvc.getFamilyParentTokens(familyId, { event: 'task' });
+    const parents  = await this.familiesSvc.getFamilyParentsForNotif(familyId, { event: 'task' });
 
     await this.ds.transaction(async em => {
       const result = await em.createQueryBuilder()
@@ -99,10 +101,18 @@ export class TasksService {
 
       if (!result.affected) throw new ConflictException('Tâche déjà soumise');
 
-      for (const fcmToken of parentTokens) {
+      for (const parent of parents) {
+        const actionToken = this.jwtSvc.sign(
+          { sub: parent.id, familyId, role: 'parent', scope: 'task:action', taskId: id },
+          { expiresIn: '24h' },
+        );
         await em.save(NotificationIntent, em.create(NotificationIntent, {
-          fcmToken,
-          payload: { title: `${task.child.name} a fait : ${task.title}`, body: 'Tape pour valider ✓', data: { taskId: id } },
+          fcmToken: parent.fcmToken,
+          payload: {
+            title: `${task.child.name} a fait : ${task.title}`,
+            body: 'Tape pour valider ✓',
+            data: { taskId: id, actionToken },
+          },
         }));
       }
     });

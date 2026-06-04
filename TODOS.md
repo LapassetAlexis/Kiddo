@@ -53,8 +53,8 @@ _Tout résolu._
 - [x] PIN lockout en PostgreSQL (pas en mémoire) : table `pin_attempts` — déjà en place
 - [x] Streak timezone : `families.timezone` field + `AT TIME ZONE :tz` dans getStreak — déjà en place
 - [x] Index PostgreSQL sur tasks/transactions/rewards/notification_intents — migration 1780300000000
-- [ ] QR code : table `qr_tokens(token_hash, child_id, expires_at, used_at)` TTL 30s one-time
-- [ ] Notification JWT scoped task (24h, approve/reject seul) : pour deep-link depuis push notif
+- [x] QR code : table `qr_tokens(token_hash, child_id, expires_at, used_at)` TTL 30s one-time — PR #17
+- [x] Notification JWT scoped task (24h, approve/reject seul) : pour deep-link depuis push notif — PR #17
 - [ ] Ledger checkpoint : table `ledger_snapshots` + cron minuit
 
 ## ✅ Fait récemment (post-v1)
