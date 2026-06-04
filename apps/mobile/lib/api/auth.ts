@@ -32,6 +32,12 @@ export const authApi = {
   joinFamily: (name: string, email: string, password: string, inviteCode: string) =>
     api.post<{ message: string; accessToken?: string }>('/auth/join-family', { name, email, password, inviteCode }, false),
 
+  generateQr: (childId: string) =>
+    api.post<{ token: string; expiresAt: string }>(`/auth/child/${childId}/qr-generate`, {}),
+
+  loginQr: (token: string) =>
+    api.post<AuthResponse>('/auth/child/qr-login', { token }, false),
+
   saveToken,
   clearToken,
 };
