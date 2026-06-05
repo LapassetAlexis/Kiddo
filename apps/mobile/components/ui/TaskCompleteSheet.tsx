@@ -5,6 +5,7 @@ import {
 import { useRef, useEffect, useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import { Colors, Radii } from '@/constants/theme';
+import { BASE_URL, getToken } from '@/lib/api-client';
 
 interface Task { id: string; name: string; gold: number; xp: number; }
 
@@ -16,16 +17,16 @@ type Props = {
 
 export default function TaskCompleteSheet({ task, onConfirm, onClose }: Props) {
   const slideAnim = useRef(new Animated.Value(500)).current;
-  const [note, setNote]         = useState('');
-  const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const [photoB64, setPhotoB64] = useState<string | null>(null);
+  const [note, setNote]           = useState('');
+  const [photoUri, setPhotoUri]   = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const visible = task !== null;
 
   useEffect(() => {
     if (visible) {
       setNote('');
       setPhotoUri(null);
-      setPhotoB64(null);
+      setUploading(false);
       Animated.spring(slideAnim, {
         toValue: 0, useNativeDriver: true, bounciness: 3,
       }).start();
@@ -42,9 +43,30 @@ export default function TaskCompleteSheet({ task, onConfirm, onClose }: Props) {
   async function confirm() {
     if (!task) return;
     Keyboard.dismiss();
+    setUploading(true);
+
+    let uploadedUrl: string | undefined;
+    if (photoUri) {
+      try {
+        const token = await getToken();
+        const formData = new FormData();
+        formData.append('file', { uri: photoUri, type: 'image/jpeg', name: 'photo.jpg' } as any);
+        const res = await fetch(`${BASE_URL}/uploads/photo`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+        if (res.ok) {
+          const data = await res.json();
+          uploadedUrl = data.url;
+        }
+      } catch {}
+    }
+
     Animated.timing(slideAnim, { toValue: 500, duration: 180, useNativeDriver: true }).start(() => {
-      onConfirm(task.id, note, photoB64 ?? undefined);
+      onConfirm(task.id, note, uploadedUrl);
     });
+    setUploading(false);
   }
 
   async function pickPhoto() {
@@ -59,12 +81,10 @@ export default function TaskCompleteSheet({ task, onConfirm, onClose }: Props) {
       allowsEditing: true,
       aspect: [4, 3],
       quality: 0.6,
-      base64: true,
     });
 
     if (!result.canceled && result.assets[0]) {
       setPhotoUri(result.assets[0].uri);
-      setPhotoB64(result.assets[0].base64 ? `data:image/jpeg;base64,${result.assets[0].base64}` : null);
     }
   }
 
@@ -76,12 +96,10 @@ export default function TaskCompleteSheet({ task, onConfirm, onClose }: Props) {
       allowsEditing: true,
       aspect: [4, 3],
       quality: 0.6,
-      base64: true,
     });
 
     if (!result.canceled && result.assets[0]) {
       setPhotoUri(result.assets[0].uri);
-      setPhotoB64(result.assets[0].base64 ? `data:image/jpeg;base64,${result.assets[0].base64}` : null);
     }
   }
 
@@ -136,7 +154,7 @@ export default function TaskCompleteSheet({ task, onConfirm, onClose }: Props) {
               {photoUri ? (
                 <View style={styles.photoPreviewWrap}>
                   <Image source={{ uri: photoUri }} style={styles.photoPreview} />
-                  <TouchableOpacity style={styles.photoRemove} onPress={() => { setPhotoUri(null); setPhotoB64(null); }}>
+                  <TouchableOpacity style={styles.photoRemove} onPress={() => setPhotoUri(null)}>
                     <Text style={styles.photoRemoveText}>✕</Text>
                   </TouchableOpacity>
                 </View>
@@ -156,8 +174,8 @@ export default function TaskCompleteSheet({ task, onConfirm, onClose }: Props) {
 
             {/* Boutons */}
             <View style={styles.actions}>
-              <TouchableOpacity style={styles.confirmBtn} onPress={confirm} activeOpacity={0.85}>
-                <Text style={styles.confirmBtnText}>C'est fait ! ✓</Text>
+              <TouchableOpacity style={[styles.confirmBtn, uploading && { opacity: 0.6 }]} onPress={confirm} activeOpacity={0.85} disabled={uploading}>
+                <Text style={styles.confirmBtnText}>{uploading ? 'Envoi en cours…' : "C'est fait ! ✓"}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.cancelBtn} onPress={close} activeOpacity={0.7}>
                 <Text style={styles.cancelBtnText}>Pas encore…</Text>
