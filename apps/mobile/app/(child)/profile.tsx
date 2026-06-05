@@ -69,7 +69,7 @@ function buildBadgeGroups(tasksCompleted: number, earnedTotal: number, spentTota
 }
 
 export default function ChildProfileScreen() {
-  const { user, switchToParent: authSwitchToParent } = useAuth();
+  const { user, canSwitchToParent, switchToParent: authSwitchToParent } = useAuth();
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
 
   const {
@@ -241,12 +241,16 @@ export default function ChildProfileScreen() {
             <Text style={styles.actionText}>Changer mon code secret</Text>
             <Text style={styles.actionArrow}>›</Text>
           </TouchableOpacity>
-          <View style={styles.actionDivider} />
-          <TouchableOpacity style={styles.actionRow} onPress={switchToParent} activeOpacity={0.7}>
-            <Text style={styles.actionIcon}>👨‍👩‍👧</Text>
-            <Text style={styles.actionText}>Espace gardien</Text>
-            <Text style={styles.actionArrow}>›</Text>
-          </TouchableOpacity>
+          {canSwitchToParent && (
+            <>
+              <View style={styles.actionDivider} />
+              <TouchableOpacity style={styles.actionRow} onPress={switchToParent} activeOpacity={0.7}>
+                <Text style={styles.actionIcon}>👨‍👩‍👧</Text>
+                <Text style={styles.actionText}>Espace gardien</Text>
+                <Text style={styles.actionArrow}>›</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
 
         <View style={{ height: 20 }} />

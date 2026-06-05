@@ -20,6 +20,7 @@ interface AuthUser {
 interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
+  canSwitchToParent: boolean;
   loginParent: (email: string, password: string) => Promise<void>;
   loginChild: (childId: string, pin: string) => Promise<void>;
   loginChildQr: (token: string) => Promise<void>;
@@ -40,8 +41,9 @@ function parseJwt(token: string): any {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser]       = useState<AuthUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser]                     = useState<AuthUser | null>(null);
+  const [loading, setLoading]               = useState(true);
+  const [canSwitchToParent, setCanSwitch]   = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -114,6 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const payload = parseJwt(accessToken);
     const me = await authApi.me().catch(() => null);
     setUser({ id: payload.sub, role: 'child', familyId: payload.familyId, name: me?.name, avatar: me?.avatar, color: (me as any)?.color });
+    setCanSwitch(!!parentToken);
     registerForPushNotifications().then(token => {
       if (token) notificationsApi.registerToken(token).catch(() => null);
     });
@@ -125,6 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const payload = parseJwt(accessToken);
     const me = await authApi.me().catch(() => null);
     setUser({ id: payload.sub, role: 'child', familyId: payload.familyId, name: me?.name, avatar: me?.avatar, color: (me as any)?.color });
+    setCanSwitch(false); // session standalone — pas de parent token
     registerForPushNotifications().then(t => {
       if (t) notificationsApi.registerToken(t).catch(() => null);
     });
@@ -140,16 +144,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const payload = parseJwt(parentToken);
     if (!payload || payload.exp * 1000 <= Date.now()) {
       await clearParentToken();
+      setCanSwitch(false);
       return false;
     }
     await saveToken(parentToken);
     await clearParentToken();
     setUser({ id: payload.sub, role: 'parent', email: payload.email, familyId: payload.familyId });
+    setCanSwitch(false);
     return true;
   }
 
   async function logout() {
     await authApi.clearToken();
+    setCanSwitch(false);
     setUser(null);
   }
 
@@ -171,7 +178,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, loginParent, loginChild, loginChildQr, joinFamily, switchToParent, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, canSwitchToParent, loginParent, loginChild, loginChildQr, joinFamily, switchToParent, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
