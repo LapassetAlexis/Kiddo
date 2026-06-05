@@ -653,7 +653,8 @@ describe('TasksService', () => {
     it('enriches tasks with completedToday from transaction count', async () => {
       const tasks = [makeTask({ id: 'task-1' })];
       taskRepo.find.mockResolvedValue(tasks);
-      (txRepo.count as jest.Mock).mockResolvedValue(2);
+      const qb = mockQbChain([{ taskId: 'task-1', count: '2' }]);
+      (txRepo.createQueryBuilder as jest.Mock).mockReturnValue(qb);
 
       const result = await service.getForChild('child-1', 'fam-1');
 
