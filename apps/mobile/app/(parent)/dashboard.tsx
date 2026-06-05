@@ -292,14 +292,6 @@ export default function ParentDashboardScreen() {
               onPress={() => router.push({ pathname: '/(auth)/child-pin', params: { name: child.name, childId: child.id, fromParent: 'true' } })}
               activeOpacity={0.8}
             >
-              <TouchableOpacity
-                style={styles.childEditBtn}
-                onPress={() => router.push({ pathname: '/(parent)/edit-child', params: { childId: child.id, childName: child.name, childEmoji: child.avatar, childColor: child.color } })}
-                hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.childEditIcon}>✏️</Text>
-              </TouchableOpacity>
               <View style={[styles.childAvatar, { backgroundColor: child.color ?? '#FFB300', shadowColor: child.color ?? '#FFB300' }]}>
                 <Text style={{ fontSize: 26 }}>{child.avatar}</Text>
               </View>
@@ -582,8 +574,6 @@ const styles = StyleSheet.create({
   pendingDot: { position: 'absolute', top: 12, right: 12, width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.orange, borderWidth: 2, borderColor: Colors.bgCard },
   childAvatar: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', shadowOpacity: 0.3, shadowRadius: 6 },
   childName:  { fontSize: 15, fontWeight: '900', color: Colors.textPrimary },
-  childEditBtn: { position: 'absolute', top: 8, right: 8, zIndex: 1 },
-  childEditIcon: { fontSize: 13, opacity: 0.5 },
   childLevelRow:       { flexDirection: 'row', alignItems: 'center', gap: 5 },
   childLevelEmoji:     { fontSize: 14 },
   childLevelBadge:     { backgroundColor: 'rgba(139,92,246,0.15)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: 'rgba(139,92,246,0.3)' },
