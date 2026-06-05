@@ -161,15 +161,37 @@ export class TasksService {
         type: 'earn', currency: 'gold', amount: task.goldReward, referenceId: id, child: task.child,
       }));
 
-      // XP reward
+      // XP reward — note = titre de la quête pour l'historique XP
       await em.save(Transaction, em.create(Transaction, {
-        type: 'earn', currency: 'xp', amount: xpReward, referenceId: id, child: task.child,
+        type: 'earn', currency: 'xp', amount: xpReward, referenceId: id, note: task.title, child: task.child,
       }));
       await em.createQueryBuilder().update(Child).set({ xp: () => `xp + ${xpReward}` }).where('id = :id', { id: task.child.id }).execute();
 
       const newLevel = getLevelFromXp(task.child.xp + xpReward);
       if (newLevel > oldLevel) {
         await em.createQueryBuilder().update(Child).set({ pendingLevelUp: newLevel }).where('id = :id', { id: task.child.id }).execute();
+      }
+
+      // Objectif de niveau — notifier les parents si atteint
+      const freshChild = await em.findOne(Child, { where: { id: task.child.id } });
+      if (freshChild?.levelGoal && newLevel >= freshChild.levelGoal) {
+        const allParentTokens = await this.familiesSvc.getFamilyParentTokens(familyId);
+        for (const fcmToken of allParentTokens) {
+          await em.save(NotificationIntent, em.create(NotificationIntent, {
+            fcmToken,
+            payload: {
+              title: `🏆 ${task.child.name} a atteint le niveau ${newLevel} !`,
+              body: freshChild.levelGoalReward
+                ? `Récompense promise : ${freshChild.levelGoalReward}`
+                : 'Objectif de niveau atteint !',
+              data: { childId: task.child.id },
+            },
+          }));
+        }
+        await em.createQueryBuilder().update(Child)
+          .set({ levelGoal: null as any, levelGoalReward: null as any })
+          .where('id = :id', { id: task.child.id })
+          .execute();
       }
 
       if (isLast && task.bonusGold > 0) {

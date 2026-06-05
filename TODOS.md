@@ -22,8 +22,8 @@
 - [x] Équipement LPC par couches : HeroSprite layers, progression par archétype (guerrier/archer/mage), badge classe avatar — PR #13
 
 ### 🔲 À faire — RPG
-- [ ] **Historique XP** : l'enfant peut voir ses transactions XP (quelle quête → combien d'XP)
-- [ ] **Objectifs de niveau** : parent peut associer une récompense automatique à un niveau cible
+- [x] **Historique XP** : filtre ⭐ XP dans l'historique, note = titre quête sur transaction XP
+- [x] **Objectifs de niveau** : parent définit niveau cible + récompense promise, notif auto à l'atteinte
 - [ ] **Shop cosmétique** : acheter des items visuels avec les pièces (avatar frames, badges) — v2
 - [ ] **Narration par classe** : quête principale différente selon classe (guerrier/mage/…) — v3
 

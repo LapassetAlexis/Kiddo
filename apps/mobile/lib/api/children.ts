@@ -18,6 +18,8 @@ export interface Child {
 
 export interface ChildStats extends Child {
   pendingLevelUp?: number | null;
+  levelGoal?: number | null;
+  levelGoalReward?: string | null;
   stats: {
     balance: number;
     totalGoldEarned: number;
@@ -54,4 +56,7 @@ export const childrenApi = {
 
   ackLevelUp: (id: string) =>
     api.post<void>(`/children/${id}/ack-levelup`, {}),
+
+  setLevelObjective: (id: string, targetLevel: number | null, rewardTitle: string | null) =>
+    api.patch<void>(`/children/${id}/level-objective`, { targetLevel, rewardTitle }),
 };
