@@ -34,10 +34,20 @@ export class TasksService {
   }
 
   private async enrichTasks(tasks: Task[]): Promise<Array<Task & { completedToday: number }>> {
-    return Promise.all(tasks.map(async task => {
-      const completedToday = await this.countTodayCompletions(task.id);
-      return Object.assign(task, { completedToday });
-    }));
+    if (!tasks.length) return [];
+    const ids = tasks.map(t => t.id);
+    const rows = await this.txs
+      .createQueryBuilder('tx')
+      .select('tx.referenceId', 'taskId')
+      .addSelect('COUNT(*)', 'count')
+      .where('tx.referenceId IN (:...ids)', { ids })
+      .andWhere('tx.type = :type', { type: 'earn' })
+      .andWhere('tx.currency = :currency', { currency: 'gold' })
+      .andWhere('tx.createdAt >= :start', { start: this.todayStart() })
+      .groupBy('tx.referenceId')
+      .getRawMany<{ taskId: string; count: string }>();
+    const countMap = new Map(rows.map(r => [r.taskId, parseInt(r.count, 10)]));
+    return tasks.map(task => Object.assign(task, { completedToday: countMap.get(task.id) ?? 0 }));
   }
 
   async getForChild(childId: string, familyId?: string) {
@@ -101,12 +111,12 @@ export class TasksService {
 
       if (!result.affected) throw new ConflictException('Tâche déjà soumise');
 
-      for (const parent of parents) {
+      await Promise.all(parents.map(parent => {
         const actionToken = this.jwtSvc.sign(
           { sub: parent.id, familyId, role: 'parent', scope: 'task:action', taskId: id },
           { expiresIn: '24h' },
         );
-        await em.save(NotificationIntent, em.create(NotificationIntent, {
+        return em.save(NotificationIntent, em.create(NotificationIntent, {
           fcmToken: parent.fcmToken,
           payload: {
             title: `${task.child.name} a fait : ${task.title}`,
@@ -114,7 +124,7 @@ export class TasksService {
             data: { taskId: id, actionToken },
           },
         }));
-      }
+      }));
     });
     return this.tasks.findOneOrFail({ where: { id } });
   }
@@ -176,8 +186,8 @@ export class TasksService {
       const freshChild = await em.findOne(Child, { where: { id: task.child.id } });
       if (freshChild?.levelGoal && newLevel >= freshChild.levelGoal) {
         const allParentTokens = await this.familiesSvc.getFamilyParentTokens(familyId);
-        for (const fcmToken of allParentTokens) {
-          await em.save(NotificationIntent, em.create(NotificationIntent, {
+        await Promise.all(allParentTokens.map(fcmToken =>
+          em.save(NotificationIntent, em.create(NotificationIntent, {
             fcmToken,
             payload: {
               title: `🏆 ${task.child.name} a atteint le niveau ${newLevel} !`,
@@ -186,8 +196,8 @@ export class TasksService {
                 : 'Objectif de niveau atteint !',
               data: { childId: task.child.id },
             },
-          }));
-        }
+          }))
+        ));
         await em.createQueryBuilder().update(Child)
           .set({ levelGoal: null as any, levelGoalReward: null as any })
           .where('id = :id', { id: task.child.id })
@@ -211,12 +221,12 @@ export class TasksService {
         }));
       }
 
-      for (const fcmToken of otherParentTokens) {
-        await em.save(NotificationIntent, em.create(NotificationIntent, {
+      await Promise.all(otherParentTokens.map(fcmToken =>
+        em.save(NotificationIntent, em.create(NotificationIntent, {
           fcmToken,
           payload: { title: `${approverName} a validé`, body: task.title, data: { taskId: id } },
-        }));
-      }
+        }))
+      ));
     });
     return this.tasks.findOneOrFail({ where: { id } });
   }
@@ -239,12 +249,12 @@ export class TasksService {
 
       if (!result.affected) throw new ConflictException('Tâche déjà traitée par l\'autre parent');
 
-      for (const fcmToken of otherParentTokens) {
-        await em.save(NotificationIntent, em.create(NotificationIntent, {
+      await Promise.all(otherParentTokens.map(fcmToken =>
+        em.save(NotificationIntent, em.create(NotificationIntent, {
           fcmToken,
           payload: { title: `${approverName} a rejeté`, body: task.title, data: { taskId: id } },
-        }));
-      }
+        }))
+      ));
 
       if (task.child.fcmToken) {
         const body = reason

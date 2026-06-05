@@ -10,6 +10,7 @@ import { childrenApi } from '@/lib/api/children';
 import { transactionsApi } from '@/lib/api/transactions';
 import { familiesApi } from '@/lib/api/families';
 import { formatName } from '@/lib/formatName';
+import { formatAgo } from '@/lib/formatters';
 import { useApiData } from '@/lib/useApiData';
 import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
 import { ApiError } from '@/lib/api-client';
@@ -17,17 +18,6 @@ import { useAuth } from '@/contexts/AuthContext';
 
 type PendingTask = { id: string; childName: string; childEmoji: string; childColor: string; taskName: string; goldReward: number; ago: string; note?: string; photoUrl?: string; timesPerDay: number; completedToday: number; bonusGold: number; };
 type RewardRequest = { id: string; childName: string; childEmoji: string; rewardName: string; emoji: string; pts: number; };
-
-function formatAgo(dateStr?: string): string {
-
-  if (!dateStr) return '';
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `il y a ${mins} min`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `il y a ${hrs}h`;
-  return `il y a ${Math.floor(hrs / 24)} j`;
-}
 
 export default function ParentDashboardScreen() {
   const { bottom } = useSafeAreaInsets();
@@ -551,8 +541,6 @@ const styles = StyleSheet.create({
   headerActions: { flexDirection: 'row', gap: 10, alignItems: 'center' },
   sub:           { fontSize: 13, fontWeight: '600', color: Colors.textDim },
   title:         { fontSize: 22, fontWeight: '900', color: Colors.textPrimary },
-  switchBtn:      { paddingHorizontal: 12, height: 36, backgroundColor: Colors.bgCard, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
-  switchBtnLabel: { fontSize: 13, fontWeight: '800', color: Colors.textPrimary },
   addBtn:        { width: 44, height: 44, backgroundColor: Colors.gold, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   addBtnText:    { fontSize: 24, fontWeight: '900', color: '#1a1000', lineHeight: 28 },
 
@@ -571,7 +559,6 @@ const styles = StyleSheet.create({
   childScroll: { paddingHorizontal: Spacing.screen, gap: 12, paddingBottom: 4 },
   childCard:   { backgroundColor: Colors.bgCard, borderRadius: 20, borderWidth: 1, borderColor: Colors.border, padding: 16, width: 150, minHeight: 160, gap: 8, marginBottom: 16, position: 'relative' },
   childCardAlert: { borderColor: 'rgba(255,184,0,0.2)' },
-  pendingDot: { position: 'absolute', top: 12, right: 12, width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.orange, borderWidth: 2, borderColor: Colors.bgCard },
   childAvatar: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', shadowOpacity: 0.3, shadowRadius: 6 },
   childName:  { fontSize: 15, fontWeight: '900', color: Colors.textPrimary },
   childLevelRow:       { flexDirection: 'row', alignItems: 'center', gap: 5 },
@@ -579,9 +566,6 @@ const styles = StyleSheet.create({
   childLevelBadge:     { backgroundColor: 'rgba(139,92,246,0.15)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: 'rgba(139,92,246,0.3)' },
   childLevelBadgeText: { fontSize: 10, fontWeight: '900', color: '#a78bfa' },
   childPts:   { fontSize: 13, fontWeight: '800', color: Colors.gold },
-  childTrack: { height: 5, borderRadius: Radii.pill, backgroundColor: 'rgba(255,255,255,0.07)', overflow: 'hidden' },
-  childFill:  { height: '100%', borderRadius: Radii.pill, backgroundColor: Colors.gold },
-  childReward:{ fontSize: 10, fontWeight: '700', color: Colors.textFaint },
   addChildCard: { backgroundColor: Colors.bgCard, borderRadius: 20, borderWidth: 1.5, borderColor: Colors.border, borderStyle: 'dashed', width: 150, minHeight: 160, alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 16, opacity: 0.5 },
   addChildText: { fontSize: 13, fontWeight: '800', color: Colors.textDim },
 

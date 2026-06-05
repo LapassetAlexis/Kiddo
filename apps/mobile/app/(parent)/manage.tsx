@@ -4,6 +4,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 import { rewardsApi } from '@/lib/api/rewards';
+import { formatHHMM } from '@/lib/formatters';
 import { useApiData } from '@/lib/useApiData';
 import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
 
@@ -19,13 +20,6 @@ interface HistoryEntry {
 interface HistorySection {
   title: string;
   data: HistoryEntry[];
-}
-
-function formatTime(dateStr?: string): string {
-
-  if (!dateStr) return '';
-  const d = new Date(dateStr);
-  return `${String(d.getHours()).padStart(2, '0')}h${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
 function groupHistoryByDate(items: any[]): HistorySection[] {
@@ -48,7 +42,7 @@ function groupHistoryByDate(items: any[]): HistorySection[] {
       childEmoji:item.childEmoji ?? item.child?.avatar ?? '👶',
       pts:       item.pts ?? item.cost ?? 0,
       status:    (item.status === 'refused' ? 'refused' : 'granted') as HistoryStatus,
-      time:      formatTime(item.createdAt),
+      time:      formatHHMM(item.createdAt),
     };
     (groups[key] = groups[key] ?? []).push(entry);
   }
