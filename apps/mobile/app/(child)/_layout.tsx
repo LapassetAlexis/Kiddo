@@ -26,11 +26,11 @@ export default function ChildLayout() {
         tabBarLabelStyle: { fontSize: 10, fontWeight: '800' },
       }}
     >
-      <Tabs.Screen name="home"    options={{ title: 'Accueil',    tabBarIcon: ({ color }) => <TabIcon emoji="🏠" color={color} /> }} />
+      <Tabs.Screen name="home"    options={{ title: 'Accueil',    tabBarIcon: ({ color }) => <TabIcon emoji="⚔️" color={color} /> }} />
       <Tabs.Screen name="rewards" options={{ title: 'Magasin',    tabBarIcon: ({ color }) => <TabIcon emoji="🛒" color={color} /> }} />
-      <Tabs.Screen name="avatar"  options={{ title: 'Héros',      tabBarIcon: ({ color }) => <TabIcon emoji="⚔️" color={color} /> }} />
       <Tabs.Screen name="history" options={{ title: 'Historique', tabBarIcon: ({ color }) => <TabIcon emoji="📊" color={color} /> }} />
       <Tabs.Screen name="profile" options={{ title: 'Profil',     tabBarIcon: ({ color }) => <TabIcon emoji={avatarEmoji} color={color} /> }} />
+      <Tabs.Screen name="avatar"  options={{ href: null }} />
     </Tabs>
   );
 }
