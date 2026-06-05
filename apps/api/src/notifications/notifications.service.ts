@@ -55,7 +55,7 @@ export class NotificationsService implements OnModuleInit {
       order: { createdAt: 'ASC' },
     });
 
-    for (const intent of pending) {
+    await Promise.all(pending.map(async intent => {
       try {
         await this.sendFcm(intent.fcmToken, intent.payload);
         await this.intents.update(intent.id, { status: 'sent', sentAt: new Date(), attempts: intent.attempts + 1 });
@@ -65,7 +65,7 @@ export class NotificationsService implements OnModuleInit {
         await this.intents.update(intent.id, { attempts, status });
         this.log.warn(`FCM attempt ${attempts} failed for intent ${intent.id}: ${err.message}`);
       }
-    }
+    }));
   }
 
   async registerChildToken(childId: string, token: string): Promise<void> {

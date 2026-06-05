@@ -17,7 +17,7 @@ import { tasksApi, Task } from '@/lib/api/tasks';
 import { transactionsApi } from '@/lib/api/transactions';
 import { rewardsApi } from '@/lib/api/rewards';
 import { childrenApi } from '@/lib/api/children';
-import { XP_BY_DIFFICULTY, getXpProgress } from '@/lib/rpg';
+import { XP_BY_DIFFICULTY, getXpProgress, type ChildClass } from '@/lib/rpg';
 import {
   getPresetById, getUnlockedChapters, getEquippedItems,
   getEquippedBehindItems, DEFAULT_PRESET,
@@ -313,7 +313,7 @@ export default function ChildHomeScreen() {
       <LevelUpModal
         visible={levelUpData !== null}
         newLevel={levelUpData?.level ?? 1}
-        childClass={(statsData?.class ?? 'warrior') as any}
+        childClass={(statsData?.class ?? 'warrior') as ChildClass}
         childName={user?.name ?? 'Aventurier'}
         onClose={dismissLevelUp}
       />

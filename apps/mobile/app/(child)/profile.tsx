@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useApiData } from '@/lib/useApiData';
 import { childrenApi } from '@/lib/api/children';
 import { transactionsApi } from '@/lib/api/transactions';
-import { getXpProgress, CLASS_LABELS, CLASS_EMOJI } from '@/lib/rpg';
+import { getXpProgress, CLASS_LABELS } from '@/lib/rpg';
 import type { ChildClass } from '@/lib/rpg';
 import HeroSprite from '@/components/HeroSprite';
 import { DEFAULT_PRESET, getPresetById, getEquippedItems } from '@/lib/character-presets';
@@ -268,8 +268,6 @@ const styles = StyleSheet.create({
   // Hero
   heroSection: { alignItems: 'center', paddingVertical: 16, gap: 10 },
   avatarWrap:   { position: 'relative', marginBottom: 4 },
-  avatarCircle: { width: 100, height: 100, borderRadius: 50, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-  avatarEmoji:  { fontSize: 56 },
   spriteContainer: { width: 120, height: 120, borderRadius: 24, borderWidth: 2, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   streakBadge: {
     position: 'absolute', bottom: -4, right: -8,

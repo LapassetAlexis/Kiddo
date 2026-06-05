@@ -14,6 +14,19 @@ import { FamiliesService } from '../families/families.service';
 
 // ── Repository mock factory ─────────────────────────────────────────────────
 
+function mockQbChain(rawMany: any[] = []) {
+  const qb: any = {};
+  const chain = () => qb;
+  qb.select         = jest.fn().mockReturnValue(qb);
+  qb.addSelect      = jest.fn().mockReturnValue(qb);
+  qb.where          = jest.fn().mockReturnValue(qb);
+  qb.andWhere       = jest.fn().mockReturnValue(qb);
+  qb.groupBy        = jest.fn().mockReturnValue(qb);
+  qb.setParameter   = jest.fn().mockReturnValue(qb);
+  qb.getRawMany     = jest.fn().mockResolvedValue(rawMany);
+  return qb;
+}
+
 function mockRepo<T extends Record<string, any>>(): jest.Mocked<Repository<T>> {
   return {
     findOne: jest.fn(),
@@ -24,6 +37,7 @@ function mockRepo<T extends Record<string, any>>(): jest.Mocked<Repository<T>> {
     update: jest.fn(),
     delete: jest.fn(),
     count: jest.fn().mockResolvedValue(0),
+    createQueryBuilder: jest.fn().mockReturnValue(mockQbChain()),
   } as unknown as jest.Mocked<Repository<T>>;
 }
 
@@ -639,7 +653,8 @@ describe('TasksService', () => {
     it('enriches tasks with completedToday from transaction count', async () => {
       const tasks = [makeTask({ id: 'task-1' })];
       taskRepo.find.mockResolvedValue(tasks);
-      (txRepo.count as jest.Mock).mockResolvedValue(2);
+      const qb = mockQbChain([{ taskId: 'task-1', count: '2' }]);
+      (txRepo.createQueryBuilder as jest.Mock).mockReturnValue(qb);
 
       const result = await service.getForChild('child-1', 'fam-1');
 
