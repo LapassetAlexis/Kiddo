@@ -22,12 +22,14 @@ import { Transaction }          from './transactions/transaction.entity';
 import { NotificationIntent }   from './notifications/notification-intent.entity';
 import { EmailVerification }    from './auth/entities/email-verification.entity';
 import { PasswordReset }        from './auth/entities/password-reset.entity';
+import { QrToken }              from './auth/qr-token.entity';
 
 const entities = [
   Family, ParentAccount, Child, PinAttempt,
   Task, Reward, Transaction,
   NotificationIntent,
   EmailVerification, PasswordReset,
+  QrToken,
 ];
 
 @Module({
