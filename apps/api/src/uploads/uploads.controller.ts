@@ -19,6 +19,7 @@ export class UploadsController {
     this.supabase = createClient(
       config.getOrThrow('SUPABASE_URL'),
       config.getOrThrow('SUPABASE_SERVICE_KEY'),
+      { auth: { autoRefreshToken: false, persistSession: false } },
     );
     this.bucket = config.get('SUPABASE_BUCKET') ?? 'task-photos';
   }

@@ -10,6 +10,7 @@ import { TasksModule }         from './tasks/tasks.module';
 import { RewardsModule }       from './rewards/rewards.module';
 import { TransactionsModule }  from './transactions/transactions.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { UploadsModule }      from './uploads/uploads.module';
 
 // Entities
 import { Family }               from './families/family.entity';
@@ -59,6 +60,7 @@ const entities = [
     RewardsModule,
     TransactionsModule,
     NotificationsModule,
+    UploadsModule,
   ],
 })
 export class AppModule {}
