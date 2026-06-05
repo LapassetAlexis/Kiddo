@@ -126,6 +126,14 @@ export class ChildrenService {
     await this.children.update(id, { pendingLevelUp: null as any });
   }
 
+  async setLevelObjective(id: string, familyId: string, targetLevel: number | null, rewardTitle: string | null): Promise<void> {
+    await this.assertOwnership(id, familyId);
+    await this.children.update(id, {
+      levelGoal:       targetLevel   as any,
+      levelGoalReward: rewardTitle   as any,
+    });
+  }
+
   private async assertOwnership(childId: string, familyId: string): Promise<Child> {
     const child = await this.children.findOne({
       where: { id: childId, family: { id: familyId } },

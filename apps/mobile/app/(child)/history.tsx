@@ -48,13 +48,14 @@ function groupTransactions(txList: Transaction[]): UISection[] {
 
   for (const tx of txList) {
     const title = getSectionTitle(tx.createdAt);
+    const isXp = tx.currency === 'xp';
     const uiTx: UITransaction = {
       id:     tx.id,
-      name:   tx.note ?? (tx.type === 'earn' ? 'Points gagnés' : 'Récompense'),
+      name:   tx.note ?? (isXp ? 'XP gagné' : tx.type === 'earn' ? 'Pièces gagnées' : 'Récompense'),
       type:   tx.type,
       amount: tx.amount,
       meta:   formatMeta(tx),
-      icon:   tx.type === 'earn' ? '✅' : '🎁',
+      icon:   isXp ? '⭐' : tx.type === 'earn' ? '✅' : '🎁',
     };
     if (!map.has(title)) map.set(title, []);
     map.get(title)!.push(uiTx);
@@ -63,7 +64,7 @@ function groupTransactions(txList: Transaction[]): UISection[] {
   return Array.from(map.entries()).map(([title, data]) => ({ title, data }));
 }
 
-type Filter = 'all' | 'earn' | 'spend';
+type Filter = 'all' | 'earn' | 'spend' | 'xp';
 
 export default function HistoryScreen() {
   const { user } = useAuth();
@@ -117,7 +118,13 @@ export default function HistoryScreen() {
 
   const filteredSections: UISection[] = ALL_SECTIONS.map(s => ({
     ...s,
-    data: s.data.filter(t => filter === 'all' || t.type === filter),
+    data: s.data.filter(t => {
+      if (filter === 'all')   return true;
+      if (filter === 'xp')    return t.icon === '⭐';
+      if (filter === 'earn')  return t.type === 'earn' && t.icon !== '⭐';
+      if (filter === 'spend') return t.type === 'spend';
+      return true;
+    }),
   })).filter(s => s.data.length > 0);
 
   return (
@@ -173,9 +180,10 @@ export default function HistoryScreen() {
             {/* Filtres */}
             <View style={styles.filterRow}>
               {([
-                { value: 'all'   as Filter, label: 'Tout'      },
-                { value: 'earn'  as Filter, label: '✅ Gagné'   },
-                { value: 'spend' as Filter, label: '🎁 Dépensé' },
+                { value: 'all'   as Filter, label: 'Tout'       },
+                { value: 'earn'  as Filter, label: '✅ 🪙'       },
+                { value: 'xp'    as Filter, label: '⭐ XP'       },
+                { value: 'spend' as Filter, label: '🎁 Dépensé'  },
               ]).map(f => (
                 <TouchableOpacity
                   key={f.value}
@@ -211,8 +219,8 @@ export default function HistoryScreen() {
                 <Text style={styles.rowName}>{item.name}</Text>
                 <Text style={styles.rowMeta}>{item.meta}</Text>
               </View>
-              <Text style={[styles.rowAmount, { color: item.type === 'earn' ? Colors.green : Colors.orange }]}>
-                {item.type === 'earn' ? '+' : '−'}{item.amount} 🪙
+              <Text style={[styles.rowAmount, { color: item.icon === '⭐' ? '#a78bfa' : item.type === 'earn' ? Colors.green : Colors.orange }]}>
+                {item.type === 'earn' ? '+' : '−'}{item.amount} {item.icon === '⭐' ? '⭐' : '🪙'}
               </Text>
             </View>
           );

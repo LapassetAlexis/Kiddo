@@ -3,6 +3,7 @@ import { api } from '../api-client';
 export interface Transaction {
   id: string;
   type: 'earn' | 'spend';
+  currency: 'gold' | 'xp';
   amount: number;
   note?: string;
   referenceId?: string;

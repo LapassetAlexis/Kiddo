@@ -21,11 +21,14 @@ export default function EditChildScreen() {
     childId: string; childName: string; childEmoji: string; childColor?: string;
   }>();
 
-  const [name,    setName]    = useState(childName ?? '');
-  const [pinMode, setPinMode] = useState(false);
-  const [newPin,  setNewPin]  = useState('');
-  const [confirm, setConfirm] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [name,           setName]           = useState(childName ?? '');
+  const [pinMode,        setPinMode]        = useState(false);
+  const [newPin,         setNewPin]         = useState('');
+  const [confirm,        setConfirm]        = useState('');
+  const [loading,        setLoading]        = useState(false);
+  const [goalLevel,      setGoalLevel]      = useState<string>('');
+  const [goalReward,     setGoalReward]     = useState<string>('');
+  const [goalLoading,    setGoalLoading]    = useState(false);
   const [qrToken,   setQrToken]   = useState<string | null>(null);
   const [qrSeconds, setQrSeconds] = useState(QR_TTL);
   const [qrLoading, setQrLoading] = useState(false);
@@ -60,7 +63,29 @@ export default function EditChildScreen() {
 
   useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
 
+  async function saveGoal() {
+    const level = parseInt(goalLevel, 10);
+    if (goalLevel && (isNaN(level) || level < 1 || level > 999)) {
+      showModal({ icon: '⚠️', title: 'Niveau invalide', message: 'Entre un niveau entre 1 et 999.' });
+      return;
+    }
+    setGoalLoading(true);
+    try {
+      await childrenApi.setLevelObjective(childId, goalLevel ? level : null, goalReward || null);
+      showModal({ icon: '✅', title: 'Objectif enregistré', message: goalLevel ? `Récompense prévue au niveau ${level}.` : 'Objectif supprimé.', buttons: [{ label: 'OK', style: 'default' }] });
+    } catch {
+      showModal({ icon: '❌', title: 'Erreur', message: 'Impossible de sauvegarder.' });
+    } finally {
+      setGoalLoading(false);
+    }
+  }
+
   const { data: statsData } = useApiData(() => childrenApi.get(childId), [childId]);
+
+  useEffect(() => {
+    if (statsData?.levelGoal)       setGoalLevel(String(statsData.levelGoal));
+    if (statsData?.levelGoalReward) setGoalReward(statsData.levelGoalReward ?? '');
+  }, [statsData]);
 
   async function save() {
     if (!name.trim()) { showModal({ icon: '✏️', title: 'Prénom requis', message: 'Entre le prénom de l\'enfant.' }); return; }
@@ -176,6 +201,37 @@ export default function EditChildScreen() {
               </View>
               <Text style={styles.actionArrow}>{qrLoading ? '…' : '›'}</Text>
             </TouchableOpacity>
+
+            <Text style={styles.sectionLabel}>Objectif de niveau</Text>
+            <View style={styles.card}>
+              <Text style={styles.goalHint}>Quand {name} atteint ce niveau, tu reçois une notification.</Text>
+              <View style={styles.goalRow}>
+                <TextInput
+                  style={[styles.goalLevelInput]}
+                  value={goalLevel}
+                  onChangeText={setGoalLevel}
+                  placeholder="Niv."
+                  placeholderTextColor={Colors.textFaint}
+                  keyboardType="number-pad"
+                  maxLength={3}
+                />
+                <TextInput
+                  style={[styles.goalRewardInput]}
+                  value={goalReward}
+                  onChangeText={setGoalReward}
+                  placeholder="Récompense promise (ex: pizza 🍕)"
+                  placeholderTextColor={Colors.textFaint}
+                />
+              </View>
+              <TouchableOpacity
+                style={[styles.goalSaveBtn, goalLoading && { opacity: 0.5 }]}
+                onPress={saveGoal}
+                disabled={goalLoading}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.goalSaveBtnText}>{goalLoading ? '…' : 'Enregistrer l\'objectif'}</Text>
+              </TouchableOpacity>
+            </View>
 
             <Text style={styles.sectionLabel}>Zone danger</Text>
             <TouchableOpacity style={styles.deleteRow} onPress={confirmDelete} activeOpacity={0.7}>
@@ -315,6 +371,13 @@ const styles = StyleSheet.create({
   keyDelete:  { backgroundColor: 'transparent', borderColor: 'transparent' },
   keyText:       { fontSize: 26, fontWeight: '800', color: Colors.textPrimary },
   keyDeleteText: { fontSize: 22, color: Colors.textDim },
+
+  goalHint:        { fontSize: 12, fontWeight: '600', color: Colors.textFaint, marginBottom: 10 },
+  goalRow:         { flexDirection: 'row', gap: 8, marginBottom: 10 },
+  goalLevelInput:  { width: 56, fontSize: 16, fontWeight: '800', color: Colors.textPrimary, borderBottomWidth: 1, borderBottomColor: Colors.border, textAlign: 'center', paddingBottom: 4 },
+  goalRewardInput: { flex: 1, fontSize: 14, fontWeight: '600', color: Colors.textPrimary, borderBottomWidth: 1, borderBottomColor: Colors.border, paddingBottom: 4 },
+  goalSaveBtn:     { backgroundColor: 'rgba(255,184,0,0.12)', borderRadius: 10, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,184,0,0.25)' },
+  goalSaveBtnText: { fontSize: 13, fontWeight: '800', color: Colors.gold },
 
   qrOverlay:     { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', alignItems: 'center', justifyContent: 'center' },
   qrSheet:       { backgroundColor: Colors.bgCard, borderRadius: 28, padding: 28, alignItems: 'center', gap: 16, marginHorizontal: 24, width: 320 },

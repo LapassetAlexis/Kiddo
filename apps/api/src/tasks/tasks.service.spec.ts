@@ -48,6 +48,7 @@ function mockEntityManager(affected = 1): jest.Mocked<EntityManager> & { _qb: Re
     update: jest.fn().mockResolvedValue(undefined),
     save:   jest.fn().mockResolvedValue({}),
     create: jest.fn().mockImplementation((_cls: any, data: any) => data),
+    findOne: jest.fn().mockResolvedValue(null),
     createQueryBuilder: jest.fn().mockReturnValue(qb),
     count: jest.fn().mockResolvedValue(0),
   } as unknown as jest.Mocked<EntityManager> & { _qb: ReturnType<typeof mockQueryBuilder> };

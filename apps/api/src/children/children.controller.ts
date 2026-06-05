@@ -80,4 +80,14 @@ export class ChildrenController {
     const resolvedId = user.role === 'child' ? user.sub : id;
     return this.svc.ackLevelUp(resolvedId, user.familyId!);
   }
+
+  @Patch(':id/level-objective')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  setLevelObjective(
+    @Param('id') id: string,
+    @Body() body: { targetLevel: number | null; rewardTitle: string | null },
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.svc.setLevelObjective(id, user.familyId!, body.targetLevel, body.rewardTitle);
+  }
 }

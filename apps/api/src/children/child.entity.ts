@@ -19,6 +19,8 @@ export class Child {
   @Column({ default: 'warrior' }) class: ChildClass;
   @Column({ nullable: true })     fcmToken: string;
   @Column({ type: 'int', nullable: true, default: null }) pendingLevelUp: number | null;
+  @Column({ type: 'int', nullable: true, default: null }) levelGoal: number | null;
+  @Column({ type: 'varchar', nullable: true, default: null }) levelGoalReward: string | null;
   @ManyToOne(() => Family, f => f.children, { onDelete: 'CASCADE' }) family: Family;
   @OneToMany(() => Task, t => t.child)         tasks: Task[];
   @OneToMany(() => Reward, r => r.family)      rewards: Reward[];
