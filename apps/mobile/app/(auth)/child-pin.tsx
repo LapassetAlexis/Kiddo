@@ -1,9 +1,13 @@
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
-import { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Modal } from 'react-native';
+import { useState, useEffect, useRef } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors, Radii } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { ApiError } from '@/lib/api-client';
+import { authApi } from '@/lib/api/auth';
+import QRCode from 'react-native-qrcode-svg';
+
+const QR_TTL = 30;
 
 export default function ChildPinScreen() {
   const { name, childId, fromParent } = useLocalSearchParams<{ name: string; childId?: string; fromParent?: string }>();
@@ -11,6 +15,60 @@ export default function ChildPinScreen() {
   const [error, setError]       = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const { loginChild }  = useAuth();
+
+  const [qrToken,      setQrToken]      = useState<string | null>(null);
+  const [qrSeconds,    setQrSeconds]    = useState(QR_TTL);
+  const [qrLoading,    setQrLoading]    = useState(false);
+  const [showQrModal,  setShowQrModal]  = useState(false);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
+
+  async function openQrModal() {
+    setShowQrModal(true);
+    setQrLoading(true);
+    try {
+      const { token } = await authApi.generateQr(childId ?? '');
+      setQrToken(token);
+      setQrSeconds(QR_TTL);
+      if (timerRef.current) clearInterval(timerRef.current);
+      timerRef.current = setInterval(() => {
+        setQrSeconds(s => {
+          if (s <= 1) { clearInterval(timerRef.current!); setQrToken(null); return QR_TTL; }
+          return s - 1;
+        });
+      }, 1000);
+    } catch {
+      setShowQrModal(false);
+    } finally {
+      setQrLoading(false);
+    }
+  }
+
+  function closeQrModal() {
+    if (timerRef.current) clearInterval(timerRef.current);
+    setQrToken(null);
+    setQrSeconds(QR_TTL);
+    setShowQrModal(false);
+  }
+
+  async function refreshQr() {
+    setQrLoading(true);
+    try {
+      const { token } = await authApi.generateQr(childId ?? '');
+      setQrToken(token);
+      setQrSeconds(QR_TTL);
+      if (timerRef.current) clearInterval(timerRef.current);
+      timerRef.current = setInterval(() => {
+        setQrSeconds(s => {
+          if (s <= 1) { clearInterval(timerRef.current!); setQrToken(null); return QR_TTL; }
+          return s - 1;
+        });
+      }, 1000);
+    } finally {
+      setQrLoading(false);
+    }
+  }
 
   function pressDigit(d: string) {
     if (pin.length >= 4 || isValidating) return;
@@ -78,6 +136,39 @@ export default function ChildPinScreen() {
       <TouchableOpacity style={styles.back} onPress={() => router.back()}>
         <Text style={styles.backText}>← Changer d'enfant</Text>
       </TouchableOpacity>
+
+      {fromParent === 'true' && (
+        <TouchableOpacity style={styles.qrBtn} onPress={openQrModal}>
+          <Text style={styles.qrBtnText}>📱 Connecter le téléphone de {name}</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Modal QR code */}
+      <Modal visible={showQrModal} transparent animationType="fade" onRequestClose={closeQrModal}>
+        <TouchableOpacity style={styles.qrOverlay} activeOpacity={1} onPress={closeQrModal}>
+          <TouchableOpacity activeOpacity={1} style={styles.qrSheet} onPress={() => {}}>
+            <Text style={styles.qrTitle}>QR code de {name}</Text>
+            <Text style={styles.qrSub}>Demande à {name} de le scanner depuis son téléphone</Text>
+            {qrToken && (
+              <View style={styles.qrBox}>
+                <QRCode value={qrToken} size={200} backgroundColor="#fff" color="#000" />
+              </View>
+            )}
+            {!qrToken && qrLoading && <ActivityIndicator size="large" color={Colors.gold} />}
+            <View style={styles.qrTimer}>
+              <Text style={[styles.qrTimerText, qrSeconds <= 5 && { color: '#EF5350' }]}>
+                Expire dans {qrSeconds}s
+              </Text>
+            </View>
+            <TouchableOpacity style={styles.qrRefreshBtn} onPress={refreshQr} disabled={qrLoading}>
+              <Text style={styles.qrRefreshText}>{qrLoading ? 'Génération…' : '🔄 Nouveau QR'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.qrCloseBtn} onPress={closeQrModal}>
+              <Text style={styles.qrCloseBtnText}>Fermer</Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -183,4 +274,30 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.textDim,
   },
+  qrBtn: {
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    backgroundColor: 'rgba(255,184,0,0.08)',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,184,0,0.25)',
+    marginTop: -8,
+  },
+  qrBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.gold,
+  },
+  qrOverlay:     { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', alignItems: 'center', justifyContent: 'center' },
+  qrSheet:       { backgroundColor: Colors.bgCard, borderRadius: 28, padding: 28, alignItems: 'center', gap: 16, marginHorizontal: 24, width: 320 },
+  qrTitle:       { fontSize: 20, fontWeight: '900', color: Colors.textPrimary, textAlign: 'center' },
+  qrSub:         { fontSize: 13, fontWeight: '600', color: Colors.textDim, textAlign: 'center', marginTop: -8 },
+  qrBox:         { backgroundColor: '#fff', padding: 16, borderRadius: 16 },
+  qrTimer:       { alignItems: 'center' },
+  qrTimerText:   { fontSize: 14, fontWeight: '800', color: Colors.textDim },
+  qrRefreshBtn:  { backgroundColor: 'rgba(255,184,0,0.12)', borderRadius: 12, paddingHorizontal: 20, paddingVertical: 10, borderWidth: 1, borderColor: 'rgba(255,184,0,0.3)' },
+  qrRefreshText: { fontSize: 14, fontWeight: '800', color: Colors.gold },
+  qrCloseBtn:    { paddingVertical: 8 },
+  qrCloseBtnText:{ fontSize: 14, fontWeight: '700', color: Colors.textFaint },
 });
