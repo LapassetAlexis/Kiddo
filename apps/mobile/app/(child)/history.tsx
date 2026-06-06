@@ -15,6 +15,7 @@ interface UITransaction {
   name: string;
   type: TxType;
   amount: number;
+  xpAmount?: number;
   meta: string;
   icon: string;
 }
@@ -44,24 +45,51 @@ function getSectionTitle(createdAt: string): string {
 }
 
 function groupTransactions(txList: Transaction[]): UISection[] {
-  const map = new Map<string, UITransaction[]>();
+  // Fusionner gold+XP du même referenceId en une seule ligne
+  const merged = new Map<string, Transaction & { xpTx?: Transaction }>();
+  const ordered: (Transaction & { xpTx?: Transaction })[] = [];
 
   for (const tx of txList) {
-    const title = getSectionTitle(tx.createdAt);
-    const isXp = tx.currency === 'xp';
-    const uiTx: UITransaction = {
-      id:     tx.id,
-      name:   tx.note ?? (isXp ? 'XP gagné' : tx.type === 'earn' ? 'Pièces gagnées' : 'Récompense'),
-      type:   tx.type,
-      amount: tx.amount,
-      meta:   formatMeta(tx),
-      icon:   isXp ? '⭐' : tx.type === 'earn' ? '✅' : '🎁',
-    };
-    if (!map.has(title)) map.set(title, []);
-    map.get(title)!.push(uiTx);
+    if (tx.referenceId && tx.type === 'earn') {
+      const key = tx.referenceId;
+      if (merged.has(key)) {
+        const existing = merged.get(key)!;
+        if (tx.currency === 'xp') existing.xpTx = tx;
+        else if (existing.currency === 'xp') {
+          // existing was XP, current is gold → swap to make gold the base
+          const newBase = { ...tx, xpTx: existing };
+          merged.set(key, newBase);
+          const idx = ordered.indexOf(existing);
+          if (idx >= 0) ordered[idx] = newBase;
+        }
+        continue;
+      }
+      merged.set(key, { ...tx });
+      ordered.push(merged.get(key)!);
+    } else {
+      ordered.push(tx as any);
+    }
   }
 
-  return Array.from(map.entries()).map(([title, data]) => ({ title, data }));
+  const sectionMap = new Map<string, UITransaction[]>();
+  for (const tx of ordered) {
+    const title = getSectionTitle(tx.createdAt);
+    const isXp  = tx.currency === 'xp' && !(tx as any).xpTx;
+    const label = tx.note ?? (isXp ? 'XP gagné' : tx.type === 'earn' ? 'Pièces gagnées' : 'Récompense');
+    const uiTx: UITransaction = {
+      id:        tx.id,
+      name:      label,
+      type:      tx.type,
+      amount:    isXp ? 0 : tx.amount,
+      xpAmount:  (tx as any).xpTx?.amount ?? (isXp ? tx.amount : undefined),
+      meta:      formatMeta(tx),
+      icon:      isXp ? '⭐' : tx.type === 'earn' ? '✅' : '🎁',
+    };
+    if (!sectionMap.has(title)) sectionMap.set(title, []);
+    sectionMap.get(title)!.push(uiTx);
+  }
+
+  return Array.from(sectionMap.entries()).map(([title, data]) => ({ title, data }));
 }
 
 type Filter = 'all' | 'earn' | 'spend' | 'xp';
@@ -120,8 +148,8 @@ export default function HistoryScreen() {
     ...s,
     data: s.data.filter(t => {
       if (filter === 'all')   return true;
-      if (filter === 'xp')    return t.icon === '⭐';
-      if (filter === 'earn')  return t.type === 'earn' && t.icon !== '⭐';
+      if (filter === 'xp')    return !!t.xpAmount;
+      if (filter === 'earn')  return t.type === 'earn';
       if (filter === 'spend') return t.type === 'spend';
       return true;
     }),
@@ -219,9 +247,18 @@ export default function HistoryScreen() {
                 <Text style={styles.rowName}>{item.name}</Text>
                 <Text style={styles.rowMeta}>{item.meta}</Text>
               </View>
-              <Text style={[styles.rowAmount, { color: item.icon === '⭐' ? '#a78bfa' : item.type === 'earn' ? Colors.green : Colors.orange }]}>
-                {item.type === 'earn' ? '+' : '−'}{item.amount} {item.icon === '⭐' ? '⭐' : '🪙'}
-              </Text>
+              <View style={{ alignItems: 'flex-end', gap: 2 }}>
+                {item.amount > 0 && (
+                  <Text style={[styles.rowAmount, { color: item.type === 'earn' ? Colors.green : Colors.orange }]}>
+                    {item.type === 'earn' ? '+' : '−'}{item.amount} 🪙
+                  </Text>
+                )}
+                {item.xpAmount ? (
+                  <Text style={[styles.rowAmount, { color: '#a78bfa', fontSize: 12 }]}>+{item.xpAmount} ⭐</Text>
+                ) : item.icon === '⭐' && item.amount > 0 ? (
+                  <Text style={[styles.rowAmount, { color: '#a78bfa' }]}>+{item.amount} ⭐</Text>
+                ) : null}
+              </View>
             </View>
           );
         }}
