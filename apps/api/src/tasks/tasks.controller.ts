@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { TasksService }     from './tasks.service';
 import { JwtAuthGuard }     from '../auth/guards/jwt-auth.guard';
 import { ScopedTaskGuard }  from '../auth/guards/scoped-task.guard';
@@ -32,6 +32,17 @@ export class TasksController {
   @UseGuards(JwtAuthGuard)
   getForChild(@Param('childId') childId: string, @CurrentUser() user: JwtPayload) {
     return this.svc.getAll(user?.familyId, childId);
+  }
+
+  @Post('exceptional')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(204)
+  async createExceptional(
+    @Body() body: { childId: string; title: string; goldReward: number; difficulty?: string },
+    @CurrentUser() user: JwtPayload,
+  ) {
+    const approverName = user.name ?? user.email ?? 'Parent';
+    return this.svc.createExceptional(body as any, user.familyId!, approverName);
   }
 
   @Post()

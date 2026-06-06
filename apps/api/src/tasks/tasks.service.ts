@@ -73,6 +73,47 @@ export class TasksService {
     return this.getAll(familyId, childId);
   }
 
+  async createExceptional(body: { childId: string; title: string; goldReward: number; difficulty?: TaskDifficulty }, familyId: string, approverName: string) {
+    const child = await this.children.findOne({ where: { id: body.childId, family: { id: familyId } }, relations: ['family'] });
+    if (!child) throw new ForbiddenException('Enfant introuvable dans cette famille');
+
+    const difficulty = body.difficulty ?? 'easy';
+    const xpReward   = XP_BY_DIFFICULTY[difficulty];
+    const oldLevel   = getLevelFromXp(child.xp);
+    const now        = new Date();
+
+    await this.ds.transaction(async em => {
+      const task = em.create(Task, {
+        title: body.title, goldReward: body.goldReward, difficulty,
+        frequency: 'once' as any, status: 'validated',
+        approvedByName: approverName, validatedAt: now, child,
+      });
+      await em.save(Task, task);
+
+      await em.save(Transaction, em.create(Transaction, {
+        type: 'earn', currency: 'gold', amount: body.goldReward,
+        referenceId: task.id, note: `⚡ ${body.title}`, child,
+      }));
+      await em.save(Transaction, em.create(Transaction, {
+        type: 'earn', currency: 'xp', amount: xpReward,
+        referenceId: task.id, note: `⚡ ${body.title}`, child,
+      }));
+      await em.createQueryBuilder().update(Child).set({ xp: () => `xp + ${xpReward}` }).where('id = :id', { id: child.id }).execute();
+
+      const newLevel = getLevelFromXp(child.xp + xpReward);
+      if (newLevel > oldLevel) {
+        await em.createQueryBuilder().update(Child).set({ pendingLevelUp: newLevel }).where('id = :id', { id: child.id }).execute();
+      }
+
+      if (child.fcmToken) {
+        await em.save(NotificationIntent, em.create(NotificationIntent, {
+          fcmToken: child.fcmToken,
+          payload: { title: '⚡ Quête exceptionnelle !', body: `+${body.goldReward}🪙 +${xpReward}⭐ pour "${body.title}"`, data: {} },
+        }));
+      }
+    });
+  }
+
   async create(body: { childId: string; title: string; goldReward: number; difficulty?: TaskDifficulty; frequency?: string; timesPerDay?: number; bonusGold?: number }, familyId: string) {
     const child = await this.children.findOne({ where: { id: body.childId, family: { id: familyId } }, relations: ['family'] })
       .then(c => { if (!c) throw new ForbiddenException('Enfant introuvable dans cette famille'); return c; });
