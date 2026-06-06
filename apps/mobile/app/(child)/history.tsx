@@ -92,7 +92,7 @@ function groupTransactions(txList: Transaction[]): UISection[] {
   return Array.from(sectionMap.entries()).map(([title, data]) => ({ title, data }));
 }
 
-type Filter = 'all' | 'earn' | 'spend' | 'xp';
+type Filter = 'all' | 'earn' | 'spend';
 
 export default function HistoryScreen() {
   const { user } = useAuth();
@@ -146,13 +146,7 @@ export default function HistoryScreen() {
 
   const filteredSections: UISection[] = ALL_SECTIONS.map(s => ({
     ...s,
-    data: s.data.filter(t => {
-      if (filter === 'all')   return true;
-      if (filter === 'xp')    return !!t.xpAmount;
-      if (filter === 'earn')  return t.type === 'earn';
-      if (filter === 'spend') return t.type === 'spend';
-      return true;
-    }),
+    data: s.data.filter(t => filter === 'all' || t.type === filter),
   })).filter(s => s.data.length > 0);
 
   return (
@@ -209,8 +203,7 @@ export default function HistoryScreen() {
             <View style={styles.filterRow}>
               {([
                 { value: 'all'   as Filter, label: 'Tout'       },
-                { value: 'earn'  as Filter, label: '✅ 🪙'       },
-                { value: 'xp'    as Filter, label: '⭐ XP'       },
+                { value: 'earn'  as Filter, label: '✅ Gagné'    },
                 { value: 'spend' as Filter, label: '🎁 Dépensé'  },
               ]).map(f => (
                 <TouchableOpacity
