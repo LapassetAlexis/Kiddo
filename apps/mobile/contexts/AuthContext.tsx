@@ -56,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               const parentToken = await getParentToken();
               const parentPayload = parentToken ? parseJwt(parentToken) : null;
               if (parentPayload && parentPayload.exp * 1000 > Date.now()) {
+                // Sous-session PIN : restaurer la session parent
                 await saveToken(parentToken!);
                 await clearParentToken();
                 const me = await authApi.me().catch(() => null);
@@ -70,8 +71,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                   inviteCode: (me as any)?.inviteCode,
                 });
               } else {
-                await clearToken();
+                // Session QR standalone ou sous-session expirée : restaurer l'enfant
                 await clearParentToken();
+                const me = await authApi.me().catch(() => null);
+                if (me) {
+                  setCanSwitch(false);
+                  setUser({ id: payload.sub, role: 'child', familyId: payload.familyId, name: me.name, avatar: me.avatar, color: (me as any)?.color });
+                } else {
+                  await clearToken();
+                }
               }
             } else {
               const me = await authApi.me().catch(() => null);
