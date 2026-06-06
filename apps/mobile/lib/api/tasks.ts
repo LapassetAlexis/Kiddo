@@ -45,6 +45,9 @@ export const tasksApi = {
     weekDay?: number; timesPerDay?: number; bonusGold?: number;
   }) => api.post<Task>('/tasks', data),
 
+  exceptional: (data: { childId: string; title: string; goldReward: number; difficulty?: TaskDifficulty }) =>
+    api.post<void>('/tasks/exceptional', data),
+
   complete: (id: string, note?: string, photoUrl?: string) =>
     api.patch<Task>(`/tasks/${id}/complete`, { note, photoUrl }),
 

@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, Animated, Pressable, Image } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, TextInput, Animated, Pressable, Image } from 'react-native';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,9 +24,15 @@ export default function ParentDashboardScreen() {
   const { user } = useAuth();
   const { data: profileData, refresh: profileRefresh } = useApiData(() => familiesApi.getMe(), []);
   const parentName = formatName(profileData?.name, profileData?.email) || 'Bonjour';
-  const [addModal, setAddModal]         = useState(false);
-  const [reviewTask, setReviewTask]     = useState<PendingTask | null>(null);
-  const [balances, setBalances]         = useState<Record<string, number>>({});
+  const [addModal, setAddModal]                 = useState(false);
+  const [reviewTask, setReviewTask]             = useState<PendingTask | null>(null);
+  const [balances, setBalances]                 = useState<Record<string, number>>({});
+  const [exceptModal, setExceptModal]           = useState(false);
+  const [exceptChildId, setExceptChildId]       = useState('');
+  const [exceptTitle, setExceptTitle]           = useState('');
+  const [exceptGold, setExceptGold]             = useState('20');
+  const [exceptDiff, setExceptDiff]             = useState<'easy'|'medium'|'hard'|'very_hard'|'legendary'>('easy');
+  const [exceptLoading, setExceptLoading]       = useState(false);
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
   const slideAnim = useRef(new Animated.Value(300)).current;
 
@@ -228,6 +234,25 @@ export default function ParentDashboardScreen() {
     });
   }
 
+  const XP_LABELS: Record<string, string> = { easy: 'Facile +10⭐', medium: 'Moyen +30⭐', hard: 'Difficile +60⭐', very_hard: 'Dur +100⭐', legendary: 'Légendaire +200⭐' };
+  const DIFFS = ['easy','medium','hard','very_hard','legendary'] as const;
+
+  async function sendExceptional() {
+    if (!exceptChildId || !exceptTitle.trim() || !exceptGold) return;
+    setExceptLoading(true);
+    try {
+      await tasksApi.exceptional({ childId: exceptChildId, title: exceptTitle.trim(), goldReward: parseInt(exceptGold, 10), difficulty: exceptDiff });
+      setExceptModal(false);
+      setExceptTitle(''); setExceptGold('20'); setExceptDiff('easy'); setExceptChildId('');
+      childrenRefresh();
+      showModal({ icon: '⚡', title: 'Quête exceptionnelle envoyée !', message: `${(childrenData ?? []).find(c => c.id === exceptChildId)?.name} reçoit ses récompenses.`, buttons: [{ label: 'Super !', style: 'default' }] });
+    } catch {
+      showModal({ icon: '❌', title: 'Erreur', message: 'Impossible d\'envoyer la quête.', buttons: [{ label: 'OK', style: 'default' }] });
+    } finally {
+      setExceptLoading(false);
+    }
+  }
+
   if (childrenLoading && !childrenData) return <LoadingScreen />;
   if (childrenError && !childrenData) return <ErrorScreen message={childrenError} onRetry={childrenRefresh} />;
 
@@ -249,6 +274,13 @@ export default function ParentDashboardScreen() {
             </View>
           </View>
           <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={styles.exceptBtn}
+              onPress={() => { setExceptChildId((childrenData ?? [])[0]?.id ?? ''); setExceptModal(true); }}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.exceptBtnText}>⚡</Text>
+            </TouchableOpacity>
             <TouchableOpacity
               style={styles.addBtn}
               onPress={openAddModal}
@@ -441,6 +473,74 @@ export default function ParentDashboardScreen() {
 
       <AppModal config={modalCfg} onHide={hideModal} />
 
+      {/* ── Modal quête exceptionnelle ── */}
+      <Modal visible={exceptModal} transparent animationType="slide" onRequestClose={() => setExceptModal(false)}>
+        <Pressable style={styles.modalOverlay} onPress={() => setExceptModal(false)}>
+          <Pressable style={[styles.reviewSheet, { paddingBottom: 36 + bottom }]} onPress={() => {}}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>⚡ Quête exceptionnelle</Text>
+
+            {/* Sélecteur enfant */}
+            <Text style={styles.fieldLabel}>Enfant</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                {(childrenData ?? []).map(child => (
+                  <TouchableOpacity
+                    key={child.id}
+                    style={[styles.childChip, exceptChildId === child.id && styles.childChipActive]}
+                    onPress={() => setExceptChildId(child.id)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={{ fontSize: 18 }}>{child.avatar}</Text>
+                    <Text style={[styles.childChipText, exceptChildId === child.id && { color: Colors.gold }]}>{child.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+
+            {/* Titre */}
+            <Text style={styles.fieldLabel}>Ce qu'il/elle a fait</Text>
+            <TextInput
+              style={styles.exceptInput}
+              placeholder="Ex : A aidé à ranger sans qu'on le demande"
+              placeholderTextColor={Colors.textFaint}
+              value={exceptTitle}
+              onChangeText={setExceptTitle}
+              maxLength={80}
+            />
+
+            {/* Pièces */}
+            <Text style={styles.fieldLabel}>Pièces d'or 🪙</Text>
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
+              {['10','20','30','50','100'].map(v => (
+                <TouchableOpacity key={v} style={[styles.goldChip, exceptGold === v && styles.goldChipActive]} onPress={() => setExceptGold(v)} activeOpacity={0.7}>
+                  <Text style={[styles.goldChipText, exceptGold === v && { color: Colors.gold }]}>{v}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Difficulté */}
+            <Text style={styles.fieldLabel}>Difficulté (XP)</Text>
+            <View style={{ gap: 6, marginBottom: 20 }}>
+              {DIFFS.map(d => (
+                <TouchableOpacity key={d} style={[styles.diffRow, exceptDiff === d && styles.diffRowActive]} onPress={() => setExceptDiff(d)} activeOpacity={0.7}>
+                  <Text style={[styles.diffText, exceptDiff === d && { color: Colors.gold }]}>{XP_LABELS[d]}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TouchableOpacity
+              style={[styles.confirmBtn, (!exceptChildId || !exceptTitle.trim() || exceptLoading) && { opacity: 0.5 }]}
+              onPress={sendExceptional}
+              disabled={!exceptChildId || !exceptTitle.trim() || exceptLoading}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.confirmBtnText}>{exceptLoading ? 'Envoi…' : '⚡ Valider la quête'}</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       {/* ── Modal review quête ── */}
       <Modal visible={!!reviewTask} transparent animationType="slide" onRequestClose={() => setReviewTask(null)}>
         <Pressable style={styles.modalOverlay} onPress={() => setReviewTask(null)}>
@@ -543,6 +643,22 @@ const styles = StyleSheet.create({
   title:         { fontSize: 22, fontWeight: '900', color: Colors.textPrimary },
   addBtn:        { width: 44, height: 44, backgroundColor: Colors.gold, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   addBtnText:    { fontSize: 24, fontWeight: '900', color: '#1a1000', lineHeight: 28 },
+  exceptBtn:     { width: 44, height: 44, backgroundColor: 'rgba(255,184,0,0.12)', borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,184,0,0.3)' },
+  exceptBtnText: { fontSize: 22 },
+
+  fieldLabel:    { fontSize: 11, fontWeight: '900', color: Colors.textFaint, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 },
+  exceptInput:   { backgroundColor: Colors.bgScreen, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, padding: 13, fontSize: 14, fontWeight: '600', color: Colors.textPrimary, marginBottom: 14 },
+  childChip:     { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: Colors.bgScreen, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, paddingHorizontal: 12, paddingVertical: 8 },
+  childChipActive: { borderColor: 'rgba(255,184,0,0.5)', backgroundColor: 'rgba(255,184,0,0.08)' },
+  childChipText: { fontSize: 13, fontWeight: '800', color: Colors.textDim },
+  goldChip:      { flex: 1, alignItems: 'center', paddingVertical: 10, backgroundColor: Colors.bgScreen, borderRadius: 10, borderWidth: 1, borderColor: Colors.border },
+  goldChipActive:{ borderColor: 'rgba(255,184,0,0.5)', backgroundColor: 'rgba(255,184,0,0.08)' },
+  goldChipText:  { fontSize: 14, fontWeight: '900', color: Colors.textDim },
+  diffRow:       { paddingHorizontal: 14, paddingVertical: 10, backgroundColor: Colors.bgScreen, borderRadius: 10, borderWidth: 1, borderColor: Colors.border },
+  diffRowActive: { borderColor: 'rgba(255,184,0,0.5)', backgroundColor: 'rgba(255,184,0,0.08)' },
+  diffText:      { fontSize: 13, fontWeight: '700', color: Colors.textDim },
+  confirmBtn:    { backgroundColor: Colors.gold, borderRadius: 14, padding: 16, alignItems: 'center' },
+  confirmBtnText:{ fontSize: 16, fontWeight: '900', color: '#1a1000' },
 
   urgentBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: Spacing.screen, marginBottom: 14, backgroundColor: 'rgba(255,107,53,0.1)', borderWidth: 1, borderColor: 'rgba(255,107,53,0.22)', borderRadius: 16, padding: 12 },
   urgentCount:  { fontSize: 14, fontWeight: '900', color: Colors.orange },
