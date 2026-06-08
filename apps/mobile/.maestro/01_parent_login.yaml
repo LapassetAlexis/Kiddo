@@ -1,0 +1,14 @@
+appId: io.kiddo.app
+name: Parent login flow
+---
+- launchApp:
+    clearState: true
+- assertVisible: "Email"
+- tapOn:
+    text: "Email"
+- inputText: ${PARENT_EMAIL:-test@kiddo.dev}
+- tapOn:
+    text: "Mot de passe"
+- inputText: ${PARENT_PASSWORD:-Test1234!}
+- tapOn: "Se connecter"
+- assertVisible: "Tableau de bord"

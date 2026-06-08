@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, JoinColumn } from 'typeorm';
 import { Family } from './family.entity';
 
 @Entity('parent_accounts')
@@ -11,6 +11,7 @@ export class ParentAccount {
   @Column({ default: true })      notifTaskSubmitted: boolean;
   @Column({ default: true })      notifRewardClaimed: boolean;
   @Column({ default: false })     notifStreakAlert: boolean;
-  @ManyToOne(() => Family, f => f.parentAccounts, { onDelete: 'CASCADE' }) family: Family;
+  @Column({ nullable: true })     familyId?: string;
+  @ManyToOne(() => Family, f => f.parentAccounts, { onDelete: 'CASCADE' }) @JoinColumn({ name: 'familyId' }) family: Family;
   @CreateDateColumn()             createdAt: Date;
 }

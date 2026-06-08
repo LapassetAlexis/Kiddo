@@ -46,7 +46,8 @@ export class ChildrenService {
       pinHash,
       family: { id: familyId } as any,
     });
-    return this.children.save(child) as Promise<Child>;
+    const saved = await this.children.save(child);
+    return withLevel(saved) as Child;
   }
 
   async findOneWithStats(id: string, familyId: string) {

@@ -1,0 +1,20 @@
+appId: io.kiddo.app
+name: Parent validates a pending task
+---
+- runFlow: 01_parent_login.yaml
+# Dismiss tours if present
+- optional:
+    - tapOn: "Suivant"
+- optional:
+    - tapOn: "Terminer"
+- assertVisible: "Tableau de bord"
+# Pending task should appear in "À VALIDER" section
+- assertVisible: "À VALIDER"
+# Tap the task card to open review modal
+- tapOn: "E2E Test Task"
+- waitForAnimationToEnd
+# Validate
+- tapOn: "✓  Valider"
+# Confirmation dialog
+- tapOn: "Valider"
+- assertVisible: "Tableau de bord"

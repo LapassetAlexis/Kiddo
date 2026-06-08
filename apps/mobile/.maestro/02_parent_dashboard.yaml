@@ -1,0 +1,21 @@
+appId: io.kiddo.app
+name: Parent dashboard navigation
+---
+- runFlow: 01_parent_login.yaml
+# Dismiss welcome tour if present
+- optional:
+    - tapOn: "Suivant"
+- optional:
+    - tapOn: "Terminer"
+# Navigate to Quêtes tab
+- tapOn: "Quêtes"
+- assertVisible: "Quêtes"
+# Navigate to Magasin tab
+- tapOn: "Magasin"
+- assertVisible: "Magasin"
+# Navigate to Paramètres tab
+- tapOn: "Paramètres"
+- assertVisible: "Paramètres"
+# Back to dashboard
+- tapOn: "Tableau de bord"
+- assertVisible: "Tableau de bord"

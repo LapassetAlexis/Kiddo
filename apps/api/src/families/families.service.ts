@@ -80,14 +80,14 @@ export class FamiliesService {
 
   async deleteAccount(accountId: string) {
     await this.repo.manager.transaction(async em => {
+      // Lock row without JOIN — FOR UPDATE cannot be applied to nullable side of outer join
       const account = await em.findOne(ParentAccount, {
         where: { id: accountId },
         lock: { mode: 'pessimistic_write' },
-        relations: ['family'],
       });
       if (!account) return;
 
-      const familyId = account.family.id;
+      const familyId = account.familyId;
       const siblingCount = await em.count(ParentAccount, { where: { family: { id: familyId } } });
 
       if (siblingCount <= 1) {
