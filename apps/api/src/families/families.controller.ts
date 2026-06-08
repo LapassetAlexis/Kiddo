@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Patch, Post, UseGuards } from '@nestjs/common';
 import { FamiliesService } from './families.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -47,6 +47,7 @@ export class FamiliesController {
   }
 
   @Post('invite-code/regenerate')
+  @HttpCode(HttpStatus.OK)
   regenerateInviteCode(@CurrentUser() user: JwtPayload) {
     return this.svc.regenerateInviteCode(user.sub);
   }

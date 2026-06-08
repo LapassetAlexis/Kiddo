@@ -1,0 +1,3 @@
+env:
+  PARENT_EMAIL: test@kiddo.dev
+  PARENT_PASSWORD: Test1234!

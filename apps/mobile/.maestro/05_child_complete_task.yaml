@@ -1,0 +1,22 @@
+appId: io.kiddo.app
+name: Child completes a task
+---
+- runFlow: 04_child_pin_login.yaml
+# Dismiss child welcome modal if present
+- optional:
+    - tapOn: "Commencer l'aventure ⚔️"
+# Dismiss tour if present
+- optional:
+    - tapOn: "Suivant"
+- optional:
+    - tapOn: "Terminer"
+- assertVisible: "Accueil"
+# Tap first available task (state = todo — it's tappable)
+- tapOn:
+    index: 0
+    text: "E2E Test Task"
+# Task complete sheet appears
+- assertVisible: "C'est fait ! ✓"
+- tapOn: "C'est fait ! ✓"
+# Task is now pending approval — back on home
+- assertVisible: "Accueil"

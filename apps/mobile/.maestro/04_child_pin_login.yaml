@@ -1,0 +1,26 @@
+appId: io.kiddo.app
+name: Child PIN login from parent dashboard
+---
+- runFlow: 01_parent_login.yaml
+# Dismiss tours if present
+- optional:
+    - tapOn: "Suivant"
+- optional:
+    - tapOn: "Terminer"
+# Tap first child card (shows child name — we target the child name label)
+# Child cards are under "MES ENFANTS" section
+- scrollTo:
+    text: "MES ENFANTS"
+- tapOn:
+    index: 0
+    text: "MES ENFANTS"
+- waitForAnimationToEnd
+# We're now on child-pin screen
+- assertVisible: "Tape ton code secret"
+# Enter 4-digit PIN (default test PIN: 1234)
+- tapOn: "1"
+- tapOn: "2"
+- tapOn: "3"
+- tapOn: "4"
+# After correct PIN, should be on child home
+- assertVisible: "Accueil"

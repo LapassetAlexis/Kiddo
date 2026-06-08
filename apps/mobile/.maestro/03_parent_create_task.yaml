@@ -1,0 +1,27 @@
+appId: io.kiddo.app
+name: Parent creates a task
+---
+- runFlow: 01_parent_login.yaml
+# Dismiss tours if present
+- optional:
+    - tapOn: "Suivant"
+- optional:
+    - tapOn: "Terminer"
+# Go to Quêtes tab
+- tapOn: "Quêtes"
+# Tap "+" or "Nouvelle quête" FAB — look for plus button in tasks screen
+- tapOn:
+    id: "btn-new-task"
+- optional:
+    # Fallback: tap any "+" visible
+    - tapOn: "+"
+- assertVisible: "Nouvelle quête"
+# Fill title
+- tapOn:
+    text: "Ex : Ranger sa chambre"
+- inputText: "E2E Test Task"
+# Select difficulty (tap Facile)
+- tapOn: "Facile"
+# Submit
+- tapOn: "Créer"
+- assertVisible: "E2E Test Task"
