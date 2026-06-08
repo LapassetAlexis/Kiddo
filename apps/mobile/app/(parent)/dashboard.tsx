@@ -725,6 +725,9 @@ const styles = StyleSheet.create({
   btnApproveLg:    { flex: 1, backgroundColor: Colors.green, borderRadius: 16, padding: 16, alignItems: 'center' },
   btnApproveLgText:{ fontSize: 15, fontWeight: '900', color: '#fff' },
 
+  sheetHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.15)', alignSelf: 'center', marginBottom: 8 },
+  sheetTitle:  { fontSize: 18, fontWeight: '900', color: Colors.textPrimary },
+
   // Modal
   modalOverlay: {
     flex: 1, backgroundColor: 'rgba(0,0,0,0.6)',

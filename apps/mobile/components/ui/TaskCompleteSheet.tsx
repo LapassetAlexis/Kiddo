@@ -1,6 +1,6 @@
 import {
   View, Text, TouchableOpacity, StyleSheet, Modal,
-  Pressable, Animated, TextInput, Keyboard, Image,
+  Pressable, Animated, TextInput, Keyboard, Image, Alert,
 } from 'react-native';
 import { useRef, useEffect, useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
@@ -59,8 +59,15 @@ export default function TaskCompleteSheet({ task, onConfirm, onClose }: Props) {
         if (res.ok) {
           const data = await res.json();
           uploadedUrl = data.url;
+        } else {
+          const body = await res.text();
+          console.error('[upload] HTTP', res.status, body);
+          Alert.alert('Erreur upload', `HTTP ${res.status}: ${body}`);
         }
-      } catch {}
+      } catch (e) {
+        console.error('[upload] fetch error', e);
+        Alert.alert('Erreur upload', String(e));
+      }
     }
 
     Animated.timing(slideAnim, { toValue: 500, duration: 180, useNativeDriver: true }).start(() => {
