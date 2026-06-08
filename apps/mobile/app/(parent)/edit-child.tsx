@@ -12,6 +12,8 @@ import { childrenApi } from '@/lib/api/children';
 import { authApi } from '@/lib/api/auth';
 import { useApiData } from '@/lib/useApiData';
 import { CLASS_LABELS, CLASS_EMOJI } from '@/lib/rpg';
+import SpotlightTour, { TourStep } from '@/components/ui/SpotlightTour';
+import { useTour } from '@/lib/useTour';
 import type { ChildClass } from '@/lib/rpg';
 
 const QR_TTL = 30;
@@ -33,6 +35,45 @@ export default function EditChildScreen() {
   const [qrSeconds, setQrSeconds] = useState(QR_TTL);
   const [qrLoading, setQrLoading] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const scrollRef  = useRef<ScrollView>(null);
+  const qrBtnRef  = useRef<any>(null);
+  const goalRef   = useRef<any>(null);
+  const { active: tourActive, finish: finishTour } = useTour('edit-child');
+  const [tourVisible, setTourVisible] = useState(false);
+
+  useEffect(() => {
+    if (tourActive) {
+      const t = setTimeout(() => {
+        if (scrollRef.current && qrBtnRef.current) {
+          qrBtnRef.current.measureLayout(
+            scrollRef.current,
+            (_x: number, y: number) => {
+              scrollRef.current?.scrollTo({ y: Math.max(0, y - 120), animated: true });
+              setTimeout(() => setTourVisible(true), 450);
+            },
+            () => setTourVisible(true),
+          );
+        } else {
+          setTourVisible(true);
+        }
+      }, 500);
+      return () => clearTimeout(t);
+    }
+  }, [tourActive]);
+
+  const TOUR_STEPS: TourStep[] = [
+    {
+      ref: qrBtnRef,
+      title: 'Connecter le téléphone 📱',
+      body: 'Génère un QR code pour lier le téléphone de ' + (childName ?? 'l\'enfant') + ' à son profil.',
+    },
+    {
+      ref: goalRef,
+      title: 'Objectif de niveau 🎁',
+      body: 'Fixe un niveau cible et une récompense promise — ' + (childName ?? 'l\'enfant') + ' sera motivé à progresser !',
+    },
+  ];
+
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
 
   function closeQr() {
@@ -152,7 +193,7 @@ export default function EditChildScreen() {
         </View>
 
         {!pinMode ? (
-          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          <ScrollView ref={scrollRef} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
 
             {/* Avatar preview */}
             <View style={styles.avatarSection}>
@@ -193,7 +234,7 @@ export default function EditChildScreen() {
               <Text style={styles.actionText}>Changer le code secret</Text>
               <Text style={styles.actionArrow}>›</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.actionRow} onPress={generateQr} activeOpacity={0.7} disabled={qrLoading}>
+            <TouchableOpacity ref={qrBtnRef} collapsable={false} style={styles.actionRow} onPress={generateQr} activeOpacity={0.7} disabled={qrLoading}>
               <Text style={styles.actionIcon}>📱</Text>
               <View style={{ flex: 1 }}>
                 <Text style={styles.actionText}>Connecter le téléphone de {name}</Text>
@@ -203,7 +244,7 @@ export default function EditChildScreen() {
             </TouchableOpacity>
 
             <Text style={styles.sectionLabel}>Objectif de niveau</Text>
-            <View style={styles.card}>
+            <View ref={goalRef} collapsable={false} style={styles.card}>
               <Text style={styles.goalHint}>Quand {name} atteint ce niveau, tu reçois une notification.</Text>
               <View style={styles.goalRow}>
                 <TextInput
@@ -288,6 +329,11 @@ export default function EditChildScreen() {
         )}
       </KeyboardAvoidingView>
       <AppModal config={modalCfg} onHide={hideModal} />
+      <SpotlightTour
+        steps={TOUR_STEPS}
+        visible={tourVisible}
+        onFinish={() => { setTourVisible(false); finishTour(); }}
+      />
 
       {/* Modal QR code */}
       <Modal visible={!!qrToken} transparent animationType="fade" onRequestClose={closeQr}>

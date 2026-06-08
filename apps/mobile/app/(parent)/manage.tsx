@@ -1,5 +1,5 @@
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SectionList } from 'react-native';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Radii, Spacing } from '@/constants/theme';
@@ -7,6 +7,8 @@ import { rewardsApi } from '@/lib/api/rewards';
 import { formatHHMM } from '@/lib/formatters';
 import { useApiData } from '@/lib/useApiData';
 import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
+import SpotlightTour, { TourStep } from '@/components/ui/SpotlightTour';
+import { useTour } from '@/lib/useTour';
 
 type Availability = 'unlimited' | 'once';
 type HistoryStatus = 'granted' | 'refused';
@@ -61,6 +63,10 @@ export default function ManageScreen() {
   const [tab, setTab]           = useState<Tab>('catalogue');
   const [childFilter, setChildFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState<'all' | HistoryStatus>('all');
+  const addBtnRef  = useRef<any>(null);
+  const tabBarRef  = useRef<any>(null);
+  const { active: tourActive, finish: finishTour } = useTour('manage');
+  const [tourVisible, setTourVisible] = useState(false);
 
   const {
     data: catalogueData,
@@ -77,6 +83,13 @@ export default function ManageScreen() {
   } = useApiData(() => rewardsApi.history(), []);
 
   useFocusEffect(useCallback(() => { catalogueRefresh(); historyRefresh(); }, []));
+
+  useEffect(() => {
+    if (tourActive && !catalogueLoading) {
+      const t = setTimeout(() => setTourVisible(true), 500);
+      return () => clearTimeout(t);
+    }
+  }, [tourActive, catalogueLoading]);
 
   const rewards = (catalogueData ?? []).filter(r => r.status === 'available');
   const historySections: HistorySection[] = groupHistoryByDate(historyRaw ?? []);
@@ -116,17 +129,19 @@ export default function ManageScreen() {
     <SafeAreaView style={styles.root} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.title}>Magasin 🛒</Text>
-        <TouchableOpacity
-          style={styles.addBtn}
-          onPress={() => router.push('/(parent)/create-reward')}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.addBtnText}>+</Text>
-        </TouchableOpacity>
+        <View ref={addBtnRef} collapsable={false}>
+          <TouchableOpacity
+            style={styles.addBtn}
+            onPress={() => router.push('/(parent)/create-reward')}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.addBtnText}>+</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Onglets */}
-      <View style={styles.tabs}>
+      <View ref={tabBarRef} style={styles.tabs}>
         {(['catalogue', 'historique'] as Tab[]).map(t => (
           <TouchableOpacity
             key={t}
@@ -273,6 +288,15 @@ export default function ManageScreen() {
           )}
         </View>
       )}
+
+      <SpotlightTour
+        visible={tourVisible}
+        onFinish={() => { setTourVisible(false); finishTour(); }}
+        steps={[
+          { ref: addBtnRef, title: 'Créer une récompense',       body: 'Ajoute une récompense que tes enfants pourront acheter avec leur or accumulé.' },
+          { ref: tabBarRef, title: 'Catalogue & historique 🛒',   body: 'Le catalogue liste tes récompenses actives. L\'historique trace toutes les transactions.' },
+        ] satisfies TourStep[]}
+      />
     </SafeAreaView>
   );
 }

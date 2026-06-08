@@ -1,11 +1,13 @@
 import { View, Text, SectionList, TouchableOpacity, StyleSheet } from 'react-native';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 import { tasksApi, Task } from '@/lib/api/tasks';
 import { useApiData } from '@/lib/useApiData';
 import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
+import SpotlightTour, { TourStep } from '@/components/ui/SpotlightTour';
+import { useTour } from '@/lib/useTour';
 
 type TaskStatus = 'validated' | 'rejected' | 'pending' | 'partial';
 
@@ -91,6 +93,10 @@ const FILTERS: { value: Filter; label: string }[] = [
 export default function TasksScreen() {
   const [filter, setFilter] = useState<Filter>('all');
   const [childFilter, setChildFilter] = useState<string>('all');
+  const addBtnRef  = useRef<any>(null);
+  const statsRef   = useRef<any>(null);
+  const { active: tourActive, finish: finishTour } = useTour('tasks');
+  const [tourVisible, setTourVisible] = useState(false);
 
   const { data: historyData, loading, error, refresh } = useApiData(
     () => tasksApi.history(),
@@ -98,6 +104,13 @@ export default function TasksScreen() {
   );
 
   useFocusEffect(useCallback(() => { refresh(); }, []));
+
+  useEffect(() => {
+    if (tourActive && !loading && (historyData ?? []).length > 0) {
+      const t = setTimeout(() => setTourVisible(true), 500);
+      return () => clearTimeout(t);
+    }
+  }, [tourActive, loading, (historyData ?? []).length]);
 
   const allTasks = historyData ?? [];
   const allSections = groupTasksByDate(allTasks);
@@ -134,17 +147,19 @@ export default function TasksScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Quêtes ⚔️</Text>
-        <TouchableOpacity
-          style={styles.addBtn}
-          onPress={() => router.push('/(parent)/create-task')}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.addBtnText}>+</Text>
-        </TouchableOpacity>
+        <View ref={addBtnRef} collapsable={false}>
+          <TouchableOpacity
+            style={styles.addBtn}
+            onPress={() => router.push('/(parent)/create-task')}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.addBtnText}>+</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Stats */}
-      <View style={styles.statsRow}>
+      <View ref={statsRef} style={styles.statsRow}>
         <View style={styles.statCard}>
           <Text style={[styles.statValue, { color: Colors.green }]}>{totalValidated}</Text>
           <Text style={styles.statLabel}>Validées</Text>
@@ -194,10 +209,22 @@ export default function TasksScreen() {
 
       {/* Liste */}
       {filteredSections.length === 0 ? (
-        <View style={styles.empty}>
-          <Text style={styles.emptyEmoji}>🔍</Text>
-          <Text style={styles.emptyText}>Aucune quête pour ce filtre</Text>
-        </View>
+        allTasks.length === 0 ? (
+          <View style={styles.empty}>
+            <Text style={styles.emptyEmoji}>⚔️</Text>
+            <Text style={styles.emptyTitle}>Pas encore de quêtes</Text>
+            <Text style={styles.emptySub}>Crée des quêtes pour tes enfants depuis le dashboard et suis leur progression ici.</Text>
+            <TouchableOpacity style={styles.emptyBtn} onPress={() => router.push('/(parent)/create-task')} activeOpacity={0.85}>
+              <Text style={styles.emptyBtnText}>Créer une quête</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.empty}>
+            <Text style={styles.emptyEmoji}>🔍</Text>
+            <Text style={styles.emptyTitle}>Aucun résultat</Text>
+            <Text style={styles.emptySub}>Aucune quête ne correspond à ce filtre.</Text>
+          </View>
+        )
       ) : (
         <SectionList
           sections={filteredSections}
@@ -250,6 +277,15 @@ export default function TasksScreen() {
           }}
         />
       )}
+
+      <SpotlightTour
+        visible={tourVisible}
+        onFinish={() => { setTourVisible(false); finishTour(); }}
+        steps={[
+          { ref: addBtnRef, title: 'Créer une quête',  body: 'Ajoute une quête quotidienne, hebdomadaire ou unique pour tes enfants.' },
+          { ref: statsRef,  title: 'Statistiques ⚔️',  body: 'Nombre de quêtes validées, en attente et or total distribué à ta famille.' },
+        ] satisfies TourStep[]}
+      />
     </SafeAreaView>
   );
 }
@@ -333,7 +369,10 @@ const styles = StyleSheet.create({
   },
   statusText: { fontSize: 10, fontWeight: '900' },
 
-  empty:      { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
-  emptyEmoji: { fontSize: 44 },
-  emptyText:  { fontSize: 15, fontWeight: '800', color: Colors.textDim },
+  empty:      { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, padding: 32 },
+  emptyEmoji: { fontSize: 48 },
+  emptyTitle: { fontSize: 17, fontWeight: '900', color: Colors.textPrimary, textAlign: 'center' },
+  emptySub:   { fontSize: 13, fontWeight: '600', color: Colors.textDim, textAlign: 'center', lineHeight: 20, maxWidth: 260 },
+  emptyBtn:   { backgroundColor: Colors.gold, borderRadius: Radii.md, paddingHorizontal: 22, paddingVertical: 12, marginTop: 4 },
+  emptyBtnText:{ fontSize: 14, fontWeight: '900', color: '#1a1000' },
 });

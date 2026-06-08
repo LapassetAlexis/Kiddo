@@ -1,7 +1,8 @@
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, Switch, Share,
 } from 'react-native';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { transactionsApi } from '@/lib/api/transactions';
 import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,6 +15,8 @@ import { formatName } from '@/lib/formatName';
 import { useApiData } from '@/lib/useApiData';
 import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
 import * as Clipboard from 'expo-clipboard';
+import SpotlightTour, { TourStep } from '@/components/ui/SpotlightTour';
+import { useTour } from '@/lib/useTour';
 
 export default function SettingsScreen() {
   const [notifTask,      setNotifTask]      = useState(true);
@@ -23,6 +26,45 @@ export default function SettingsScreen() {
   const [childBalances,  setChildBalances]  = useState<Record<string, number>>({});
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
   const { logout, user } = useAuth();
+
+  const scrollRef  = useRef<ScrollView>(null);
+  const inviteRef = useRef<any>(null);
+  const notifRef  = useRef<any>(null);
+  const { active: tourActive, finish: finishTour } = useTour('settings');
+  const [tourVisible, setTourVisible] = useState(false);
+
+  useEffect(() => {
+    if (tourActive) {
+      const t = setTimeout(() => {
+        if (scrollRef.current && inviteRef.current) {
+          inviteRef.current.measureLayout(
+            scrollRef.current,
+            (_x: number, y: number) => {
+              scrollRef.current?.scrollTo({ y: Math.max(0, y - 120), animated: true });
+              setTimeout(() => setTourVisible(true), 450);
+            },
+            () => setTourVisible(true),
+          );
+        } else {
+          setTourVisible(true);
+        }
+      }, 500);
+      return () => clearTimeout(t);
+    }
+  }, [tourActive]);
+
+  const TOUR_STEPS: TourStep[] = [
+    {
+      ref: inviteRef,
+      title: 'Code famille 🏠',
+      body: 'Partage ce code pour inviter un autre gardien — il aura les mêmes droits que toi.',
+    },
+    {
+      ref: notifRef,
+      title: 'Notifications 🔔',
+      body: 'Personnalise les alertes : quêtes soumises, récompenses réclamées, série en danger.',
+    },
+  ];
 
   const { data: profileData, refresh: profileRefresh } = useApiData(() => familiesApi.getMe(), []);
   const { data: parentsData, refresh: parentsRefresh } = useApiData(() => familiesApi.listParents(), []);
@@ -116,7 +158,7 @@ export default function SettingsScreen() {
         <Text style={styles.title}>Paramètres ⚙️</Text>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+      <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
 
         {/* Profil parent */}
         <Text style={styles.sectionLabel}>Mon profil</Text>
@@ -214,7 +256,7 @@ export default function SettingsScreen() {
         {/* Invitation */}
         <Text style={styles.sectionLabel}>Invitation</Text>
         <View style={styles.card}>
-          <View style={styles.inviteBlock}>
+          <View ref={inviteRef} collapsable={false} style={styles.inviteBlock}>
             <Text style={styles.inviteTitle}>Inviter un gardien</Text>
             <Text style={styles.inviteDesc}>Partage ce code pour qu'un autre gardien rejoigne ta famille avec les mêmes droits.</Text>
             <View style={styles.codeBox}>
@@ -251,7 +293,7 @@ export default function SettingsScreen() {
 
         {/* Notifications */}
         <Text style={styles.sectionLabel}>Notifications</Text>
-        <View style={styles.card}>
+        <View ref={notifRef} collapsable={false} style={styles.card}>
           <ToggleRow
             label="Quête soumise"
             desc="Quand un enfant marque une quête comme faite"
@@ -303,6 +345,19 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Dev — TODO: supprimer avant prod */}
+        <Text style={styles.sectionLabel}>Dev</Text>
+        <View style={styles.card}>
+          <TouchableOpacity
+            style={styles.linkRow}
+            onPress={() => AsyncStorage.multiRemove(['@kiddo:tour:dashboard', '@kiddo:tour:dashboard-validate', '@kiddo:tour:dashboard-child-login', '@kiddo:tour:tasks', '@kiddo:tour:manage', '@kiddo:tour:child-home', '@kiddo:tour:child-rewards', '@kiddo:onboarding:done', '@kiddo:tour:settings', '@kiddo:tour:edit-child']).then(() => alert("Tours et checklist réinitialisés — recharge le dashboard"))}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.linkText, { color: Colors.gold }]}>🔄 Réinitialiser le tour guidé</Text>
+            <Text style={styles.linkArrow}>›</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Compte */}
         <Text style={styles.sectionLabel}>Compte</Text>
         <View style={styles.card}>
@@ -321,6 +376,11 @@ export default function SettingsScreen() {
       </ScrollView>
 
       <AppModal config={modalCfg} onHide={hideModal} />
+      <SpotlightTour
+        steps={TOUR_STEPS}
+        visible={tourVisible}
+        onFinish={() => { setTourVisible(false); finishTour(); }}
+      />
     </SafeAreaView>
   );
 }

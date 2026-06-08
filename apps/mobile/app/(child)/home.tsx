@@ -2,7 +2,11 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   Animated, Image, useWindowDimensions,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRef, useState, useCallback, useEffect } from 'react';
+import SpotlightTour, { TourStep } from '@/components/ui/SpotlightTour';
+import { useTour } from '@/lib/useTour';
+import ChildWelcomeModal from '@/components/ui/ChildWelcomeModal';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Easing } from 'react-native';
@@ -126,6 +130,26 @@ export default function ChildHomeScreen() {
     if (statsData?.pendingLevelUp) setLevelUpData({ level: statsData.pendingLevelUp });
   }, [statsData?.pendingLevelUp]);
 
+  const goldChipRef    = useRef<any>(null);
+  const questSectionRef = useRef<any>(null);
+  const { active: tourActive, finish: finishTour } = useTour('child-home');
+  const [tourVisible, setTourVisible] = useState(false);
+  const [welcomeReady, setWelcomeReady] = useState(false);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    AsyncStorage.getItem(`@kiddo:welcome:${user.id}`).then(v => {
+      if (v) setWelcomeReady(true);
+    });
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (tourActive && welcomeReady && !tasksLoading && !balanceLoading && !streakLoading) {
+      const t = setTimeout(() => setTourVisible(true), 500);
+      return () => clearTimeout(t);
+    }
+  }, [tourActive, welcomeReady, tasksLoading, balanceLoading, streakLoading]);
+
   const [selectedTask, setSelectedTask] = useState<UITask | null>(null);
   const [levelUpData, setLevelUpData]   = useState<{ level: number } | null>(null);
   const ptsAnim = useRef(new Animated.Value(1)).current;
@@ -193,7 +217,7 @@ export default function ChildHomeScreen() {
               <Text style={styles.namePillText}>{user?.name ?? 'Aventurier'}</Text>
             </View>
             <View style={{ flex: 1 }} />
-            <View style={styles.goldChip}>
+            <View ref={goldChipRef} collapsable={false} style={styles.goldChip}>
               <Animated.Text style={[styles.goldChipText, { transform: [{ scale: ptsAnim }] }]}>🪙 {gold}</Animated.Text>
             </View>
           </View>
@@ -228,15 +252,16 @@ export default function ChildHomeScreen() {
         )}
 
         {/* ── Quêtes ── */}
-        <View style={styles.sectionHeader}>
+        <View ref={questSectionRef} collapsable={false} style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>QUÊTES DU JOUR</Text>
           <Text style={styles.sectionCount}>{doneCount}/{tasks.length}</Text>
         </View>
 
         {tasks.length === 0 && (
           <View style={styles.emptyTasks}>
-            <Text style={styles.emptyTasksTitle}>Aucune quête pour l'instant !</Text>
-            <Text style={styles.emptyTasksSub}>Ton gardien va bientôt te confier des aventures. ⚔️</Text>
+            <Text style={styles.emptyTasksIcon}>🏕️</Text>
+            <Text style={styles.emptyTasksTitle}>Pas encore de mission !</Text>
+            <Text style={styles.emptyTasksSub}>Ton gardien va bientôt te confier une aventure.{'\n'}Reviens vite ! ⚔️</Text>
           </View>
         )}
 
@@ -317,6 +342,20 @@ export default function ChildHomeScreen() {
         childName={user?.name ?? 'Aventurier'}
         onClose={dismissLevelUp}
       />
+      <SpotlightTour
+        visible={tourVisible}
+        onFinish={() => { setTourVisible(false); finishTour(); }}
+        steps={[
+          { ref: goldChipRef,    title: 'Ton or 🪙',     body: "Tu gagnes de l'or en faisant tes quêtes ! Dépense-le au Magasin 🛒" },
+          { ref: questSectionRef, title: 'Tes quêtes ⚔️', body: "Appuie sur une quête pour dire à ton gardien que tu l'as faite !" },
+        ] satisfies TourStep[]}
+      />
+      <ChildWelcomeModal
+        userId={user?.id ?? ''}
+        name={user?.name ?? 'Aventurier'}
+        avatar={user?.avatar ?? '🧒'}
+        onDismiss={() => setWelcomeReady(true)}
+      />
     </SafeAreaView>
   );
 }
@@ -362,9 +401,10 @@ const styles = StyleSheet.create({
   sectionCount:  { fontSize: 12, fontWeight: '700', color: Colors.textFaint },
 
   // ── Tasks ─────────────────────────────────────────────────────────────────
-  emptyTasks:    { alignItems: 'center', marginHorizontal: Spacing.screen, marginTop: 4, marginBottom: 12, padding: 24, backgroundColor: Colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: Colors.border, gap: 6 },
-  emptyTasksTitle:{ fontSize: 15, fontWeight: '900', color: Colors.textPrimary, textAlign: 'center' },
-  emptyTasksSub: { fontSize: 12, fontWeight: '600', color: Colors.textDim, textAlign: 'center' },
+  emptyTasks:    { alignItems: 'center', marginHorizontal: Spacing.screen, marginTop: 4, marginBottom: 12, padding: 28, backgroundColor: Colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: Colors.border, gap: 8 },
+  emptyTasksIcon:{ fontSize: 40 },
+  emptyTasksTitle:{ fontSize: 16, fontWeight: '900', color: Colors.textPrimary, textAlign: 'center' },
+  emptyTasksSub: { fontSize: 13, fontWeight: '600', color: Colors.textDim, textAlign: 'center', lineHeight: 20 },
 
   taskCard:    { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: Spacing.screen, marginBottom: 10, backgroundColor: Colors.bgCard, borderRadius: Radii.card, padding: 14, borderWidth: 1, borderColor: Colors.border, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 8 },
   taskDone:    { backgroundColor: Colors.bgCardDone,    borderColor: 'rgba(76,175,80,0.2)' },
