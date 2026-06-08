@@ -12,11 +12,17 @@
     },
     "preview": {
       "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://kiddo-api-f1ip.onrender.com/api"
+      },
       "android": {
         "buildType": "apk"
       }
     },
     "production": {
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://kiddo-api-f1ip.onrender.com/api"
+      },
       "android": {
         "buildType": "app-bundle"
       }
