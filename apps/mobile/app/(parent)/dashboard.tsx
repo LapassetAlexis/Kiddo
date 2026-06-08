@@ -15,6 +15,9 @@ import { useApiData } from '@/lib/useApiData';
 import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
 import { ApiError } from '@/lib/api-client';
 import { useAuth } from '@/contexts/AuthContext';
+import SpotlightTour, { TourStep } from '@/components/ui/SpotlightTour';
+import { useTour } from '@/lib/useTour';
+import OnboardingChecklist from '@/components/ui/OnboardingChecklist';
 
 type PendingTask = { id: string; childName: string; childEmoji: string; childColor: string; taskName: string; goldReward: number; ago: string; note?: string; photoUrl?: string; timesPerDay: number; completedToday: number; bonusGold: number; };
 type RewardRequest = { id: string; childName: string; childEmoji: string; rewardName: string; emoji: string; pts: number; };
@@ -35,6 +38,20 @@ export default function ParentDashboardScreen() {
   const [exceptLoading, setExceptLoading]       = useState(false);
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
   const slideAnim = useRef(new Animated.Value(300)).current;
+  const scrollRef        = useRef<ScrollView>(null);
+  const addBtnRef        = useRef<any>(null);
+  const exceptBtnRef     = useRef<any>(null);
+  const pendingSecRef    = useRef<any>(null);
+  const firstPendingRef  = useRef<any>(null);
+  const firstChildRef    = useRef<any>(null);
+
+  const { active: tourActive,         finish: finishTour }         = useTour('dashboard');
+  const { active: validateTourActive, finish: finishValidateTour } = useTour('dashboard-validate');
+  const { active: childLoginActive,   finish: finishChildLogin }   = useTour('dashboard-child-login');
+
+  const [tourVisible,        setTourVisible]        = useState(false);
+  const [validateTourVisible, setValidateTourVisible] = useState(false);
+  const [childLoginVisible,  setChildLoginVisible]  = useState(false);
 
   const {
     data: childrenData,
@@ -72,6 +89,53 @@ export default function ParentDashboardScreen() {
   }
 
   useEffect(() => { refreshBalances(childrenData); }, [childrenData]);
+
+  useEffect(() => {
+    if (tourActive && !childrenLoading) {
+      const t = setTimeout(() => setTourVisible(true), 500);
+      return () => clearTimeout(t);
+    }
+  }, [tourActive, childrenLoading]);
+
+  useEffect(() => {
+    if (validateTourActive && !tourActive && !tourVisible && (pendingData ?? []).length > 0) {
+      const t = setTimeout(() => {
+        if (scrollRef.current && firstPendingRef.current) {
+          firstPendingRef.current.measureLayout(
+            scrollRef.current,
+            (_x: number, y: number) => {
+              scrollRef.current?.scrollTo({ y: Math.max(0, y - 120), animated: true });
+              setTimeout(() => setValidateTourVisible(true), 450);
+            },
+            () => setValidateTourVisible(true),
+          );
+        } else {
+          setValidateTourVisible(true);
+        }
+      }, 600);
+      return () => clearTimeout(t);
+    }
+  }, [validateTourActive, tourActive, tourVisible, pendingData]);
+
+  useEffect(() => {
+    if (childLoginActive && !tourActive && !tourVisible && !validateTourActive && !validateTourVisible && (childrenData ?? []).length > 0 && !childrenLoading) {
+      const t = setTimeout(() => {
+        if (scrollRef.current && firstChildRef.current) {
+          firstChildRef.current.measureLayout(
+            scrollRef.current,
+            (_x: number, y: number) => {
+              scrollRef.current?.scrollTo({ y: Math.max(0, y - 120), animated: true });
+              setTimeout(() => setChildLoginVisible(true), 450);
+            },
+            () => setChildLoginVisible(true),
+          );
+        } else {
+          setChildLoginVisible(true);
+        }
+      }, 600);
+      return () => clearTimeout(t);
+    }
+  }, [childLoginActive, tourActive, tourVisible, validateTourActive, validateTourVisible, childrenLoading, (childrenData ?? []).length]);
 
   // Refresh toutes les données quand l'écran revient au premier plan
   useFocusEffect(useCallback(() => {
@@ -258,7 +322,7 @@ export default function ParentDashboardScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false}>
 
         {/* Header */}
         <View style={styles.header}>
@@ -274,20 +338,24 @@ export default function ParentDashboardScreen() {
             </View>
           </View>
           <View style={styles.headerActions}>
-            <TouchableOpacity
-              style={styles.exceptBtn}
-              onPress={() => { setExceptChildId((childrenData ?? [])[0]?.id ?? ''); setExceptModal(true); }}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.exceptBtnText}>⚡</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.addBtn}
-              onPress={openAddModal}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.addBtnText}>+</Text>
-            </TouchableOpacity>
+            <View ref={exceptBtnRef} collapsable={false}>
+              <TouchableOpacity
+                style={styles.exceptBtn}
+                onPress={() => { setExceptChildId((childrenData ?? [])[0]?.id ?? ''); setExceptModal(true); }}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.exceptBtnText}>⚡</Text>
+              </TouchableOpacity>
+            </View>
+            <View ref={addBtnRef} collapsable={false}>
+              <TouchableOpacity
+                style={styles.addBtn}
+                onPress={openAddModal}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.addBtnText}>+</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
@@ -302,14 +370,17 @@ export default function ParentDashboardScreen() {
           </View>
         )}
 
+        {/* Onboarding checklist */}
+        <OnboardingChecklist childrenCount={(childrenData ?? []).length} />
+
         {/* Children */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>MES ENFANTS</Text>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.childScroll}>
-          {(childrenData ?? []).map((child) => (
+          {(childrenData ?? []).map((child, i) => (
+            <View key={child.id} ref={i === 0 ? firstChildRef : undefined} collapsable={false}>
             <TouchableOpacity
-              key={child.id}
               style={[styles.childCard, styles.childCardAlert]}
               onPress={() => router.push({ pathname: '/(auth)/child-pin', params: { name: child.name, childId: child.id, fromParent: 'true' } })}
               activeOpacity={0.8}
@@ -326,6 +397,7 @@ export default function ParentDashboardScreen() {
               </View>
               <Text style={styles.childPts}>🪙 {balances[child.id] ?? 0}</Text>
             </TouchableOpacity>
+            </View>
           ))}
           <TouchableOpacity
             style={styles.addChildCard}
@@ -386,7 +458,7 @@ export default function ParentDashboardScreen() {
         )}
 
         {/* Pending validations */}
-        <View style={[styles.sectionHeader, { marginTop: 28 }]}>
+        <View ref={pendingSecRef} style={[styles.sectionHeader, { marginTop: 28 }]}>
           <Text style={styles.sectionTitle}>À VALIDER</Text>
           {pending.length > 0 && <Text style={styles.pendingCount}>{pending.length}</Text>}
         </View>
@@ -406,8 +478,9 @@ export default function ParentDashboardScreen() {
           </View>
         ) : (
           <View style={styles.list}>
-            {pending.map(task => (
-              <TouchableOpacity key={task.id} style={styles.pendingCard} onPress={() => setReviewTask(task)} activeOpacity={0.8}>
+            {pending.map((task, i) => (
+              <View key={task.id} ref={i === 0 ? firstPendingRef : undefined} collapsable={false}>
+              <TouchableOpacity style={styles.pendingCard} onPress={() => setReviewTask(task)} activeOpacity={0.8}>
                 <View style={[styles.childAvatarSm, { backgroundColor: task.childColor }]}><Text style={{ fontSize: 18 }}>{task.childEmoji}</Text></View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.pendingTask}>{task.taskName}</Text>
@@ -421,6 +494,7 @@ export default function ParentDashboardScreen() {
                 <View style={styles.ptsBadge}><Text style={styles.ptsBadgeText}>+{task.goldReward} 🪙</Text></View>
                 <Text style={{ fontSize: 16, color: Colors.textFaint }}>›</Text>
               </TouchableOpacity>
+              </View>
             ))}
           </View>
         )}
@@ -628,6 +702,29 @@ export default function ParentDashboardScreen() {
           </Animated.View>
         </Pressable>
       </Modal>
+
+      <SpotlightTour
+        visible={tourVisible}
+        onFinish={() => { setTourVisible(false); finishTour(); }}
+        steps={[
+          { ref: addBtnRef,    title: 'Créer quêtes et récompenses', body: 'Appuie sur + pour créer une nouvelle quête ou une récompense pour tes héros.' },
+          { ref: exceptBtnRef, title: 'Quête exceptionnelle ⚡',       body: 'Récompense ton enfant sur-le-champ pour un effort remarquable, sans quête préalable.' },
+        ] satisfies TourStep[]}
+      />
+      <SpotlightTour
+        visible={validateTourVisible}
+        onFinish={() => { setValidateTourVisible(false); finishValidateTour(); }}
+        steps={[
+          { ref: firstPendingRef, title: 'Valider les quêtes ✅', body: "Appuie sur cette carte pour approuver ou rejeter la quête de ton enfant !" },
+        ] satisfies TourStep[]}
+      />
+      <SpotlightTour
+        visible={childLoginVisible}
+        onFinish={() => { setChildLoginVisible(false); finishChildLogin(); }}
+        steps={[
+          { ref: firstChildRef, title: "Espace enfant 👶", body: "Appuie sur le prénom d'un enfant pour te connecter à sa place et voir son aventure !" },
+        ] satisfies TourStep[]}
+      />
     </SafeAreaView>
   );
 }

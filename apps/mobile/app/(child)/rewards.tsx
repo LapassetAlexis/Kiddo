@@ -1,5 +1,7 @@
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import SpotlightTour, { TourStep } from '@/components/ui/SpotlightTour';
+import { useTour } from '@/lib/useTour';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
@@ -24,6 +26,12 @@ export default function RewardsScreen() {
   const [filter, setFilter] = useState<Filter>('all');
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
 
+  const scrollRef  = useRef<ScrollView>(null);
+  const ptsPillRef = useRef<any>(null);
+  const filterRef  = useRef<any>(null);
+  const { active: tourActive, finish: finishTour } = useTour('child-rewards');
+  const [tourVisible, setTourVisible] = useState(false);
+
   const {
     data: balanceData,
     loading: balanceLoading,
@@ -37,6 +45,26 @@ export default function RewardsScreen() {
     error: rewardsError,
     refresh: refreshRewards,
   } = useApiData(() => rewardsApi.list(), []);
+
+  useEffect(() => {
+    if (tourActive && !balanceLoading && !rewardsLoading) {
+      const t = setTimeout(() => {
+        if (scrollRef.current && filterRef.current) {
+          filterRef.current.measureLayout(
+            scrollRef.current,
+            (_x: number, y: number) => {
+              scrollRef.current?.scrollTo({ y: Math.max(0, y - 120), animated: true });
+              setTimeout(() => setTourVisible(true), 450);
+            },
+            () => setTourVisible(true),
+          );
+        } else {
+          setTourVisible(true);
+        }
+      }, 500);
+      return () => clearTimeout(t);
+    }
+  }, [tourActive, balanceLoading, rewardsLoading]);
 
   if (balanceLoading || rewardsLoading) return <LoadingScreen />;
   if (balanceError) return <ErrorScreen message={balanceError} onRetry={refreshBalance} />;
@@ -99,13 +127,13 @@ export default function RewardsScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Magasin 🛒</Text>
-        <View style={styles.ptsPill}>
+        <View ref={ptsPillRef} collapsable={false} style={styles.ptsPill}>
           <Text style={{ fontSize: 14 }}>🪙</Text>
           <Text style={styles.ptsPillText}>{myGold} pièces</Text>
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+      <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
 
         {/* Récompenses en attente */}
         {pending.length > 0 && (
@@ -121,7 +149,7 @@ export default function RewardsScreen() {
         )}
 
         {/* Filtres */}
-        <View style={styles.filterRow}>
+        <View ref={filterRef} collapsable={false} style={styles.filterRow}>
           {([
             { value: 'all'       as Filter, label: 'Toutes',    count: rewards.length },
             { value: 'available' as Filter, label: '🔓 Dispo',  count: available.length + pending.length },
@@ -218,6 +246,14 @@ export default function RewardsScreen() {
       </ScrollView>
 
       <AppModal config={modalCfg} onHide={hideModal} />
+      <SpotlightTour
+        visible={tourVisible}
+        onFinish={() => { setTourVisible(false); finishTour(); }}
+        steps={[
+          { ref: ptsPillRef, title: 'Ton trésor 🪙',       body: 'Voilà combien de pièces tu as gagnées !' },
+          { ref: filterRef,  title: 'Les récompenses 🎁',  body: 'Appuie sur une récompense disponible pour la réclamer à ton gardien !' },
+        ] satisfies TourStep[]}
+      />
     </SafeAreaView>
   );
 }
