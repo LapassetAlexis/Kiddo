@@ -150,7 +150,7 @@ export class RewardsService {
     const balance = Number(balanceRow?.balance ?? 0);
     if (balance < reward.cost) throw new BadRequestException('Pas assez de points');
 
-    const parentTokens = await this.familiesSvc.getFamilyParentTokens(familyId);
+    const parentTokens = await this.familiesSvc.getFamilyParentTokens(familyId, { event: 'reward' });
 
     await this.ds.transaction(async em => {
       // Atomic test-and-set : seul le premier enfant qui arrive gagne le claim
