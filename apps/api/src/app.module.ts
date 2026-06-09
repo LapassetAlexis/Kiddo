@@ -11,6 +11,7 @@ import { RewardsModule }       from './rewards/rewards.module';
 import { TransactionsModule }  from './transactions/transactions.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { UploadsModule }      from './uploads/uploads.module';
+import { FeedbackModule }     from './feedback/feedback.module';
 
 // Entities
 import { Family }               from './families/family.entity';
@@ -61,6 +62,7 @@ const entities = [
     TransactionsModule,
     NotificationsModule,
     UploadsModule,
+    FeedbackModule,
   ],
 })
 export class AppModule {}

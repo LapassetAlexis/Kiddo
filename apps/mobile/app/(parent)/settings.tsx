@@ -1,5 +1,6 @@
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, Switch, Share,
+  Modal, Pressable, TextInput, Animated,
 } from 'react-native';
 import { useState, useCallback, useEffect, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -17,6 +18,7 @@ import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
 import * as Clipboard from 'expo-clipboard';
 import SpotlightTour, { TourStep } from '@/components/ui/SpotlightTour';
 import { useTour } from '@/lib/useTour';
+import { apiCall } from '@/lib/api-client';
 
 export default function SettingsScreen() {
   const [notifTask,      setNotifTask]      = useState(true);
@@ -24,6 +26,11 @@ export default function SettingsScreen() {
   const [notifStreak,    setNotifStreak]    = useState(false);
   const [savingNotif,    setSavingNotif]    = useState(false);
   const [childBalances,  setChildBalances]  = useState<Record<string, number>>({});
+  const [contactVisible,  setContactVisible]  = useState(false);
+  const [contactCategory, setContactCategory] = useState<'bug' | 'question' | 'feature'>('bug');
+  const [contactMessage,  setContactMessage]  = useState('');
+  const [contactSending,  setContactSending]  = useState(false);
+  const contactSlide = useRef(new Animated.Value(400)).current;
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
   const { logout, user } = useAuth();
 
@@ -133,6 +140,35 @@ export default function SettingsScreen() {
         { label: 'Annuler', style: 'cancel' },
       ],
     });
+  }
+
+  function openContact() {
+    setContactVisible(true);
+    Animated.spring(contactSlide, { toValue: 0, useNativeDriver: true, bounciness: 4 }).start();
+  }
+  function closeContact() {
+    Animated.timing(contactSlide, { toValue: 400, duration: 200, useNativeDriver: true }).start(() => {
+      setContactVisible(false);
+      setContactMessage('');
+      setContactCategory('bug');
+    });
+  }
+
+  async function sendContact() {
+    if (contactMessage.trim().length < 10) {
+      showModal({ icon: '⚠️', title: 'Message trop court', message: 'Décris ton message en au moins 10 caractères.' });
+      return;
+    }
+    setContactSending(true);
+    try {
+      await apiCall('POST', '/feedback', { category: contactCategory, message: contactMessage.trim() });
+      closeContact();
+      setTimeout(() => showModal({ icon: '✅', title: 'Message envoyé !', message: 'Nous reviendrons vers toi dès que possible.' }), 300);
+    } catch {
+      showModal({ icon: '❌', title: 'Erreur', message: "Impossible d'envoyer le message. Réessaie plus tard." });
+    } finally {
+      setContactSending(false);
+    }
   }
 
   function confirmDeleteAccount() {
@@ -343,6 +379,11 @@ export default function SettingsScreen() {
             <Text style={styles.linkText}>Politique de confidentialité</Text>
             <Text style={styles.linkArrow}>›</Text>
           </TouchableOpacity>
+          <View style={styles.rowDivider} />
+          <TouchableOpacity style={styles.linkRow} onPress={openContact} activeOpacity={0.7}>
+            <Text style={styles.linkText}>Nous contacter</Text>
+            <Text style={styles.linkArrow}>›</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Dev — TODO: supprimer avant prod */}
@@ -374,6 +415,59 @@ export default function SettingsScreen() {
 
         <View style={{ height: 32 }} />
       </ScrollView>
+
+      <Modal visible={contactVisible} transparent animationType="none" onRequestClose={closeContact}>
+        <Pressable style={styles.contactOverlay} onPress={closeContact}>
+          <Animated.View style={[styles.contactSheet, { transform: [{ translateY: contactSlide }] }]}>
+            <Pressable>
+              <View style={styles.contactHandle} />
+              <Text style={styles.contactTitle}>Nous contacter</Text>
+              <Text style={styles.contactSub}>Bug, question ou suggestion — on lit tout !</Text>
+
+              {/* Category chips */}
+              <View style={styles.chipRow}>
+                {([
+                  { key: 'bug', label: '🐛 Bug' },
+                  { key: 'question', label: '❓ Question' },
+                  { key: 'feature', label: '💡 Suggestion' },
+                ] as const).map(c => (
+                  <TouchableOpacity
+                    key={c.key}
+                    style={[styles.chip, contactCategory === c.key && styles.chipActive]}
+                    onPress={() => setContactCategory(c.key)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.chipText, contactCategory === c.key && styles.chipTextActive]}>{c.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Message input */}
+              <TextInput
+                style={styles.contactInput}
+                placeholder="Décris ton problème ou ton idée..."
+                placeholderTextColor="rgba(255,255,255,0.25)"
+                value={contactMessage}
+                onChangeText={setContactMessage}
+                multiline
+                numberOfLines={5}
+                maxLength={2000}
+                textAlignVertical="top"
+              />
+              <Text style={styles.contactCounter}>{contactMessage.length}/2000</Text>
+
+              <TouchableOpacity
+                style={[styles.contactBtn, contactSending && { opacity: 0.5 }]}
+                onPress={sendContact}
+                disabled={contactSending}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.contactBtnText}>{contactSending ? 'Envoi…' : 'Envoyer'}</Text>
+              </TouchableOpacity>
+            </Pressable>
+          </Animated.View>
+        </Pressable>
+      </Modal>
 
       <AppModal config={modalCfg} onHide={hideModal} />
       <SpotlightTour
@@ -494,4 +588,19 @@ const styles = StyleSheet.create({
   inviteBtnText:    { fontSize: 13, fontWeight: '900', color: '#1a1000' },
   regenerateBtn:    { alignItems: 'center', paddingVertical: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)', marginTop: 4 },
   regenerateBtnText:{ fontSize: 12, fontWeight: '700', color: Colors.textFaint },
+
+  contactOverlay:   { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+  contactSheet:     { backgroundColor: '#1e1e26', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40, gap: 16 },
+  contactHandle:    { width: 36, height: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 2, alignSelf: 'center', marginBottom: 8 },
+  contactTitle:     { fontSize: 18, fontWeight: '900', color: Colors.textPrimary },
+  contactSub:       { fontSize: 13, fontWeight: '600', color: Colors.textFaint, marginTop: -8 },
+  chipRow:          { flexDirection: 'row', gap: 8 },
+  chip:             { borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7, backgroundColor: 'rgba(255,255,255,0.07)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  chipActive:       { backgroundColor: 'rgba(255,184,0,0.15)', borderColor: 'rgba(255,184,0,0.5)' },
+  chipText:         { fontSize: 13, fontWeight: '700', color: Colors.textDim },
+  chipTextActive:   { color: Colors.gold },
+  contactInput:     { backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', padding: 14, color: Colors.textPrimary, fontSize: 14, fontWeight: '600', minHeight: 120 },
+  contactCounter:   { fontSize: 11, color: Colors.textFaint, textAlign: 'right', marginTop: -8 },
+  contactBtn:       { backgroundColor: Colors.gold, borderRadius: Radii.pill, paddingVertical: 14, alignItems: 'center' },
+  contactBtnText:   { fontSize: 15, fontWeight: '900', color: '#1a1000' },
 });
