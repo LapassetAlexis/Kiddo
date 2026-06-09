@@ -8,10 +8,12 @@ import Animated, {
   cancelAnimation,
   Easing,
 } from 'react-native-reanimated';
-import { useEffect } from 'react';
-import { Colors, Radii } from '@/constants/theme';
+import { useEffect, useMemo } from 'react';
+import { Radii } from '@/constants/theme';
+import type { ThemeColors } from '@/constants/theme';
 import { getLevelTitle } from '@/lib/rpg';
 import type { ChildClass } from '@/lib/rpg';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const CLASS_MESSAGES: Record<ChildClass, string[]> = {
   warrior: ['Ton épée brille plus que jamais !', 'Les ennemis tremblent devant toi !', 'Un guerrier légendaire est né !'],
@@ -36,6 +38,8 @@ interface Props {
 }
 
 export default function LevelUpModal({ visible, newLevel, childClass, childName, onClose }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const backdropOpacity = useSharedValue(0);
   const cardScale       = useSharedValue(0);
   const cardOpacity     = useSharedValue(0);
@@ -102,7 +106,7 @@ export default function LevelUpModal({ visible, newLevel, childClass, childName,
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.85)',
@@ -119,7 +123,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'rgba(255,184,0,0.4)',
     overflow: 'hidden',
-    shadowColor: Colors.gold,
+    shadowColor: colors.gold,
     shadowOpacity: 0.5,
     shadowRadius: 30,
   },
@@ -137,7 +141,7 @@ const styles = StyleSheet.create({
   badge: {
     fontSize: 11,
     fontWeight: '900',
-    color: Colors.gold,
+    color: colors.gold,
     letterSpacing: 2,
     textTransform: 'uppercase',
     marginBottom: 16,
@@ -145,7 +149,7 @@ const styles = StyleSheet.create({
   levelNum: {
     fontSize: 96,
     fontWeight: '900',
-    color: Colors.gold,
+    color: colors.gold,
     lineHeight: 100,
     letterSpacing: -4,
     textShadowColor: 'rgba(255,184,0,0.4)',
@@ -168,11 +172,11 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   btn: {
-    backgroundColor: Colors.gold,
+    backgroundColor: colors.gold,
     borderRadius: Radii.pill,
     paddingHorizontal: 32,
     paddingVertical: 14,
-    shadowColor: Colors.gold,
+    shadowColor: colors.gold,
     shadowOpacity: 0.5,
     shadowRadius: 12,
   },

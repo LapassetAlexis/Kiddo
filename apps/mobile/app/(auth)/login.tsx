@@ -1,7 +1,9 @@
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, Image } from 'react-native';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { router } from 'expo-router';
-import { Colors, Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing } from '@/constants/theme';
+import type { ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { ApiError } from '@/lib/api-client';
 
@@ -10,6 +12,9 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading]   = useState(false);
   const { loginParent } = useAuth();
+
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   async function handleParentLogin() {
     if (!email || !password) return;
@@ -49,7 +54,7 @@ export default function LoginScreen() {
           <TextInput
             style={styles.input}
             placeholder="Email"
-            placeholderTextColor={Colors.textFaint}
+            placeholderTextColor={colors.textFaint}
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -59,7 +64,7 @@ export default function LoginScreen() {
           <TextInput
             style={styles.input}
             placeholder="Mot de passe"
-            placeholderTextColor={Colors.textFaint}
+            placeholderTextColor={colors.textFaint}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -89,7 +94,7 @@ export default function LoginScreen() {
           >
             <Text style={styles.registerText}>
               Pas encore de compte ?{' '}
-              <Text style={{ color: Colors.gold, fontWeight: '900' }}>S'inscrire</Text>
+              <Text style={{ color: colors.gold, fontWeight: '900' }}>S'inscrire</Text>
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -99,7 +104,7 @@ export default function LoginScreen() {
           >
             <Text style={styles.registerText}>
               Tu as un code famille ?{' '}
-              <Text style={{ color: Colors.gold, fontWeight: '900' }}>Rejoindre</Text>
+              <Text style={{ color: colors.gold, fontWeight: '900' }}>Rejoindre</Text>
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -109,7 +114,7 @@ export default function LoginScreen() {
           >
             <Text style={styles.registerText}>
               👋 Tu es un enfant ?{' '}
-              <Text style={{ color: Colors.gold, fontWeight: '900' }}>Scanner le QR</Text>
+              <Text style={{ color: colors.gold, fontWeight: '900' }}>Scanner le QR</Text>
             </Text>
           </TouchableOpacity>
         </View>
@@ -118,10 +123,10 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: Colors.bgScreen,
+    backgroundColor: colors.bgScreen,
   },
   container: {
     flex: 1,
@@ -144,29 +149,29 @@ const styles = StyleSheet.create({
   logoTitle: {
     fontSize: 32,
     fontWeight: '900',
-    color: Colors.gold,
+    color: colors.gold,
     letterSpacing: -1,
   },
   logoSub: {
     fontSize: 14,
     fontWeight: '700',
-    color: Colors.textDim,
+    color: colors.textDim,
   },
   form: {
     gap: 12,
   },
   input: {
-    backgroundColor: Colors.bgCard,
+    backgroundColor: colors.bgCard,
     borderRadius: Radii.md,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: colors.border,
     padding: 16,
     fontSize: 16,
-    color: Colors.textPrimary,
+    color: colors.textPrimary,
     fontWeight: '600',
   },
   btn: {
-    backgroundColor: Colors.gold,
+    backgroundColor: colors.gold,
     borderRadius: Radii.md,
     padding: 16,
     alignItems: 'center',
@@ -181,10 +186,10 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   forgotBtn:  { alignItems: 'center', paddingTop: 8 },
-  forgotText: { fontSize: 13, fontWeight: '700', color: Colors.textFaint },
+  forgotText: { fontSize: 13, fontWeight: '700', color: colors.textFaint },
 
   authLinks:    { gap: 10 },
-  registerBtn:  { alignItems: 'center', paddingVertical: 14, backgroundColor: Colors.bgCard, borderRadius: Radii.md, borderWidth: 1, borderColor: Colors.border },
-  registerText: { fontSize: 14, fontWeight: '600', color: Colors.textDim },
+  registerBtn:  { alignItems: 'center', paddingVertical: 14, backgroundColor: colors.bgCard, borderRadius: Radii.md, borderWidth: 1, borderColor: colors.border },
+  registerText: { fontSize: 14, fontWeight: '600', color: colors.textDim },
 
 });

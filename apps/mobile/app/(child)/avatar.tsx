@@ -2,10 +2,11 @@ import {
   View, Text, ScrollView, StyleSheet, Animated,
   Easing, Image, useWindowDimensions,
 } from 'react-native';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors, Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing } from '@/constants/theme';
+import type { ThemeColors } from '@/constants/theme';
 import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
 import { useAuth } from '@/contexts/AuthContext';
 import { useApiData } from '@/lib/useApiData';
@@ -13,6 +14,7 @@ import { childrenApi } from '@/lib/api/children';
 import { getXpProgress } from '@/lib/rpg';
 import HeroSprite from '@/components/HeroSprite';
 import { getPresetById, getUnlockedChapters, getEquippedItems, getEquippedBehindItems, DEFAULT_PRESET } from '@/lib/character-presets';
+import { useTheme } from '@/contexts/ThemeContext';
 
 // Chapter backgrounds — one per story milestone
 const BG_BY_CHAPTER = [
@@ -49,10 +51,10 @@ function HeroScene({ preset, level, chapterIndex }: { preset: ReturnType<typeof 
   }, [tileW]);
 
   return (
-    <View style={[styles.scene, { height: SCENE_HEIGHT }]}>
+    <View style={[sceneStyles.scene, { height: SCENE_HEIGHT }]}>
       {/* Scrolling background tiles */}
       <Animated.View
-        style={[styles.bgRow, { width: totalW, transform: [{ translateX: scrollX }] }]}
+        style={[sceneStyles.bgRow, { width: totalW, transform: [{ translateX: scrollX }] }]}
       >
         {Array.from({ length: copies }).map((_, i) => (
           <Image
@@ -65,19 +67,95 @@ function HeroScene({ preset, level, chapterIndex }: { preset: ReturnType<typeof 
       </Animated.View>
 
       {/* Dark overlay at bottom for depth */}
-      <View style={styles.sceneGradient} />
+      <View style={sceneStyles.sceneGradient} />
 
       {/* Character walking right, feet on the ground */}
-      <View style={styles.spriteAnchor}>
+      <View style={sceneStyles.spriteAnchor}>
         <HeroSprite source={preset.baseStrip} items={getEquippedItems(preset, level)} behindItems={getEquippedBehindItems(preset, level)} size={SPRITE_SIZE} direction="right" />
       </View>
     </View>
   );
 }
 
+const sceneStyles = StyleSheet.create({
+  scene:        { overflow: 'hidden', backgroundColor: '#0a1a0a' },
+  bgRow:        { position: 'absolute', top: 0, left: 0, bottom: 0, flexDirection: 'row' },
+  sceneGradient:{
+    position: 'absolute', bottom: 0, left: 0, right: 0, height: 60,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  spriteAnchor: {
+    position: 'absolute',
+    bottom: GROUND_OFFSET,
+    left: '50%',
+    marginLeft: -(SPRITE_SIZE / 2),
+  },
+});
+
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.bgScreen },
+
+  // Zone infos
+  infoArea:    { flex: 1, backgroundColor: colors.bgScreen },
+  infoContent: { padding: Spacing.screen, gap: 12 },
+
+  nameBlock:   { gap: 2, paddingTop: 4 },
+  heroName:    { fontSize: 26, fontWeight: '900', color: colors.textPrimary },
+  heroTagline: { fontSize: 14, fontWeight: '700', color: colors.textDim },
+
+  xpCard: {
+    backgroundColor: colors.bgCard,
+    borderRadius: Radii.card, borderWidth: 1, borderColor: colors.border,
+    padding: 14, gap: 8,
+  },
+  xpRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  levelPill:  {
+    backgroundColor: 'rgba(139,92,246,0.15)', borderRadius: Radii.pill,
+    paddingHorizontal: 10, paddingVertical: 3,
+    borderWidth: 1, borderColor: 'rgba(139,92,246,0.3)',
+  },
+  levelPillText: { fontSize: 12, fontWeight: '900', color: '#a78bfa' },
+  xpLabel:       { fontSize: 11, fontWeight: '700', color: colors.textFaint },
+  xpBarTrack:    { height: 6, borderRadius: 99, backgroundColor: 'rgba(139,92,246,0.15)', overflow: 'hidden' },
+  xpBarFill:     { height: '100%', borderRadius: 99, backgroundColor: '#8b5cf6' },
+
+  sectionLabel: {
+    fontSize: 11, fontWeight: '900', color: colors.textFaint,
+    textTransform: 'uppercase', letterSpacing: 1.2, marginTop: 4,
+  },
+
+  chapterCard: {
+    backgroundColor: colors.bgCard,
+    borderRadius: Radii.card, borderWidth: 1, borderColor: colors.border,
+    padding: 16, gap: 8,
+  },
+  chapterHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  chapterBadge: {
+    backgroundColor: 'rgba(255,184,0,0.12)', borderRadius: Radii.pill,
+    paddingHorizontal: 10, paddingVertical: 3,
+    borderWidth: 1, borderColor: 'rgba(255,184,0,0.25)',
+  },
+  chapterBadgeText: { fontSize: 11, fontWeight: '900', color: colors.gold },
+  chapterMinLevel:  { fontSize: 11, fontWeight: '700', color: colors.textFaint },
+  chapterTitle:     { fontSize: 16, fontWeight: '900', color: colors.textPrimary },
+  chapterText:      { fontSize: 14, fontWeight: '500', color: colors.textDim, lineHeight: 22 },
+
+  chapterCardLocked: {
+    backgroundColor: 'rgba(255,255,255,0.02)',
+    borderRadius: Radii.card, borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)',
+    padding: 16,
+  },
+  lockRow:            { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  lockIcon:           { fontSize: 20 },
+  chapterTitleLocked: { fontSize: 15, fontWeight: '800', color: colors.textFaint },
+  lockHint:           { fontSize: 12, fontWeight: '600', color: colors.textFaint, marginTop: 2, opacity: 0.6 },
+});
+
 export default function AvatarScreen() {
   const { user } = useAuth();
   const { bottom } = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const { data: statsData, loading, error, refresh } = useApiData(
     () => childrenApi.get(user?.id ?? ''),
@@ -161,76 +239,3 @@ export default function AvatarScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.bgScreen },
-
-  // Scène
-  scene:        { overflow: 'hidden', backgroundColor: '#0a1a0a' },
-  bgRow:        { position: 'absolute', top: 0, left: 0, bottom: 0, flexDirection: 'row' },
-  sceneGradient:{
-    position: 'absolute', bottom: 0, left: 0, right: 0, height: 60,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-  },
-  spriteAnchor: {
-    position: 'absolute',
-    bottom: GROUND_OFFSET,
-    left: '50%',
-    marginLeft: -(SPRITE_SIZE / 2),
-  },
-
-  // Zone infos
-  infoArea:    { flex: 1, backgroundColor: Colors.bgScreen },
-  infoContent: { padding: Spacing.screen, gap: 12 },
-
-  nameBlock:   { gap: 2, paddingTop: 4 },
-  heroName:    { fontSize: 26, fontWeight: '900', color: Colors.textPrimary },
-  heroTagline: { fontSize: 14, fontWeight: '700', color: Colors.textDim },
-
-  xpCard: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: Radii.card, borderWidth: 1, borderColor: Colors.border,
-    padding: 14, gap: 8,
-  },
-  xpRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  levelPill:  {
-    backgroundColor: 'rgba(139,92,246,0.15)', borderRadius: Radii.pill,
-    paddingHorizontal: 10, paddingVertical: 3,
-    borderWidth: 1, borderColor: 'rgba(139,92,246,0.3)',
-  },
-  levelPillText: { fontSize: 12, fontWeight: '900', color: '#a78bfa' },
-  xpLabel:       { fontSize: 11, fontWeight: '700', color: Colors.textFaint },
-  xpBarTrack:    { height: 6, borderRadius: 99, backgroundColor: 'rgba(139,92,246,0.15)', overflow: 'hidden' },
-  xpBarFill:     { height: '100%', borderRadius: 99, backgroundColor: '#8b5cf6' },
-
-  sectionLabel: {
-    fontSize: 11, fontWeight: '900', color: Colors.textFaint,
-    textTransform: 'uppercase', letterSpacing: 1.2, marginTop: 4,
-  },
-
-  chapterCard: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: Radii.card, borderWidth: 1, borderColor: Colors.border,
-    padding: 16, gap: 8,
-  },
-  chapterHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  chapterBadge: {
-    backgroundColor: 'rgba(255,184,0,0.12)', borderRadius: Radii.pill,
-    paddingHorizontal: 10, paddingVertical: 3,
-    borderWidth: 1, borderColor: 'rgba(255,184,0,0.25)',
-  },
-  chapterBadgeText: { fontSize: 11, fontWeight: '900', color: Colors.gold },
-  chapterMinLevel:  { fontSize: 11, fontWeight: '700', color: Colors.textFaint },
-  chapterTitle:     { fontSize: 16, fontWeight: '900', color: Colors.textPrimary },
-  chapterText:      { fontSize: 14, fontWeight: '500', color: Colors.textDim, lineHeight: 22 },
-
-  chapterCardLocked: {
-    backgroundColor: 'rgba(255,255,255,0.02)',
-    borderRadius: Radii.card, borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)',
-    padding: 16,
-  },
-  lockRow:            { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  lockIcon:           { fontSize: 20 },
-  chapterTitleLocked: { fontSize: 15, fontWeight: '800', color: Colors.textFaint },
-  lockHint:           { fontSize: 12, fontWeight: '600', color: Colors.textFaint, marginTop: 2, opacity: 0.6 },
-});

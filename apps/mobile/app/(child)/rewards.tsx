@@ -1,9 +1,11 @@
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import SpotlightTour, { TourStep } from '@/components/ui/SpotlightTour';
 import { useTour } from '@/lib/useTour';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors, Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing } from '@/constants/theme';
+import type { ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
 import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
 import { useAuth } from '@/contexts/AuthContext';
@@ -25,6 +27,8 @@ export default function RewardsScreen() {
   const { user } = useAuth();
   const [filter, setFilter] = useState<Filter>('all');
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const scrollRef  = useRef<ScrollView>(null);
   const ptsPillRef = useRef<any>(null);
@@ -210,7 +214,7 @@ export default function RewardsScreen() {
                 <Text style={[styles.cardEmoji, isLocked && { opacity: 0.45 }]}>{r.emoji}</Text>
 
                 {/* Nom */}
-                <Text style={[styles.cardName, isLocked && { color: Colors.textDim }]}>
+                <Text style={[styles.cardName, isLocked && { color: colors.textDim }]}>
                   {r.title}
                 </Text>
 
@@ -258,14 +262,14 @@ export default function RewardsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root:    { flex: 1, backgroundColor: Colors.bgScreen },
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  root:    { flex: 1, backgroundColor: colors.bgScreen },
   content: { padding: Spacing.screen, gap: 14 },
 
   header:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: Spacing.screen, paddingBottom: 0 },
-  title:       { fontSize: 22, fontWeight: '900', color: Colors.textPrimary },
+  title:       { fontSize: 22, fontWeight: '900', color: colors.textPrimary },
   ptsPill:     { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,184,0,0.1)', borderWidth: 1, borderColor: 'rgba(255,184,0,0.2)', borderRadius: Radii.pill, paddingHorizontal: 14, paddingVertical: 7 },
-  ptsPillText: { fontSize: 15, fontWeight: '900', color: Colors.gold },
+  ptsPillText: { fontSize: 15, fontWeight: '900', color: colors.gold },
 
   // Pending banner
   pendingBanner: {
@@ -275,31 +279,31 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   pendingIcon:  { fontSize: 24 },
-  pendingTitle: { fontSize: 14, fontWeight: '900', color: Colors.gold },
-  pendingDesc:  { fontSize: 12, fontWeight: '600', color: Colors.textFaint, marginTop: 2 },
+  pendingTitle: { fontSize: 14, fontWeight: '900', color: colors.gold },
+  pendingDesc:  { fontSize: 12, fontWeight: '600', color: colors.textFaint, marginTop: 2 },
 
   // Filtres
   filterRow: { flexDirection: 'row', gap: 8 },
   filterChip: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-    backgroundColor: Colors.bgCard, borderRadius: Radii.pill,
-    borderWidth: 1, borderColor: Colors.border, paddingVertical: 9,
+    backgroundColor: colors.bgCard, borderRadius: Radii.pill,
+    borderWidth: 1, borderColor: colors.border, paddingVertical: 9,
   },
   filterChipActive:    { backgroundColor: 'rgba(255,184,0,0.1)', borderColor: 'rgba(255,184,0,0.3)' },
-  filterText:          { fontSize: 12, fontWeight: '800', color: Colors.textDim },
-  filterTextActive:    { color: Colors.gold },
+  filterText:          { fontSize: 12, fontWeight: '800', color: colors.textDim },
+  filterTextActive:    { color: colors.gold },
   filterBadge:         { backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 99, minWidth: 20, alignItems: 'center', paddingHorizontal: 6, paddingVertical: 1 },
   filterBadgeActive:   { backgroundColor: 'rgba(255,184,0,0.2)' },
-  filterBadgeText:     { fontSize: 10, fontWeight: '900', color: Colors.textFaint },
-  filterBadgeTextActive:{ color: Colors.gold },
+  filterBadgeText:     { fontSize: 10, fontWeight: '900', color: colors.textFaint },
+  filterBadgeTextActive:{ color: colors.gold },
 
   // Grille
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
 
   card: {
     width: '47%',
-    backgroundColor: Colors.bgCard, borderRadius: Radii.card,
-    borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: colors.bgCard, borderRadius: Radii.card,
+    borderWidth: 1, borderColor: colors.border,
     padding: 16, alignItems: 'center', gap: 8,
     position: 'relative',
   },
@@ -307,24 +311,24 @@ const styles = StyleSheet.create({
   cardPending: { borderColor: 'rgba(255,184,0,0.2)', opacity: 0.8 },
 
   pendingPill: { position: 'absolute', top: 8, left: 8, backgroundColor: 'rgba(255,184,0,0.15)', borderRadius: 99, paddingHorizontal: 7, paddingVertical: 2 },
-  pendingPillText: { fontSize: 9, fontWeight: '900', color: Colors.gold },
+  pendingPillText: { fontSize: 9, fontWeight: '900', color: colors.gold },
   lockPill:    { position: 'absolute', top: 8, right: 8 },
   lockPillText:{ fontSize: 13 },
 
   cardEmoji: { fontSize: 38, marginTop: 4 },
-  cardName:  { fontSize: 13, fontWeight: '800', color: Colors.textPrimary, textAlign: 'center', lineHeight: 17 },
+  cardName:  { fontSize: 13, fontWeight: '800', color: colors.textPrimary, textAlign: 'center', lineHeight: 17 },
 
   costBadge:      { backgroundColor: 'rgba(255,184,0,0.1)', borderWidth: 1, borderColor: 'rgba(255,184,0,0.2)', borderRadius: Radii.pill, paddingHorizontal: 12, paddingVertical: 4 },
   costBadgeLocked:{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.08)' },
   costBadgePending:{ backgroundColor: 'rgba(255,184,0,0.08)', borderColor: 'rgba(255,184,0,0.15)' },
-  costText:       { fontSize: 13, fontWeight: '900', color: Colors.gold },
-  costTextLocked: { color: Colors.textDim },
+  costText:       { fontSize: 13, fontWeight: '900', color: colors.gold },
+  costTextLocked: { color: colors.textDim },
   costTextPending:{ color: 'rgba(255,184,0,0.6)' },
 
   progressTrack: { width: '100%', height: 5, borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.07)', overflow: 'hidden' },
   progressFill:  { height: '100%', borderRadius: 99, backgroundColor: 'rgba(255,184,0,0.4)' },
-  missingText:   { fontSize: 10, fontWeight: '700', color: Colors.textFaint },
+  missingText:   { fontSize: 10, fontWeight: '700', color: colors.textFaint },
 
-  claimBtn:     { backgroundColor: Colors.gold, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 8, marginTop: 2 },
+  claimBtn:     { backgroundColor: colors.gold, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 8, marginTop: 2 },
   claimBtnText: { fontSize: 12, fontWeight: '900', color: '#1a1000' },
 });

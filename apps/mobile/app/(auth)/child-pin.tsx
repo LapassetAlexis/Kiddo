@@ -1,7 +1,9 @@
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Modal } from 'react-native';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Colors, Radii } from '@/constants/theme';
+import { Radii } from '@/constants/theme';
+import type { ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { ApiError } from '@/lib/api-client';
 import { authApi } from '@/lib/api/auth';
@@ -21,6 +23,9 @@ export default function ChildPinScreen() {
   const [qrLoading,    setQrLoading]    = useState(false);
   const [showQrModal,  setShowQrModal]  = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
 
@@ -110,7 +115,7 @@ export default function ChildPinScreen() {
         ))}
       </View>
       {isValidating
-        ? <ActivityIndicator size="small" color={Colors.gold} style={styles.spinner} />
+        ? <ActivityIndicator size="small" color={colors.gold} style={styles.spinner} />
         : error
           ? <Text style={styles.errorText}>Code incorrect — réessaie</Text>
           : <View style={styles.errorPlaceholder} />
@@ -154,7 +159,7 @@ export default function ChildPinScreen() {
                 <QRCode value={qrToken} size={200} backgroundColor="#fff" color="#000" />
               </View>
             )}
-            {!qrToken && qrLoading && <ActivityIndicator size="large" color={Colors.gold} />}
+            {!qrToken && qrLoading && <ActivityIndicator size="large" color={colors.gold} />}
             <View style={styles.qrTimer}>
               <Text style={[styles.qrTimerText, qrSeconds <= 5 && { color: '#EF5350' }]}>
                 Expire dans {qrSeconds}s
@@ -173,10 +178,10 @@ export default function ChildPinScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: Colors.bgScreen,
+    backgroundColor: colors.bgScreen,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 24,
@@ -185,12 +190,12 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: 26,
     fontWeight: '900',
-    color: Colors.textPrimary,
+    color: colors.textPrimary,
   },
   sub: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.textDim,
+    color: colors.textDim,
     marginTop: -16,
   },
   dots: {
@@ -202,20 +207,20 @@ const styles = StyleSheet.create({
     width: 18, height: 18,
     borderRadius: 9,
     borderWidth: 2,
-    borderColor: Colors.textFaint,
+    borderColor: colors.textFaint,
     backgroundColor: 'transparent',
   },
   dotFilled: {
-    backgroundColor: Colors.gold,
-    borderColor: Colors.gold,
+    backgroundColor: colors.gold,
+    borderColor: colors.gold,
   },
   dotError: {
     borderColor: '#EF5350',
     backgroundColor: '#EF5350',
   },
   dotValidating: {
-    backgroundColor: Colors.gold,
-    borderColor: Colors.gold,
+    backgroundColor: colors.gold,
+    borderColor: colors.gold,
     opacity: 0.5,
   },
   errorText: {
@@ -244,9 +249,9 @@ const styles = StyleSheet.create({
   key: {
     width: 84, height: 84,
     borderRadius: Radii.hero,
-    backgroundColor: Colors.bgCard,
+    backgroundColor: colors.bgCard,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -260,11 +265,11 @@ const styles = StyleSheet.create({
   keyText: {
     fontSize: 26,
     fontWeight: '800',
-    color: Colors.textPrimary,
+    color: colors.textPrimary,
   },
   keyDeleteText: {
     fontSize: 22,
-    color: Colors.textDim,
+    color: colors.textDim,
   },
   back: {
     padding: 16,
@@ -272,7 +277,7 @@ const styles = StyleSheet.create({
   backText: {
     fontSize: 14,
     fontWeight: '700',
-    color: Colors.textDim,
+    color: colors.textDim,
   },
   qrBtn: {
     alignItems: 'center',
@@ -287,17 +292,17 @@ const styles = StyleSheet.create({
   qrBtnText: {
     fontSize: 13,
     fontWeight: '700',
-    color: Colors.gold,
+    color: colors.gold,
   },
   qrOverlay:     { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', alignItems: 'center', justifyContent: 'center' },
-  qrSheet:       { backgroundColor: Colors.bgCard, borderRadius: 28, padding: 28, alignItems: 'center', gap: 16, marginHorizontal: 24, width: 320 },
-  qrTitle:       { fontSize: 20, fontWeight: '900', color: Colors.textPrimary, textAlign: 'center' },
-  qrSub:         { fontSize: 13, fontWeight: '600', color: Colors.textDim, textAlign: 'center', marginTop: -8 },
+  qrSheet:       { backgroundColor: colors.bgCard, borderRadius: 28, padding: 28, alignItems: 'center', gap: 16, marginHorizontal: 24, width: 320 },
+  qrTitle:       { fontSize: 20, fontWeight: '900', color: colors.textPrimary, textAlign: 'center' },
+  qrSub:         { fontSize: 13, fontWeight: '600', color: colors.textDim, textAlign: 'center', marginTop: -8 },
   qrBox:         { backgroundColor: '#fff', padding: 16, borderRadius: 16 },
   qrTimer:       { alignItems: 'center' },
-  qrTimerText:   { fontSize: 14, fontWeight: '800', color: Colors.textDim },
+  qrTimerText:   { fontSize: 14, fontWeight: '800', color: colors.textDim },
   qrRefreshBtn:  { backgroundColor: 'rgba(255,184,0,0.12)', borderRadius: 12, paddingHorizontal: 20, paddingVertical: 10, borderWidth: 1, borderColor: 'rgba(255,184,0,0.3)' },
-  qrRefreshText: { fontSize: 14, fontWeight: '800', color: Colors.gold },
+  qrRefreshText: { fontSize: 14, fontWeight: '800', color: colors.gold },
   qrCloseBtn:    { paddingVertical: 8 },
-  qrCloseBtnText:{ fontSize: 14, fontWeight: '700', color: Colors.textFaint },
+  qrCloseBtnText:{ fontSize: 14, fontWeight: '700', color: colors.textFaint },
 });

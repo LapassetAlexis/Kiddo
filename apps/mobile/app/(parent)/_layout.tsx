@@ -1,23 +1,36 @@
 import { Tabs } from 'expo-router';
-import { Colors } from '@/constants/theme';
+import { useMemo } from 'react';
+import { Radii, Spacing } from '@/constants/theme';
+import type { ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+const makeStyles = (colors: ThemeColors) => ({
+  tabBarStyle: {
+    backgroundColor: colors.bgNav,
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
+  },
+  tabBarActiveTintColor: colors.gold,
+  tabBarInactiveTintColor: colors.textFaint,
+});
 
 export default function ParentLayout() {
   const { bottom } = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const themed = useMemo(() => makeStyles(colors), [colors]);
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: Colors.bgNav,
-          borderTopColor: Colors.border,
-          borderTopWidth: 1,
+          ...themed.tabBarStyle,
           height: 64 + bottom,
           paddingBottom: bottom + 8,
           paddingTop: 8,
         },
-        tabBarActiveTintColor: Colors.gold,
-        tabBarInactiveTintColor: Colors.textFaint,
+        tabBarActiveTintColor: themed.tabBarActiveTintColor,
+        tabBarInactiveTintColor: themed.tabBarInactiveTintColor,
         tabBarLabelStyle: { fontSize: 10, fontWeight: '800' },
       }}
     >
@@ -37,5 +50,6 @@ export default function ParentLayout() {
 
 function TabIcon({ emoji, color }: { emoji: string; color: string }) {
   const { Text } = require('react-native');
-  return <Text style={{ fontSize: 22, opacity: color === Colors.gold ? 1 : 0.4 }}>{emoji}</Text>;
+  const { colors } = useTheme();
+  return <Text style={{ fontSize: 22, opacity: color === colors.gold ? 1 : 0.4 }}>{emoji}</Text>;
 }

@@ -2,11 +2,13 @@ import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, ScrollView,
 } from 'react-native';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { authApi } from '@/lib/api/auth';
 import { ApiError } from '@/lib/api-client';
 import { router } from 'expo-router';
-import { Colors, Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing } from '@/constants/theme';
+import type { ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
 
 export default function RegisterScreen() {
@@ -21,6 +23,9 @@ export default function RegisterScreen() {
   const [code, setCode]           = useState('');
   const [resending, setResending] = useState(false);
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
+
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   // ── Étape 1 : infos ──────────────────────────────────────────────────────
   function nextStep() {
@@ -105,9 +110,9 @@ export default function RegisterScreen() {
 
         {/* Étapes */}
         <View style={styles.stepsRow}>
-          <View style={[styles.stepLine, { backgroundColor: Colors.gold }]} />
-          <View style={[styles.stepLine, { backgroundColor: step >= 2 ? Colors.gold : 'rgba(255,255,255,0.1)' }]} />
-          <View style={[styles.stepLine, { backgroundColor: step === 3 ? Colors.gold : 'rgba(255,255,255,0.1)' }]} />
+          <View style={[styles.stepLine, { backgroundColor: colors.gold }]} />
+          <View style={[styles.stepLine, { backgroundColor: step >= 2 ? colors.gold : 'rgba(255,255,255,0.1)' }]} />
+          <View style={[styles.stepLine, { backgroundColor: step === 3 ? colors.gold : 'rgba(255,255,255,0.1)' }]} />
         </View>
         <Text style={styles.stepLabel}>
           {step === 1 ? 'Étape 1 sur 3 — Tes informations'
@@ -123,7 +128,7 @@ export default function RegisterScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Marie"
-                placeholderTextColor={Colors.textFaint}
+                placeholderTextColor={colors.textFaint}
                 value={firstName}
                 onChangeText={setFirstName}
                 autoCapitalize="words"
@@ -135,7 +140,7 @@ export default function RegisterScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Dupont"
-                placeholderTextColor={Colors.textFaint}
+                placeholderTextColor={colors.textFaint}
                 value={lastName}
                 onChangeText={setLastName}
                 autoCapitalize="words"
@@ -147,7 +152,7 @@ export default function RegisterScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="marie@exemple.com"
-                placeholderTextColor={Colors.textFaint}
+                placeholderTextColor={colors.textFaint}
                 value={email}
                 onChangeText={setEmail}
                 autoCapitalize="none"
@@ -171,7 +176,7 @@ export default function RegisterScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="8 caractères minimum"
-                placeholderTextColor={Colors.textFaint}
+                placeholderTextColor={colors.textFaint}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
@@ -183,9 +188,9 @@ export default function RegisterScreen() {
                   {[...Array(3)].map((_, i) => (
                     <View key={i} style={[
                       styles.strengthBar,
-                      i === 0 && password.length >= 1 && { backgroundColor: password.length < 6 ? '#EF5350' : Colors.gold },
-                      i === 1 && password.length >= 6 && { backgroundColor: password.length < 10 ? Colors.gold : Colors.green },
-                      i === 2 && password.length >= 10 && { backgroundColor: Colors.green },
+                      i === 0 && password.length >= 1 && { backgroundColor: password.length < 6 ? '#EF5350' : colors.gold },
+                      i === 1 && password.length >= 6 && { backgroundColor: password.length < 10 ? colors.gold : colors.green },
+                      i === 2 && password.length >= 10 && { backgroundColor: colors.green },
                     ]} />
                   ))}
                   <Text style={styles.strengthLabel}>
@@ -200,7 +205,7 @@ export default function RegisterScreen() {
               <TextInput
                 style={[styles.input, confirm.length > 0 && confirm !== password && styles.inputError]}
                 placeholder="Répète ton mot de passe"
-                placeholderTextColor={Colors.textFaint}
+                placeholderTextColor={colors.textFaint}
                 value={confirm}
                 onChangeText={setConfirm}
                 secureTextEntry
@@ -255,7 +260,7 @@ export default function RegisterScreen() {
               <Text style={styles.emailIllusTitle}>Vérifie tes emails</Text>
               <Text style={styles.emailIllusDesc}>
                 On a envoyé un code à 6 chiffres à{'\n'}
-                <Text style={{ color: Colors.gold, fontWeight: '800' }}>{email}</Text>
+                <Text style={{ color: colors.gold, fontWeight: '800' }}>{email}</Text>
               </Text>
             </View>
 
@@ -265,7 +270,7 @@ export default function RegisterScreen() {
               <TextInput
                 style={[styles.input, styles.codeInput]}
                 placeholder="· · · · · ·"
-                placeholderTextColor={Colors.textFaint}
+                placeholderTextColor={colors.textFaint}
                 value={code}
                 onChangeText={v => setCode(v.replace(/[^0-9]/g, '').slice(0, 6))}
                 keyboardType="numeric"
@@ -302,7 +307,7 @@ export default function RegisterScreen() {
 
         {/* Lien connexion */}
         <TouchableOpacity style={styles.loginLink} onPress={() => router.back()} activeOpacity={0.7}>
-          <Text style={styles.loginLinkText}>Déjà un compte ? <Text style={{ color: Colors.gold, fontWeight: '900' }}>Se connecter</Text></Text>
+          <Text style={styles.loginLinkText}>Déjà un compte ? <Text style={{ color: colors.gold, fontWeight: '900' }}>Se connecter</Text></Text>
         </TouchableOpacity>
 
         <View style={{ height: 32 }} />
@@ -313,62 +318,62 @@ export default function RegisterScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root:      { flex: 1, backgroundColor: Colors.bgScreen },
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  root:      { flex: 1, backgroundColor: colors.bgScreen },
   container: { paddingHorizontal: Spacing.screen, paddingTop: 60, gap: 24 },
 
   logoWrap:  { alignItems: 'center', gap: 8 },
   logoEmoji: { fontSize: 52 },
-  logoTitle: { fontSize: 30, fontWeight: '900', color: Colors.gold, letterSpacing: -1 },
-  logoSub:   { fontSize: 14, fontWeight: '700', color: Colors.textDim },
+  logoTitle: { fontSize: 30, fontWeight: '900', color: colors.gold, letterSpacing: -1 },
+  logoSub:   { fontSize: 14, fontWeight: '700', color: colors.textDim },
 
   stepsRow:  { flexDirection: 'row', gap: 8 },
   stepLine:  { flex: 1, height: 4, borderRadius: 2 },
-  stepLabel: { fontSize: 12, fontWeight: '700', color: Colors.textFaint, marginTop: -12 },
+  stepLabel: { fontSize: 12, fontWeight: '700', color: colors.textFaint, marginTop: -12 },
 
   form:       { gap: 16 },
   fieldWrap:  { gap: 6 },
-  fieldLabel: { fontSize: 12, fontWeight: '800', color: Colors.textDim, textTransform: 'uppercase', letterSpacing: 0.8 },
+  fieldLabel: { fontSize: 12, fontWeight: '800', color: colors.textDim, textTransform: 'uppercase', letterSpacing: 0.8 },
   input: {
-    backgroundColor: Colors.bgCard,
+    backgroundColor: colors.bgCard,
     borderRadius: Radii.md,
-    borderWidth: 1, borderColor: Colors.border,
+    borderWidth: 1, borderColor: colors.border,
     padding: 16, fontSize: 16, fontWeight: '600',
-    color: Colors.textPrimary,
+    color: colors.textPrimary,
   },
   inputError: { borderColor: 'rgba(239,83,80,0.5)' },
 
   strengthRow:  { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
   strengthBar:  { flex: 1, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.1)' },
-  strengthLabel:{ fontSize: 11, fontWeight: '700', color: Colors.textFaint, minWidth: 50 },
+  strengthLabel:{ fontSize: 11, fontWeight: '700', color: colors.textFaint, minWidth: 50 },
 
-  matchOk: { fontSize: 12, fontWeight: '700', color: Colors.green, marginTop: 4 },
+  matchOk: { fontSize: 12, fontWeight: '700', color: colors.green, marginTop: 4 },
 
   cguRow:     { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  checkbox:   { width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: Colors.textFaint, marginTop: 1, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  checkboxChecked: { backgroundColor: Colors.gold, borderColor: Colors.gold },
+  checkbox:   { width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: colors.textFaint, marginTop: 1, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  checkboxChecked: { backgroundColor: colors.gold, borderColor: colors.gold },
   checkmark:  { fontSize: 13, color: '#1a1000', fontWeight: '900' },
-  cguText:    { flex: 1, fontSize: 13, fontWeight: '600', color: Colors.textDim, lineHeight: 20 },
-  cguLink:    { color: Colors.gold, fontWeight: '800' },
+  cguText:    { flex: 1, fontSize: 13, fontWeight: '600', color: colors.textDim, lineHeight: 20 },
+  cguLink:    { color: colors.gold, fontWeight: '800' },
 
-  btnPrimary:     { backgroundColor: Colors.gold, borderRadius: Radii.md, padding: 16, alignItems: 'center' },
+  btnPrimary:     { backgroundColor: colors.gold, borderRadius: Radii.md, padding: 16, alignItems: 'center' },
   btnPrimaryText: { fontSize: 16, fontWeight: '900', color: '#1a1000' },
 
   backBtn:     { alignItems: 'center', padding: 12 },
-  backBtnText: { fontSize: 14, fontWeight: '700', color: Colors.textDim },
+  backBtnText: { fontSize: 14, fontWeight: '700', color: colors.textDim },
 
   loginLink:     { alignItems: 'center', padding: 8 },
-  loginLinkText: { fontSize: 14, fontWeight: '600', color: Colors.textDim },
+  loginLinkText: { fontSize: 14, fontWeight: '600', color: colors.textDim },
 
   // Étape 3
   emailIllus:      { alignItems: 'center', gap: 8, paddingVertical: 8 },
   emailIllusEmoji: { fontSize: 52 },
-  emailIllusTitle: { fontSize: 20, fontWeight: '900', color: Colors.textPrimary },
-  emailIllusDesc:  { fontSize: 14, fontWeight: '600', color: Colors.textDim, textAlign: 'center', lineHeight: 22 },
+  emailIllusTitle: { fontSize: 20, fontWeight: '900', color: colors.textPrimary },
+  emailIllusDesc:  { fontSize: 14, fontWeight: '600', color: colors.textDim, textAlign: 'center', lineHeight: 22 },
 
-  codeInput:  { fontSize: 28, fontWeight: '900', letterSpacing: 12, color: Colors.gold },
-  codeHint:   { fontSize: 11, fontWeight: '600', color: Colors.textFaint, textAlign: 'center' },
+  codeInput:  { fontSize: 28, fontWeight: '900', letterSpacing: 12, color: colors.gold },
+  codeHint:   { fontSize: 11, fontWeight: '600', color: colors.textFaint, textAlign: 'center' },
 
-  resendBtn:  { alignItems: 'center', padding: 12, backgroundColor: Colors.bgCard, borderRadius: Radii.md, borderWidth: 1, borderColor: Colors.border },
-  resendText: { fontSize: 14, fontWeight: '700', color: Colors.textDim },
+  resendBtn:  { alignItems: 'center', padding: 12, backgroundColor: colors.bgCard, borderRadius: Radii.md, borderWidth: 1, borderColor: colors.border },
+  resendText: { fontSize: 14, fontWeight: '700', color: colors.textDim },
 });

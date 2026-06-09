@@ -1,8 +1,10 @@
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { router } from 'expo-router';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { Colors, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
+import type { ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function ChildQrScanScreen() {
@@ -10,6 +12,9 @@ export default function ChildQrScanScreen() {
   const [scanned, setScanned]           = useState(false);
   const [error, setError]               = useState<string | null>(null);
   const { loginChildQr }                = useAuth();
+
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   async function handleBarcode({ data }: { data: string }) {
     if (scanned) return;
@@ -58,7 +63,7 @@ export default function ChildQrScanScreen() {
         </View>
         {scanned && !error && (
           <View style={styles.scanning}>
-            <ActivityIndicator size="large" color={Colors.gold} />
+            <ActivityIndicator size="large" color={colors.gold} />
             <Text style={styles.scanningText}>Connexion en cours…</Text>
           </View>
         )}
@@ -77,10 +82,10 @@ export default function ChildQrScanScreen() {
 
 const FRAME = 240;
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: Colors.bgScreen,
+    backgroundColor: colors.bgScreen,
     alignItems: 'center',
     paddingHorizontal: Spacing.screen,
     gap: 16,
@@ -88,14 +93,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: '900',
-    color: Colors.textPrimary,
+    color: colors.textPrimary,
     textAlign: 'center',
     marginTop: 80,
   },
   sub: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.textDim,
+    color: colors.textDim,
     textAlign: 'center',
     marginTop: -8,
   },
@@ -116,7 +121,7 @@ const styles = StyleSheet.create({
     width: FRAME,
     height: FRAME,
     borderWidth: 3,
-    borderColor: Colors.gold,
+    borderColor: colors.gold,
     borderRadius: 16,
     backgroundColor: 'transparent',
   },
@@ -140,7 +145,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   btn: {
-    backgroundColor: Colors.gold,
+    backgroundColor: colors.gold,
     paddingHorizontal: 32,
     paddingVertical: 14,
     borderRadius: 16,
@@ -159,6 +164,6 @@ const styles = StyleSheet.create({
   backText: {
     fontSize: 14,
     fontWeight: '700',
-    color: Colors.textDim,
+    color: colors.textDim,
   },
 });

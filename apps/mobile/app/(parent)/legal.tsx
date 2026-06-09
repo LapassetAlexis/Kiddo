@@ -1,7 +1,10 @@
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { useMemo } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
+import type { ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const CONTENT = {
   terms: {
@@ -68,9 +71,26 @@ const CONTENT = {
   },
 };
 
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.bgScreen },
+  navbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.screen, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
+  backBtn:  { fontSize: 22, color: colors.textDim, fontWeight: '700', width: 40 },
+  navTitle: { fontSize: 16, fontWeight: '900', color: colors.textPrimary, flex: 1, textAlign: 'center' },
+
+  content:    { padding: Spacing.screen, gap: 20 },
+  lastUpdate: { fontSize: 12, fontWeight: '600', color: colors.textFaint, marginBottom: 4 },
+
+  section: { gap: 8 },
+  heading: { fontSize: 15, fontWeight: '900', color: colors.textPrimary },
+  body:    { fontSize: 14, fontWeight: '500', color: colors.textDim, lineHeight: 22 },
+});
+
 export default function LegalScreen() {
   const { type } = useLocalSearchParams<{ type: 'terms' | 'privacy' }>();
   const content = CONTENT[type ?? 'terms'];
+
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
@@ -97,17 +117,3 @@ export default function LegalScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.bgScreen },
-  navbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.screen, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  backBtn:  { fontSize: 22, color: Colors.textDim, fontWeight: '700', width: 40 },
-  navTitle: { fontSize: 16, fontWeight: '900', color: Colors.textPrimary, flex: 1, textAlign: 'center' },
-
-  content:    { padding: Spacing.screen, gap: 20 },
-  lastUpdate: { fontSize: 12, fontWeight: '600', color: Colors.textFaint, marginBottom: 4 },
-
-  section: { gap: 8 },
-  heading: { fontSize: 15, fontWeight: '900', color: Colors.textPrimary },
-  body:    { fontSize: 14, fontWeight: '500', color: Colors.textDim, lineHeight: 22 },
-});

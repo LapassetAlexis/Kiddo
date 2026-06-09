@@ -1,7 +1,10 @@
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { useMemo } from 'react';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors, Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing } from '@/constants/theme';
+import type { ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
 import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
 import { useAuth } from '@/contexts/AuthContext';
@@ -71,6 +74,8 @@ function buildBadgeGroups(tasksCompleted: number, earnedTotal: number, spentTota
 export default function ChildProfileScreen() {
   const { user, canSwitchToParent, switchToParent: authSwitchToParent } = useAuth();
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const {
     data: statsData,
@@ -129,10 +134,10 @@ export default function ChildProfileScreen() {
     : '';
 
   const STATS = [
-    { label: 'Quêtes faites',   value: String(statsData?.stats?.tasksCompleted ?? 0), icon: '⚔️', color: Colors.green  },
-    { label: 'Récompenses',     value: String(statsData?.stats?.rewardsClaimed ?? 0), icon: '🎁', color: Colors.gold   },
-    { label: 'Record de série', value: `${streakData?.longestStreak ?? 0}j`,          icon: '🔥', color: Colors.orange },
-    { label: 'Or gagné',        value: earnedTotal.toLocaleString('fr-FR') + ' 🪙',   icon: '💰', color: Colors.gold   },
+    { label: 'Quêtes faites',   value: String(statsData?.stats?.tasksCompleted ?? 0), icon: '⚔️', color: colors.green  },
+    { label: 'Récompenses',     value: String(statsData?.stats?.rewardsClaimed ?? 0), icon: '🎁', color: colors.gold   },
+    { label: 'Record de série', value: `${streakData?.longestStreak ?? 0}j`,          icon: '🔥', color: colors.orange },
+    { label: 'Or gagné',        value: earnedTotal.toLocaleString('fr-FR') + ' 🪙',   icon: '💰', color: colors.gold   },
   ];
 
   function changePin() {
@@ -261,8 +266,8 @@ export default function ChildProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root:    { flex: 1, backgroundColor: Colors.bgScreen },
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  root:    { flex: 1, backgroundColor: colors.bgScreen },
   content: { padding: Spacing.screen, gap: 12 },
 
   // Hero
@@ -275,16 +280,16 @@ const styles = StyleSheet.create({
     borderRadius: 99, paddingHorizontal: 8, paddingVertical: 3,
     borderWidth: 1, borderColor: 'rgba(255,107,53,0.3)',
   },
-  streakBadgeText: { fontSize: 12, fontWeight: '900', color: Colors.orange },
-  childName:       { fontSize: 28, fontWeight: '900', color: Colors.textPrimary },
-  childSince:      { fontSize: 13, fontWeight: '600', color: Colors.textFaint },
+  streakBadgeText: { fontSize: 12, fontWeight: '900', color: colors.orange },
+  childName:       { fontSize: 28, fontWeight: '900', color: colors.textPrimary },
+  childSince:      { fontSize: 13, fontWeight: '600', color: colors.textFaint },
 
   // Level / XP
   levelRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     width: '100%', paddingHorizontal: 8,
-    backgroundColor: Colors.bgCard, borderRadius: Radii.card,
-    borderWidth: 1, borderColor: Colors.border, padding: 14,
+    backgroundColor: colors.bgCard, borderRadius: Radii.card,
+    borderWidth: 1, borderColor: colors.border, padding: 14,
   },
   levelEmoji:    { fontSize: 36 },
   levelInfo:     { flex: 1, gap: 5 },
@@ -295,21 +300,21 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(139,92,246,0.3)',
   },
   levelBadgeText: { fontSize: 11, fontWeight: '900', color: '#a78bfa' },
-  levelTitle:     { fontSize: 13, fontWeight: '800', color: Colors.textPrimary },
-  classChip:      { marginLeft: 'auto', fontSize: 12, fontWeight: '700', color: Colors.textDim },
+  levelTitle:     { fontSize: 13, fontWeight: '800', color: colors.textPrimary },
+  classChip:      { marginLeft: 'auto', fontSize: 12, fontWeight: '700', color: colors.textDim },
   xpBarTrack: { height: 6, borderRadius: 99, backgroundColor: 'rgba(139,92,246,0.15)', overflow: 'hidden', width: '100%' },
   xpBarFill:  { height: '100%', borderRadius: 99, backgroundColor: '#8b5cf6' },
-  xpLabel:    { fontSize: 10, fontWeight: '700', color: Colors.textFaint },
+  xpLabel:    { fontSize: 10, fontWeight: '700', color: colors.textFaint },
 
   balancePill: {
     backgroundColor: 'rgba(255,184,0,0.12)',
     borderRadius: 99, paddingHorizontal: 20, paddingVertical: 10,
     borderWidth: 1, borderColor: 'rgba(255,184,0,0.25)',
   },
-  balancePillText: { fontSize: 18, fontWeight: '900', color: Colors.gold },
+  balancePillText: { fontSize: 18, fontWeight: '900', color: colors.gold },
 
   sectionLabel: {
-    fontSize: 11, fontWeight: '900', color: Colors.textFaint,
+    fontSize: 11, fontWeight: '900', color: colors.textFaint,
     textTransform: 'uppercase', letterSpacing: 1.1, marginTop: 4,
   },
 
@@ -317,40 +322,40 @@ const styles = StyleSheet.create({
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   statCard: {
     width: '47%',
-    backgroundColor: Colors.bgCard, borderRadius: Radii.card,
-    borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: colors.bgCard, borderRadius: Radii.card,
+    borderWidth: 1, borderColor: colors.border,
     padding: 16, alignItems: 'center', gap: 6,
   },
   statIcon:  { fontSize: 28 },
   statValue: { fontSize: 22, fontWeight: '900', lineHeight: 24 },
-  statLabel: { fontSize: 11, fontWeight: '700', color: Colors.textFaint, textAlign: 'center' },
+  statLabel: { fontSize: 11, fontWeight: '700', color: colors.textFaint, textAlign: 'center' },
 
   // Badges
   badgeGroup:      { gap: 8 },
-  badgeGroupTitle: { fontSize: 12, fontWeight: '800', color: Colors.textDim },
+  badgeGroupTitle: { fontSize: 12, fontWeight: '800', color: colors.textDim },
   badgeRow:        { flexDirection: 'row', gap: 8 },
   badgeCard: {
     flex: 1,
-    backgroundColor: Colors.bgCard, borderRadius: Radii.card,
-    borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: colors.bgCard, borderRadius: Radii.card,
+    borderWidth: 1, borderColor: colors.border,
     paddingVertical: 12, paddingHorizontal: 4,
     alignItems: 'center', gap: 5,
     position: 'relative',
   },
   badgeLocked:      { opacity: 0.45 },
   badgeEmoji:       { fontSize: 26 },
-  badgeLabel:       { fontSize: 9, fontWeight: '700', color: Colors.textPrimary, textAlign: 'center', lineHeight: 12 },
-  badgeLabelLocked: { color: Colors.textFaint },
+  badgeLabel:       { fontSize: 9, fontWeight: '700', color: colors.textPrimary, textAlign: 'center', lineHeight: 12 },
+  badgeLabelLocked: { color: colors.textFaint },
   badgeLockIcon:    { position: 'absolute', top: 5, right: 5, fontSize: 9 },
 
   // Actions
   actionsCard: {
-    backgroundColor: Colors.bgCard, borderRadius: Radii.card,
-    borderWidth: 1, borderColor: Colors.border, overflow: 'hidden',
+    backgroundColor: colors.bgCard, borderRadius: Radii.card,
+    borderWidth: 1, borderColor: colors.border, overflow: 'hidden',
   },
   actionRow:     { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 },
   actionIcon:    { fontSize: 22 },
-  actionText:    { flex: 1, fontSize: 15, fontWeight: '700', color: Colors.textPrimary },
-  actionArrow:   { fontSize: 20, color: Colors.textFaint },
+  actionText:    { flex: 1, fontSize: 15, fontWeight: '700', color: colors.textPrimary },
+  actionArrow:   { fontSize: 20, color: colors.textFaint },
   actionDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.05)' },
 });

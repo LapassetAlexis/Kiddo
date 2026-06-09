@@ -2,7 +2,7 @@ import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, KeyboardAvoidingView, Platform,
 } from 'react-native';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,7 +11,9 @@ import { childrenApi } from '@/lib/api/children';
 import { useApiData } from '@/lib/useApiData';
 import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
 import { ApiError } from '@/lib/api-client';
-import { Colors, Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing } from '@/constants/theme';
+import type { ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { DIFFICULTY_LABELS, DIFFICULTY_EMOJI, XP_BY_DIFFICULTY, type TaskDifficulty } from '@/lib/rpg';
 
 type Frequency = 'once' | 'daily' | 'weekly';
@@ -37,6 +39,88 @@ const FREQ_OPTIONS: { value: Frequency; label: string; desc: string }[] = [
 
 const DAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
 
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.bgScreen },
+
+  navbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.screen, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
+  backBtn:     { fontSize: 22, color: colors.textDim, fontWeight: '700', width: 40 },
+  navTitle:    { fontSize: 16, fontWeight: '900', color: colors.textPrimary },
+  saveBtn:     { backgroundColor: colors.gold, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 8 },
+  saveBtnText: { fontSize: 14, fontWeight: '900', color: '#1a1000' },
+
+  content: { padding: Spacing.screen, gap: 16 },
+  sectionLabel: { fontSize: 11, fontWeight: '900', color: colors.textFaint, textTransform: 'uppercase', letterSpacing: 1.2 },
+
+  quickScroll: { marginHorizontal: -Spacing.screen, paddingHorizontal: Spacing.screen },
+  quickChip:       { backgroundColor: colors.bgCard, borderRadius: Radii.pill, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 14, paddingVertical: 10, marginRight: 8, alignItems: 'center' },
+  quickChipActive: { backgroundColor: 'rgba(255,184,0,0.12)', borderColor: 'rgba(255,184,0,0.3)' },
+  quickChipText:       { fontSize: 13, fontWeight: '700', color: colors.textDim },
+  quickChipTextActive: { color: colors.gold },
+  quickChipPts:    { fontSize: 11, fontWeight: '900', color: colors.textFaint, marginTop: 2 },
+
+  input: { backgroundColor: colors.bgCard, borderRadius: Radii.md, borderWidth: 1, borderColor: colors.border, padding: 16, fontSize: 16, fontWeight: '700', color: colors.textPrimary },
+
+  // Difficulté
+  diffGroup: { gap: 8 },
+  diffOption: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: colors.border, padding: 14 },
+  diffOptionActive: { borderColor: 'rgba(255,184,0,0.3)', backgroundColor: 'rgba(255,184,0,0.06)' },
+  diffEmoji: { fontSize: 20, width: 26, textAlign: 'center' },
+  diffLabel:       { fontSize: 15, fontWeight: '800', color: colors.textDim },
+  diffLabelActive: { color: colors.gold },
+  diffXp:          { fontSize: 13, fontWeight: '900', color: colors.textFaint },
+  diffXpActive:    { color: colors.gold },
+
+  // Or
+  ptsRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+  ptsChip:       { width: 56, height: 56, borderRadius: Radii.card, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  ptsChipActive: { backgroundColor: 'rgba(255,184,0,0.12)', borderColor: 'rgba(255,184,0,0.3)' },
+  ptsChipText:       { fontSize: 16, fontWeight: '900', color: colors.textDim },
+  ptsChipTextActive: { color: colors.gold },
+  ptsInput:       { flex: 1, height: 56, backgroundColor: colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: colors.border, textAlign: 'center', fontSize: 16, fontWeight: '900', color: colors.textPrimary },
+  ptsInputActive: { borderColor: 'rgba(255,184,0,0.3)', backgroundColor: 'rgba(255,184,0,0.08)' },
+
+  // Fréquence
+  freqGroup: { gap: 8 },
+  freqOption:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: colors.border, padding: 14 },
+  freqOptionActive: { borderColor: 'rgba(255,184,0,0.3)', backgroundColor: 'rgba(255,184,0,0.06)' },
+  freqLabel:       { fontSize: 15, fontWeight: '800', color: colors.textDim },
+  freqLabelActive: { color: colors.gold },
+  freqDesc:        { fontSize: 12, fontWeight: '600', color: colors.textFaint },
+
+  dayPicker: { flexDirection: 'row', gap: 6, justifyContent: 'space-between' },
+  dayBtn:       { flex: 1, height: 44, borderRadius: 12, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  dayBtnActive: { backgroundColor: 'rgba(255,184,0,0.12)', borderColor: 'rgba(255,184,0,0.35)' },
+  dayText:       { fontSize: 12, fontWeight: '800', color: colors.textFaint },
+  dayTextActive: { color: colors.gold },
+
+  stepperRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  stepperBtn:         { width: 48, height: 48, borderRadius: Radii.card, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  stepperBtnDisabled: { opacity: 0.35 },
+  stepperBtnText:     { fontSize: 22, fontWeight: '800', color: colors.textPrimary },
+  stepperValue:       { flex: 1, alignItems: 'center' },
+  stepperValueText:   { fontSize: 22, fontWeight: '900', color: colors.gold },
+  stepperValueSub:    { fontSize: 11, fontWeight: '700', color: colors.textFaint, marginTop: 1 },
+
+  // Enfants
+  childrenGroup: { gap: 8 },
+  childOption:       { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: colors.border, padding: 14 },
+  childOptionActive: { borderColor: 'rgba(255,184,0,0.3)', backgroundColor: 'rgba(255,184,0,0.06)' },
+  childEmoji: { fontSize: 26 },
+  childName:       { fontSize: 15, fontWeight: '800', color: colors.textDim },
+  childNameActive: { color: colors.textPrimary },
+  childLevel:      { fontSize: 11, fontWeight: '600', color: colors.textFaint, marginTop: 2 },
+  checkbox:       { width: 24, height: 24, borderRadius: 7, borderWidth: 2, borderColor: colors.textFaint, alignItems: 'center', justifyContent: 'center' },
+  checkboxActive: { backgroundColor: colors.gold, borderColor: colors.gold },
+  checkmark:      { fontSize: 14, color: '#1a1000', fontWeight: '900' },
+
+  summary: { backgroundColor: colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: colors.border, padding: 16, gap: 6 },
+  summaryTitle: { fontSize: 11, fontWeight: '900', color: colors.textFaint, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 },
+  summaryLine:  { fontSize: 14, fontWeight: '600', color: colors.textDim },
+
+  createBtn:     { backgroundColor: colors.gold, borderRadius: Radii.md, padding: 18, alignItems: 'center' },
+  createBtnText: { fontSize: 16, fontWeight: '900', color: '#1a1000' },
+});
+
 export default function CreateTaskScreen() {
   const [title, setTitle]             = useState('');
   const [gold, setGold]               = useState('');
@@ -48,6 +132,9 @@ export default function CreateTaskScreen() {
   const [assignedIds, setAssignedIds] = useState<string[]>([]);
   const [loading, setLoading]         = useState(false);
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
+
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const { data: childrenData, loading: childrenLoading, error: childrenError, refresh: childrenRefresh } =
     useApiData(() => childrenApi.list(), []);
@@ -151,7 +238,7 @@ export default function CreateTaskScreen() {
           <TextInput
             style={styles.input}
             placeholder="Ex : Ranger sa chambre"
-            placeholderTextColor={Colors.textFaint}
+            placeholderTextColor={colors.textFaint}
             value={title}
             onChangeText={setTitle}
             returnKeyType="next"
@@ -196,7 +283,7 @@ export default function CreateTaskScreen() {
             <TextInput
               style={[styles.ptsInput, !([10,20,30,50].map(String).includes(gold)) && gold !== '' && styles.ptsInputActive]}
               placeholder="Autre"
-              placeholderTextColor={Colors.textFaint}
+              placeholderTextColor={colors.textFaint}
               value={[10,20,30,50].map(String).includes(gold) ? '' : gold}
               onChangeText={v => setGold(v.replace(/[^0-9]/g, ''))}
               keyboardType="numeric"
@@ -263,7 +350,7 @@ export default function CreateTaskScreen() {
                 <TextInput
                   style={[styles.ptsInput, !([5,10,15,20].map(String).includes(bonusGold)) && bonusGold !== '' && styles.ptsInputActive]}
                   placeholder="0"
-                  placeholderTextColor={Colors.textFaint}
+                  placeholderTextColor={colors.textFaint}
                   value={[5,10,15,20].map(String).includes(bonusGold) ? '' : bonusGold}
                   onChangeText={v => setBonusGold(v.replace(/[^0-9]/g, ''))}
                   keyboardType="numeric"
@@ -298,13 +385,13 @@ export default function CreateTaskScreen() {
           {title.trim() && gold ? (
             <View style={styles.summary}>
               <Text style={styles.summaryTitle}>Récapitulatif</Text>
-              <Text style={styles.summaryLine}>📋 <Text style={{ color: Colors.textPrimary, fontWeight: '800' }}>{title}</Text></Text>
+              <Text style={styles.summaryLine}>📋 <Text style={{ color: colors.textPrimary, fontWeight: '800' }}>{title}</Text></Text>
               <Text style={styles.summaryLine}>
-                {DIFFICULTY_EMOJI[difficulty]} <Text style={{ color: Colors.textDim }}>{DIFFICULTY_LABELS[difficulty]}</Text>
+                {DIFFICULTY_EMOJI[difficulty]} <Text style={{ color: colors.textDim }}>{DIFFICULTY_LABELS[difficulty]}</Text>
                 {'  ·  '}
-                <Text style={{ color: Colors.gold, fontWeight: '900' }}>+{gold}🪙</Text>
+                <Text style={{ color: colors.gold, fontWeight: '900' }}>+{gold}🪙</Text>
                 {'  ·  '}
-                <Text style={{ color: Colors.textDim }}>+{XP_BY_DIFFICULTY[difficulty]}⭐</Text>
+                <Text style={{ color: colors.textDim }}>+{XP_BY_DIFFICULTY[difficulty]}⭐</Text>
               </Text>
               <Text style={styles.summaryLine}>
                 👶 {children.filter(c => assignedIds.includes(c.id)).map(c => `${c.avatar} ${c.name}`).join('  ') || '—'}
@@ -323,85 +410,3 @@ export default function CreateTaskScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.bgScreen },
-
-  navbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.screen, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  backBtn:     { fontSize: 22, color: Colors.textDim, fontWeight: '700', width: 40 },
-  navTitle:    { fontSize: 16, fontWeight: '900', color: Colors.textPrimary },
-  saveBtn:     { backgroundColor: Colors.gold, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 8 },
-  saveBtnText: { fontSize: 14, fontWeight: '900', color: '#1a1000' },
-
-  content: { padding: Spacing.screen, gap: 16 },
-  sectionLabel: { fontSize: 11, fontWeight: '900', color: Colors.textFaint, textTransform: 'uppercase', letterSpacing: 1.2 },
-
-  quickScroll: { marginHorizontal: -Spacing.screen, paddingHorizontal: Spacing.screen },
-  quickChip:       { backgroundColor: Colors.bgCard, borderRadius: Radii.pill, borderWidth: 1, borderColor: Colors.border, paddingHorizontal: 14, paddingVertical: 10, marginRight: 8, alignItems: 'center' },
-  quickChipActive: { backgroundColor: 'rgba(255,184,0,0.12)', borderColor: 'rgba(255,184,0,0.3)' },
-  quickChipText:       { fontSize: 13, fontWeight: '700', color: Colors.textDim },
-  quickChipTextActive: { color: Colors.gold },
-  quickChipPts:    { fontSize: 11, fontWeight: '900', color: Colors.textFaint, marginTop: 2 },
-
-  input: { backgroundColor: Colors.bgCard, borderRadius: Radii.md, borderWidth: 1, borderColor: Colors.border, padding: 16, fontSize: 16, fontWeight: '700', color: Colors.textPrimary },
-
-  // Difficulté
-  diffGroup: { gap: 8 },
-  diffOption: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: Colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: Colors.border, padding: 14 },
-  diffOptionActive: { borderColor: 'rgba(255,184,0,0.3)', backgroundColor: 'rgba(255,184,0,0.06)' },
-  diffEmoji: { fontSize: 20, width: 26, textAlign: 'center' },
-  diffLabel:       { fontSize: 15, fontWeight: '800', color: Colors.textDim },
-  diffLabelActive: { color: Colors.gold },
-  diffXp:          { fontSize: 13, fontWeight: '900', color: Colors.textFaint },
-  diffXpActive:    { color: Colors.gold },
-
-  // Or
-  ptsRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
-  ptsChip:       { width: 56, height: 56, borderRadius: Radii.card, backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
-  ptsChipActive: { backgroundColor: 'rgba(255,184,0,0.12)', borderColor: 'rgba(255,184,0,0.3)' },
-  ptsChipText:       { fontSize: 16, fontWeight: '900', color: Colors.textDim },
-  ptsChipTextActive: { color: Colors.gold },
-  ptsInput:       { flex: 1, height: 56, backgroundColor: Colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: Colors.border, textAlign: 'center', fontSize: 16, fontWeight: '900', color: Colors.textPrimary },
-  ptsInputActive: { borderColor: 'rgba(255,184,0,0.3)', backgroundColor: 'rgba(255,184,0,0.08)' },
-
-  // Fréquence
-  freqGroup: { gap: 8 },
-  freqOption:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: Colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: Colors.border, padding: 14 },
-  freqOptionActive: { borderColor: 'rgba(255,184,0,0.3)', backgroundColor: 'rgba(255,184,0,0.06)' },
-  freqLabel:       { fontSize: 15, fontWeight: '800', color: Colors.textDim },
-  freqLabelActive: { color: Colors.gold },
-  freqDesc:        { fontSize: 12, fontWeight: '600', color: Colors.textFaint },
-
-  dayPicker: { flexDirection: 'row', gap: 6, justifyContent: 'space-between' },
-  dayBtn:       { flex: 1, height: 44, borderRadius: 12, backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
-  dayBtnActive: { backgroundColor: 'rgba(255,184,0,0.12)', borderColor: 'rgba(255,184,0,0.35)' },
-  dayText:       { fontSize: 12, fontWeight: '800', color: Colors.textFaint },
-  dayTextActive: { color: Colors.gold },
-
-  stepperRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  stepperBtn:         { width: 48, height: 48, borderRadius: Radii.card, backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
-  stepperBtnDisabled: { opacity: 0.35 },
-  stepperBtnText:     { fontSize: 22, fontWeight: '800', color: Colors.textPrimary },
-  stepperValue:       { flex: 1, alignItems: 'center' },
-  stepperValueText:   { fontSize: 22, fontWeight: '900', color: Colors.gold },
-  stepperValueSub:    { fontSize: 11, fontWeight: '700', color: Colors.textFaint, marginTop: 1 },
-
-  // Enfants
-  childrenGroup: { gap: 8 },
-  childOption:       { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: Colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: Colors.border, padding: 14 },
-  childOptionActive: { borderColor: 'rgba(255,184,0,0.3)', backgroundColor: 'rgba(255,184,0,0.06)' },
-  childEmoji: { fontSize: 26 },
-  childName:       { fontSize: 15, fontWeight: '800', color: Colors.textDim },
-  childNameActive: { color: Colors.textPrimary },
-  childLevel:      { fontSize: 11, fontWeight: '600', color: Colors.textFaint, marginTop: 2 },
-  checkbox:       { width: 24, height: 24, borderRadius: 7, borderWidth: 2, borderColor: Colors.textFaint, alignItems: 'center', justifyContent: 'center' },
-  checkboxActive: { backgroundColor: Colors.gold, borderColor: Colors.gold },
-  checkmark:      { fontSize: 14, color: '#1a1000', fontWeight: '900' },
-
-  summary: { backgroundColor: Colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: Colors.border, padding: 16, gap: 6 },
-  summaryTitle: { fontSize: 11, fontWeight: '900', color: Colors.textFaint, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 },
-  summaryLine:  { fontSize: 14, fontWeight: '600', color: Colors.textDim },
-
-  createBtn:     { backgroundColor: Colors.gold, borderRadius: Radii.md, padding: 18, alignItems: 'center' },
-  createBtnText: { fontSize: 16, fontWeight: '900', color: '#1a1000' },
-});

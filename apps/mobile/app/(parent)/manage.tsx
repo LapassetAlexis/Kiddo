@@ -1,8 +1,10 @@
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SectionList } from 'react-native';
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors, Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing } from '@/constants/theme';
+import type { ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { rewardsApi } from '@/lib/api/rewards';
 import { formatHHMM } from '@/lib/formatters';
 import { useApiData } from '@/lib/useApiData';
@@ -52,12 +54,120 @@ function groupHistoryByDate(items: any[]): HistorySection[] {
   return Object.entries(groups).map(([title, data]) => ({ title, data }));
 }
 
-const STATUS_CONFIG = {
-  granted: { label: 'Accordée', color: Colors.green,  bg: 'rgba(76,175,80,0.12)', border: 'rgba(76,175,80,0.22)', icon: '✓' },
-  refused: { label: 'Refusée',  color: '#EF5350',     bg: 'rgba(239,83,80,0.1)',  border: 'rgba(239,83,80,0.2)', icon: '✕' },
-};
-
 type Tab = 'catalogue' | 'historique';
+
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.bgScreen },
+
+  header: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: Spacing.screen, paddingVertical: 12,
+    borderBottomWidth: 1, borderBottomColor: colors.border,
+  },
+  title:      { fontSize: 20, fontWeight: '900', color: colors.textPrimary },
+  addBtn:     { width: 44, height: 44, backgroundColor: colors.gold, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  addBtnText: { fontSize: 24, fontWeight: '900', color: '#1a1000', lineHeight: 28 },
+
+  list: { padding: Spacing.screen, gap: 10 },
+
+  card: {
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    backgroundColor: colors.bgCard, borderRadius: Radii.card,
+    borderWidth: 1, borderColor: colors.border, padding: 16,
+  },
+  cardEmoji: { fontSize: 30 },
+  cardInfo:  { flex: 1, gap: 6 },
+  cardTitle: { fontSize: 15, fontWeight: '800', color: colors.textPrimary },
+  badgeRow:  { flexDirection: 'row' },
+  availBadge: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: Radii.pill, paddingHorizontal: 8, paddingVertical: 3,
+    borderWidth: 1, borderColor: colors.border,
+  },
+  availBadgeText: { fontSize: 11, fontWeight: '700', color: colors.textFaint },
+  costWrap:   { alignItems: 'center' },
+  costValue:  { fontSize: 22, fontWeight: '900', color: colors.gold, lineHeight: 24 },
+  costPts:    { fontSize: 10, fontWeight: '700', color: colors.textFaint },
+
+  addCard: {
+    borderRadius: Radii.card, borderWidth: 1.5, borderColor: colors.border,
+    borderStyle: 'dashed', padding: 18, alignItems: 'center',
+  },
+  addCardText: { fontSize: 14, fontWeight: '800', color: colors.textDim },
+
+  empty:      { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 40 },
+  emptyEmoji: { fontSize: 56, marginBottom: 4 },
+  emptyTitle: { fontSize: 18, fontWeight: '900', color: colors.textPrimary },
+  emptySub:   { fontSize: 14, fontWeight: '600', color: colors.textDim, textAlign: 'center', lineHeight: 20 },
+  emptyBtn:   { backgroundColor: colors.gold, borderRadius: Radii.md, paddingHorizontal: 24, paddingVertical: 14, marginTop: 8 },
+  emptyBtnText: { fontSize: 15, fontWeight: '900', color: '#1a1000' },
+
+  // Onglets
+  tabs: {
+    flexDirection: 'row',
+    borderBottomWidth: 1, borderBottomColor: colors.border,
+  },
+  tab: {
+    flex: 1, paddingVertical: 13, alignItems: 'center',
+    borderBottomWidth: 2, borderBottomColor: 'transparent',
+  },
+  tabActive: { borderBottomColor: colors.gold },
+  tabText:       { fontSize: 14, fontWeight: '800', color: colors.textDim },
+  tabTextActive: { color: colors.gold },
+
+  // Stats historique
+  statsRow: { flexDirection: 'row', gap: 10, padding: Spacing.screen, paddingBottom: 0 },
+  statCard: {
+    flex: 1, backgroundColor: colors.bgCard, borderRadius: 16,
+    borderWidth: 1, borderColor: colors.border,
+    padding: 14, alignItems: 'center', gap: 4,
+  },
+  statValue: { fontSize: 22, fontWeight: '900', lineHeight: 24 },
+  statLabel: { fontSize: 10, fontWeight: '700', color: colors.textFaint, textTransform: 'uppercase', letterSpacing: 0.6 },
+
+  // Filtres
+  filterRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingHorizontal: Spacing.screen, paddingVertical: 10,
+  },
+  filterChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: colors.bgCard, borderRadius: Radii.pill,
+    borderWidth: 1, borderColor: colors.border,
+    paddingHorizontal: 10, paddingVertical: 6,
+  },
+  filterChipActive:    { borderColor: 'rgba(255,184,0,0.35)', backgroundColor: 'rgba(255,184,0,0.08)' },
+  filterEmoji:         { fontSize: 13 },
+  filterText:          { fontSize: 12, fontWeight: '700', color: colors.textDim },
+  filterTextActive:    { color: colors.gold },
+
+  statusChip: {
+    backgroundColor: colors.bgCard, borderRadius: Radii.pill,
+    borderWidth: 1, borderColor: colors.border,
+    paddingHorizontal: 10, paddingVertical: 6,
+  },
+  statusChipActive:    { borderColor: 'rgba(255,184,0,0.35)', backgroundColor: 'rgba(255,184,0,0.08)' },
+  statusChipText:      { fontSize: 12, fontWeight: '800', color: colors.textDim },
+  statusChipTextActive:{ color: colors.gold },
+
+  // Historique rows
+  sectionTitle: {
+    fontSize: 11, fontWeight: '900', color: colors.textFaint,
+    textTransform: 'uppercase', letterSpacing: 1.1,
+    marginTop: 12, marginBottom: 4,
+  },
+  historyRow:  { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.bgCard, padding: 13 },
+  rowFirst:    { borderTopLeftRadius: Radii.card, borderTopRightRadius: Radii.card },
+  rowLast:     { borderBottomLeftRadius: Radii.card, borderBottomRightRadius: Radii.card },
+  historyEmoji:{ fontSize: 26, width: 34, textAlign: 'center' },
+  historyInfo: { flex: 1, gap: 2 },
+  historyName: { fontSize: 14, fontWeight: '800', color: colors.textPrimary },
+  historyMeta: { fontSize: 11, fontWeight: '600', color: colors.textFaint },
+  historyRight:{ alignItems: 'flex-end', gap: 4, flexShrink: 0 },
+  historyPts:  { fontSize: 13, fontWeight: '900', color: colors.orange },
+  statusBadge: { borderRadius: Radii.pill, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1 },
+  statusText:  { fontSize: 10, fontWeight: '900' },
+});
 
 export default function ManageScreen() {
   const [tab, setTab]           = useState<Tab>('catalogue');
@@ -67,6 +177,14 @@ export default function ManageScreen() {
   const tabBarRef  = useRef<any>(null);
   const { active: tourActive, finish: finishTour } = useTour('manage');
   const [tourVisible, setTourVisible] = useState(false);
+
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
+  const STATUS_CONFIG = useMemo(() => ({
+    granted: { label: 'Accordée', color: colors.green,  bg: 'rgba(76,175,80,0.12)', border: 'rgba(76,175,80,0.22)', icon: '✓' },
+    refused: { label: 'Refusée',  color: '#EF5350',     bg: 'rgba(239,83,80,0.1)',  border: 'rgba(239,83,80,0.2)', icon: '✕' },
+  }), [colors]);
 
   const {
     data: catalogueData,
@@ -201,11 +319,11 @@ export default function ManageScreen() {
           {/* Stats */}
           <View style={styles.statsRow}>
             <View style={styles.statCard}>
-              <Text style={[styles.statValue, { color: Colors.green }]}>{totalGranted}</Text>
+              <Text style={[styles.statValue, { color: colors.green }]}>{totalGranted}</Text>
               <Text style={styles.statLabel}>Accordées</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={[styles.statValue, { color: Colors.gold }]}>{totalPts} 🪙</Text>
+              <Text style={[styles.statValue, { color: colors.gold }]}>{totalPts} 🪙</Text>
               <Text style={styles.statLabel}>Or dépensé</Text>
             </View>
           </View>
@@ -274,7 +392,7 @@ export default function ManageScreen() {
                       </Text>
                     </View>
                     <View style={styles.historyRight}>
-                      <Text style={[styles.historyPts, item.status === 'refused' && { color: Colors.textFaint }]}>
+                      <Text style={[styles.historyPts, item.status === 'refused' && { color: colors.textFaint }]}>
                         {item.status === 'granted' ? '−' : '↩'}{item.pts} 🪙
                       </Text>
                       <View style={[styles.statusBadge, { backgroundColor: cfg.bg, borderColor: cfg.border }]}>
@@ -300,116 +418,3 @@ export default function ManageScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.bgScreen },
-
-  header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: Spacing.screen, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
-  },
-  title:      { fontSize: 20, fontWeight: '900', color: Colors.textPrimary },
-  addBtn:     { width: 44, height: 44, backgroundColor: Colors.gold, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  addBtnText: { fontSize: 24, fontWeight: '900', color: '#1a1000', lineHeight: 28 },
-
-  list: { padding: Spacing.screen, gap: 10 },
-
-  card: {
-    flexDirection: 'row', alignItems: 'center', gap: 14,
-    backgroundColor: Colors.bgCard, borderRadius: Radii.card,
-    borderWidth: 1, borderColor: Colors.border, padding: 16,
-  },
-  cardEmoji: { fontSize: 30 },
-  cardInfo:  { flex: 1, gap: 6 },
-  cardTitle: { fontSize: 15, fontWeight: '800', color: Colors.textPrimary },
-  badgeRow:  { flexDirection: 'row' },
-  availBadge: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: Radii.pill, paddingHorizontal: 8, paddingVertical: 3,
-    borderWidth: 1, borderColor: Colors.border,
-  },
-  availBadgeText: { fontSize: 11, fontWeight: '700', color: Colors.textFaint },
-  costWrap:   { alignItems: 'center' },
-  costValue:  { fontSize: 22, fontWeight: '900', color: Colors.gold, lineHeight: 24 },
-  costPts:    { fontSize: 10, fontWeight: '700', color: Colors.textFaint },
-
-  addCard: {
-    borderRadius: Radii.card, borderWidth: 1.5, borderColor: Colors.border,
-    borderStyle: 'dashed', padding: 18, alignItems: 'center',
-  },
-  addCardText: { fontSize: 14, fontWeight: '800', color: Colors.textDim },
-
-  empty:      { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 40 },
-  emptyEmoji: { fontSize: 56, marginBottom: 4 },
-  emptyTitle: { fontSize: 18, fontWeight: '900', color: Colors.textPrimary },
-  emptySub:   { fontSize: 14, fontWeight: '600', color: Colors.textDim, textAlign: 'center', lineHeight: 20 },
-  emptyBtn:   { backgroundColor: Colors.gold, borderRadius: Radii.md, paddingHorizontal: 24, paddingVertical: 14, marginTop: 8 },
-  emptyBtnText: { fontSize: 15, fontWeight: '900', color: '#1a1000' },
-
-  // Onglets
-  tabs: {
-    flexDirection: 'row',
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
-  },
-  tab: {
-    flex: 1, paddingVertical: 13, alignItems: 'center',
-    borderBottomWidth: 2, borderBottomColor: 'transparent',
-  },
-  tabActive: { borderBottomColor: Colors.gold },
-  tabText:       { fontSize: 14, fontWeight: '800', color: Colors.textDim },
-  tabTextActive: { color: Colors.gold },
-
-  // Stats historique
-  statsRow: { flexDirection: 'row', gap: 10, padding: Spacing.screen, paddingBottom: 0 },
-  statCard: {
-    flex: 1, backgroundColor: Colors.bgCard, borderRadius: 16,
-    borderWidth: 1, borderColor: Colors.border,
-    padding: 14, alignItems: 'center', gap: 4,
-  },
-  statValue: { fontSize: 22, fontWeight: '900', lineHeight: 24 },
-  statLabel: { fontSize: 10, fontWeight: '700', color: Colors.textFaint, textTransform: 'uppercase', letterSpacing: 0.6 },
-
-  // Filtres
-  filterRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    paddingHorizontal: Spacing.screen, paddingVertical: 10,
-  },
-  filterChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: Colors.bgCard, borderRadius: Radii.pill,
-    borderWidth: 1, borderColor: Colors.border,
-    paddingHorizontal: 10, paddingVertical: 6,
-  },
-  filterChipActive:    { borderColor: 'rgba(255,184,0,0.35)', backgroundColor: 'rgba(255,184,0,0.08)' },
-  filterEmoji:         { fontSize: 13 },
-  filterText:          { fontSize: 12, fontWeight: '700', color: Colors.textDim },
-  filterTextActive:    { color: Colors.gold },
-
-  statusChip: {
-    backgroundColor: Colors.bgCard, borderRadius: Radii.pill,
-    borderWidth: 1, borderColor: Colors.border,
-    paddingHorizontal: 10, paddingVertical: 6,
-  },
-  statusChipActive:    { borderColor: 'rgba(255,184,0,0.35)', backgroundColor: 'rgba(255,184,0,0.08)' },
-  statusChipText:      { fontSize: 12, fontWeight: '800', color: Colors.textDim },
-  statusChipTextActive:{ color: Colors.gold },
-
-  // Historique rows
-  sectionTitle: {
-    fontSize: 11, fontWeight: '900', color: Colors.textFaint,
-    textTransform: 'uppercase', letterSpacing: 1.1,
-    marginTop: 12, marginBottom: 4,
-  },
-  historyRow:  { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: Colors.bgCard, padding: 13 },
-  rowFirst:    { borderTopLeftRadius: Radii.card, borderTopRightRadius: Radii.card },
-  rowLast:     { borderBottomLeftRadius: Radii.card, borderBottomRightRadius: Radii.card },
-  historyEmoji:{ fontSize: 26, width: 34, textAlign: 'center' },
-  historyInfo: { flex: 1, gap: 2 },
-  historyName: { fontSize: 14, fontWeight: '800', color: Colors.textPrimary },
-  historyMeta: { fontSize: 11, fontWeight: '600', color: Colors.textFaint },
-  historyRight:{ alignItems: 'flex-end', gap: 4, flexShrink: 0 },
-  historyPts:  { fontSize: 13, fontWeight: '900', color: Colors.orange },
-  statusBadge: { borderRadius: Radii.pill, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1 },
-  statusText:  { fontSize: 10, fontWeight: '900' },
-});

@@ -1,6 +1,9 @@
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { useMemo } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Colors, Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing } from '@/constants/theme';
+import type { ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
 import { useAuth } from '@/contexts/AuthContext';
 import { useApiData } from '@/lib/useApiData';
@@ -15,6 +18,9 @@ export default function ChildSelectScreen() {
     error,
     refresh,
   } = useApiData(() => childrenApi.list(), []);
+
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   if (loading) return <LoadingScreen />;
   if (error)   return <ErrorScreen message={error} onRetry={refresh} />;
@@ -59,10 +65,10 @@ export default function ChildSelectScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: Colors.bgScreen,
+    backgroundColor: colors.bgScreen,
     paddingHorizontal: Spacing.screen,
   },
   header: {
@@ -74,12 +80,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '900',
-    color: Colors.textPrimary,
+    color: colors.textPrimary,
   },
   sub: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.textDim,
+    color: colors.textDim,
   },
   grid: {
     flexDirection: 'row',
@@ -89,10 +95,10 @@ const styles = StyleSheet.create({
   },
   card: {
     width: 150,
-    backgroundColor: Colors.bgCard,
+    backgroundColor: colors.bgCard,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: colors.border,
     padding: 24,
     alignItems: 'center',
     gap: 10,
@@ -108,7 +114,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 18,
     fontWeight: '900',
-    color: Colors.textPrimary,
+    color: colors.textPrimary,
   },
   parentLink: {
     alignItems: 'center',
@@ -118,6 +124,6 @@ const styles = StyleSheet.create({
   parentLinkText: {
     fontSize: 14,
     fontWeight: '700',
-    color: Colors.textDim,
+    color: colors.textDim,
   },
 });

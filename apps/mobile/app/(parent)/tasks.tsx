@@ -1,8 +1,10 @@
 import { View, Text, SectionList, TouchableOpacity, StyleSheet } from 'react-native';
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors, Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing } from '@/constants/theme';
+import type { ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { tasksApi, Task } from '@/lib/api/tasks';
 import { useApiData } from '@/lib/useApiData';
 import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
@@ -74,13 +76,6 @@ function groupTasksByDate(tasks: Task[]): Section[] {
   return Object.entries(groups).map(([title, data]) => ({ title, data }));
 }
 
-const STATUS_CONFIG = {
-  validated: { label: 'Validée',    color: Colors.green,    bg: 'rgba(76,175,80,0.12)',   border: 'rgba(76,175,80,0.22)',   icon: '✓'  },
-  rejected:  { label: 'Rejetée',   color: '#EF5350',       bg: 'rgba(239,83,80,0.1)',    border: 'rgba(239,83,80,0.2)',    icon: '✕'  },
-  pending:   { label: 'En attente', color: Colors.gold,     bg: 'rgba(255,184,0,0.1)',    border: 'rgba(255,184,0,0.2)',    icon: '⏳' },
-  partial:   { label: 'En cours',   color: Colors.orange,   bg: 'rgba(255,107,53,0.1)',   border: 'rgba(255,107,53,0.2)',   icon: '↺'  },
-};
-
 type Filter = 'all' | 'validated' | 'rejected' | 'pending';
 
 const FILTERS: { value: Filter; label: string }[] = [
@@ -90,6 +85,93 @@ const FILTERS: { value: Filter; label: string }[] = [
   { value: 'rejected',  label: 'Rejetées'   },
 ];
 
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.bgScreen },
+
+  header: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: Spacing.screen, paddingVertical: 12,
+    borderBottomWidth: 1, borderBottomColor: colors.border,
+  },
+  title:      { fontSize: 20, fontWeight: '900', color: colors.textPrimary },
+  addBtn:     { width: 44, height: 44, backgroundColor: colors.gold, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  addBtnText: { fontSize: 24, fontWeight: '900', color: '#1a1000', lineHeight: 28 },
+
+  statsRow: { flexDirection: 'row', gap: 10, padding: Spacing.screen, paddingBottom: 0 },
+  statCard: {
+    flex: 1, backgroundColor: colors.bgCard, borderRadius: 16,
+    borderWidth: 1, borderColor: colors.border,
+    padding: 14, alignItems: 'center', gap: 4,
+  },
+  statValue: { fontSize: 22, fontWeight: '900', lineHeight: 24 },
+  statLabel: { fontSize: 10, fontWeight: '700', color: colors.textFaint, textTransform: 'uppercase', letterSpacing: 0.6 },
+
+  childFilters: {
+    flexDirection: 'row', gap: 8,
+    paddingHorizontal: Spacing.screen, paddingTop: 14,
+  },
+  childChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: colors.bgCard, borderRadius: Radii.pill,
+    borderWidth: 1, borderColor: colors.border,
+    paddingHorizontal: 12, paddingVertical: 7,
+  },
+  childChipActive:    { borderColor: 'rgba(255,184,0,0.35)', backgroundColor: 'rgba(255,184,0,0.08)' },
+  childChipEmoji:     { fontSize: 14 },
+  childChipText:      { fontSize: 13, fontWeight: '700', color: colors.textDim },
+  childChipTextActive:{ color: colors.gold },
+
+  filterRow: {
+    flexDirection: 'row', gap: 8,
+    paddingHorizontal: Spacing.screen, paddingTop: 10, paddingBottom: 6,
+  },
+  filterChip: {
+    borderRadius: Radii.pill, paddingHorizontal: 12, paddingVertical: 6,
+    backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border,
+  },
+  filterChipActive: { backgroundColor: 'rgba(255,184,0,0.1)', borderColor: 'rgba(255,184,0,0.3)' },
+  filterText:       { fontSize: 12, fontWeight: '800', color: colors.textDim },
+  filterTextActive: { color: colors.gold },
+
+  list: { padding: Spacing.screen, gap: 4 },
+
+  sectionTitle: {
+    fontSize: 11, fontWeight: '900', color: colors.textFaint,
+    textTransform: 'uppercase', letterSpacing: 1.1,
+    marginTop: 12, marginBottom: 6,
+  },
+
+  row:      { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.bgCard, padding: 13 },
+  rowFirst: { borderTopLeftRadius: Radii.card, borderTopRightRadius: Radii.card },
+  rowLast:  { borderBottomLeftRadius: Radii.card, borderBottomRightRadius: Radii.card },
+
+  childAvatar: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: 'rgba(255,184,0,0.1)',
+    alignItems: 'center', justifyContent: 'center',
+    flexShrink: 0,
+  },
+  rowInfo:   { flex: 1, gap: 2 },
+  rowTask:   { fontSize: 14, fontWeight: '800', color: colors.textPrimary },
+  rowMeta:   { fontSize: 11, fontWeight: '600', color: colors.textFaint },
+
+  rowRight:  { alignItems: 'flex-end', gap: 4, flexShrink: 0 },
+  rowPts:    { fontSize: 13, fontWeight: '900', color: colors.gold },
+  stepBadge: { fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.45)' },
+  statusBadge: {
+    borderRadius: Radii.pill, paddingHorizontal: 8, paddingVertical: 3,
+    borderWidth: 1,
+  },
+  statusText: { fontSize: 10, fontWeight: '900' },
+
+  empty:      { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, padding: 32 },
+  emptyEmoji: { fontSize: 48 },
+  emptyTitle: { fontSize: 17, fontWeight: '900', color: colors.textPrimary, textAlign: 'center' },
+  emptySub:   { fontSize: 13, fontWeight: '600', color: colors.textDim, textAlign: 'center', lineHeight: 20, maxWidth: 260 },
+  emptyBtn:   { backgroundColor: colors.gold, borderRadius: Radii.md, paddingHorizontal: 22, paddingVertical: 12, marginTop: 4 },
+  emptyBtnText:{ fontSize: 14, fontWeight: '900', color: '#1a1000' },
+});
+
 export default function TasksScreen() {
   const [filter, setFilter] = useState<Filter>('all');
   const [childFilter, setChildFilter] = useState<string>('all');
@@ -97,6 +179,16 @@ export default function TasksScreen() {
   const statsRef   = useRef<any>(null);
   const { active: tourActive, finish: finishTour } = useTour('tasks');
   const [tourVisible, setTourVisible] = useState(false);
+
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
+  const STATUS_CONFIG = useMemo(() => ({
+    validated: { label: 'Validée',    color: colors.green,    bg: 'rgba(76,175,80,0.12)',   border: 'rgba(76,175,80,0.22)',   icon: '✓'  },
+    rejected:  { label: 'Rejetée',   color: '#EF5350',       bg: 'rgba(239,83,80,0.1)',    border: 'rgba(239,83,80,0.2)',    icon: '✕'  },
+    pending:   { label: 'En attente', color: colors.gold,     bg: 'rgba(255,184,0,0.1)',    border: 'rgba(255,184,0,0.2)',    icon: '⏳' },
+    partial:   { label: 'En cours',   color: colors.orange,   bg: 'rgba(255,107,53,0.1)',   border: 'rgba(255,107,53,0.2)',   icon: '↺'  },
+  }), [colors]);
 
   const { data: historyData, loading, error, refresh } = useApiData(
     () => tasksApi.history(),
@@ -161,15 +253,15 @@ export default function TasksScreen() {
       {/* Stats */}
       <View ref={statsRef} style={styles.statsRow}>
         <View style={styles.statCard}>
-          <Text style={[styles.statValue, { color: Colors.green }]}>{totalValidated}</Text>
+          <Text style={[styles.statValue, { color: colors.green }]}>{totalValidated}</Text>
           <Text style={styles.statLabel}>Validées</Text>
         </View>
         <View style={styles.statCard}>
-          <Text style={[styles.statValue, { color: Colors.gold }]}>{totalPending}</Text>
+          <Text style={[styles.statValue, { color: colors.gold }]}>{totalPending}</Text>
           <Text style={styles.statLabel}>En attente</Text>
         </View>
         <View style={styles.statCard}>
-          <Text style={[styles.statValue, { color: Colors.gold }]}>+{totalGold}🪙</Text>
+          <Text style={[styles.statValue, { color: colors.gold }]}>+{totalGold}🪙</Text>
           <Text style={styles.statLabel}>Or accordé</Text>
         </View>
       </View>
@@ -265,7 +357,7 @@ export default function TasksScreen() {
                   {item.timesPerDay > 1 && (
                     <Text style={styles.stepBadge}>{item.completedToday}/{item.timesPerDay}</Text>
                   )}
-                  <Text style={[styles.rowPts, item.status !== 'validated' && { color: Colors.textFaint }]}>
+                  <Text style={[styles.rowPts, item.status !== 'validated' && { color: colors.textFaint }]}>
                     {item.status === 'validated' ? `+${item.goldReward}` : `${item.goldReward}`} 🪙
                   </Text>
                   <View style={[styles.statusBadge, { backgroundColor: cfg.bg, borderColor: cfg.border }]}>
@@ -289,90 +381,3 @@ export default function TasksScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.bgScreen },
-
-  header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: Spacing.screen, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
-  },
-  title:      { fontSize: 20, fontWeight: '900', color: Colors.textPrimary },
-  addBtn:     { width: 44, height: 44, backgroundColor: Colors.gold, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  addBtnText: { fontSize: 24, fontWeight: '900', color: '#1a1000', lineHeight: 28 },
-
-  statsRow: { flexDirection: 'row', gap: 10, padding: Spacing.screen, paddingBottom: 0 },
-  statCard: {
-    flex: 1, backgroundColor: Colors.bgCard, borderRadius: 16,
-    borderWidth: 1, borderColor: Colors.border,
-    padding: 14, alignItems: 'center', gap: 4,
-  },
-  statValue: { fontSize: 22, fontWeight: '900', lineHeight: 24 },
-  statLabel: { fontSize: 10, fontWeight: '700', color: Colors.textFaint, textTransform: 'uppercase', letterSpacing: 0.6 },
-
-  childFilters: {
-    flexDirection: 'row', gap: 8,
-    paddingHorizontal: Spacing.screen, paddingTop: 14,
-  },
-  childChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: Colors.bgCard, borderRadius: Radii.pill,
-    borderWidth: 1, borderColor: Colors.border,
-    paddingHorizontal: 12, paddingVertical: 7,
-  },
-  childChipActive:    { borderColor: 'rgba(255,184,0,0.35)', backgroundColor: 'rgba(255,184,0,0.08)' },
-  childChipEmoji:     { fontSize: 14 },
-  childChipText:      { fontSize: 13, fontWeight: '700', color: Colors.textDim },
-  childChipTextActive:{ color: Colors.gold },
-
-  filterRow: {
-    flexDirection: 'row', gap: 8,
-    paddingHorizontal: Spacing.screen, paddingTop: 10, paddingBottom: 6,
-  },
-  filterChip: {
-    borderRadius: Radii.pill, paddingHorizontal: 12, paddingVertical: 6,
-    backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border,
-  },
-  filterChipActive: { backgroundColor: 'rgba(255,184,0,0.1)', borderColor: 'rgba(255,184,0,0.3)' },
-  filterText:       { fontSize: 12, fontWeight: '800', color: Colors.textDim },
-  filterTextActive: { color: Colors.gold },
-
-  list: { padding: Spacing.screen, gap: 4 },
-
-  sectionTitle: {
-    fontSize: 11, fontWeight: '900', color: Colors.textFaint,
-    textTransform: 'uppercase', letterSpacing: 1.1,
-    marginTop: 12, marginBottom: 6,
-  },
-
-  row:      { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: Colors.bgCard, padding: 13 },
-  rowFirst: { borderTopLeftRadius: Radii.card, borderTopRightRadius: Radii.card },
-  rowLast:  { borderBottomLeftRadius: Radii.card, borderBottomRightRadius: Radii.card },
-
-  childAvatar: {
-    width: 36, height: 36, borderRadius: 18,
-    backgroundColor: 'rgba(255,184,0,0.1)',
-    alignItems: 'center', justifyContent: 'center',
-    flexShrink: 0,
-  },
-  rowInfo:   { flex: 1, gap: 2 },
-  rowTask:   { fontSize: 14, fontWeight: '800', color: Colors.textPrimary },
-  rowMeta:   { fontSize: 11, fontWeight: '600', color: Colors.textFaint },
-
-  rowRight:  { alignItems: 'flex-end', gap: 4, flexShrink: 0 },
-  rowPts:    { fontSize: 13, fontWeight: '900', color: Colors.gold },
-  stepBadge: { fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.45)' },
-  statusBadge: {
-    borderRadius: Radii.pill, paddingHorizontal: 8, paddingVertical: 3,
-    borderWidth: 1,
-  },
-  statusText: { fontSize: 10, fontWeight: '900' },
-
-  empty:      { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, padding: 32 },
-  emptyEmoji: { fontSize: 48 },
-  emptyTitle: { fontSize: 17, fontWeight: '900', color: Colors.textPrimary, textAlign: 'center' },
-  emptySub:   { fontSize: 13, fontWeight: '600', color: Colors.textDim, textAlign: 'center', lineHeight: 20, maxWidth: 260 },
-  emptyBtn:   { backgroundColor: Colors.gold, borderRadius: Radii.md, paddingHorizontal: 22, paddingVertical: 12, marginTop: 4 },
-  emptyBtnText:{ fontSize: 14, fontWeight: '900', color: '#1a1000' },
-});

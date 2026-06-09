@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { Modal, Platform, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Colors, Radii } from '@/constants/theme';
+import { Radii } from '@/constants/theme';
+import type { ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const PAD = 10;
 const OVERLAY = 'rgba(0,0,0,0.82)';
@@ -20,6 +22,8 @@ interface Props {
 }
 
 export default function SpotlightTour({ steps, visible, onFinish }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [index, setIndex] = useState(0);
   const [spot, setSpot] = useState<MeasuredRect | null>(null);
   const [containerH, setContainerH] = useState(900);
@@ -81,7 +85,7 @@ export default function SpotlightTour({ steps, visible, onFinish }: Props) {
           {spot && (
             <View style={{
               position: 'absolute', top: sy, left: sx, width: sw, height: sh,
-              borderRadius: 12, borderWidth: 2, borderColor: Colors.gold,
+              borderRadius: 12, borderWidth: 2, borderColor: colors.gold,
             }} />
           )}
         </View>
@@ -109,15 +113,15 @@ export default function SpotlightTour({ steps, visible, onFinish }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   tooltip: {
     position: 'absolute',
     left: 20, right: 20,
-    backgroundColor: '#1e1e26',
+    backgroundColor: colors.bgCard,
     borderRadius: 20,
     padding: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: colors.border,
     shadowColor: '#000',
     shadowOpacity: 0.5,
     shadowRadius: 16,
@@ -126,29 +130,29 @@ const styles = StyleSheet.create({
   dots: { flexDirection: 'row', gap: 5, marginBottom: 14 },
   dot: {
     width: 6, height: 6, borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: colors.border,
   },
-  dotActive: { width: 18, backgroundColor: Colors.gold },
+  dotActive: { width: 18, backgroundColor: colors.gold },
   title: {
     fontSize: 17, fontWeight: '900',
-    color: Colors.textPrimary, marginBottom: 8,
+    color: colors.textPrimary, marginBottom: 8,
   },
   body: {
     fontSize: 14, fontWeight: '500',
-    color: Colors.textDim, lineHeight: 20,
+    color: colors.textDim, lineHeight: 20,
     marginBottom: 16,
   },
   actions: { flexDirection: 'row', gap: 10 },
   skipBtn: {
     flex: 1, alignItems: 'center', padding: 12,
     borderRadius: Radii.md,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 1, borderColor: colors.border,
   },
-  skipText: { fontSize: 13, fontWeight: '700', color: Colors.textFaint },
+  skipText: { fontSize: 13, fontWeight: '700', color: colors.textFaint },
   nextBtn: {
     flex: 2, alignItems: 'center', padding: 12,
     borderRadius: Radii.md,
-    backgroundColor: Colors.gold,
+    backgroundColor: colors.gold,
   },
   nextText: { fontSize: 14, fontWeight: '900', color: '#000' },
 });

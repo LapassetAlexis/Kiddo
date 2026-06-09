@@ -1,8 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { router } from 'expo-router';
-import { Colors, Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing } from '@/constants/theme';
+import type { ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { tasksApi } from '@/lib/api/tasks';
 import { rewardsApi } from '@/lib/api/rewards';
 import { childrenApi } from '@/lib/api/children';
@@ -26,6 +28,8 @@ interface Step {
 }
 
 export default function OnboardingChecklist({ childrenCount }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [visible, setVisible]           = useState(false);
   const [hasTask, setHasTask]           = useState(false);
   const [hasReward, setHasReward]       = useState(false);
@@ -166,11 +170,11 @@ export default function OnboardingChecklist({ childrenCount }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   card: {
     marginHorizontal: Spacing.screen,
     marginBottom: 16,
-    backgroundColor: Colors.bgCard,
+    backgroundColor: colors.bgCard,
     borderRadius: Radii.card,
     borderWidth: 1,
     borderColor: 'rgba(255,184,0,0.25)',
@@ -181,32 +185,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10,
   },
-  title:    { fontSize: 15, fontWeight: '900', color: Colors.textPrimary },
-  sub:      { fontSize: 11, fontWeight: '700', color: Colors.textFaint, marginTop: 2 },
+  title:    { fontSize: 15, fontWeight: '900', color: colors.textPrimary },
+  sub:      { fontSize: 11, fontWeight: '700', color: colors.textFaint, marginTop: 2 },
   skipBtn:  { paddingHorizontal: 10, paddingVertical: 6 },
-  skipText: { fontSize: 12, fontWeight: '700', color: Colors.textDim },
+  skipText: { fontSize: 12, fontWeight: '700', color: colors.textDim },
 
   progressTrack: { height: 3, backgroundColor: 'rgba(255,255,255,0.07)', marginHorizontal: 16, borderRadius: 99, marginBottom: 10, overflow: 'hidden' },
-  progressFill:  { height: '100%', borderRadius: 99, backgroundColor: Colors.gold },
+  progressFill:  { height: '100%', borderRadius: 99, backgroundColor: colors.gold },
 
   row:       { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 11 },
   rowBorder: { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
 
   checkbox:     { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  checkboxDone: { backgroundColor: Colors.green, borderColor: Colors.green },
+  checkboxDone: { backgroundColor: colors.green, borderColor: colors.green },
   checkmark:    { fontSize: 12, fontWeight: '900', color: '#fff' },
 
-  label:     { fontSize: 13, fontWeight: '700', color: Colors.textPrimary },
-  labelDone: { color: Colors.textFaint, textDecorationLine: 'line-through' },
+  label:     { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
+  labelDone: { color: colors.textFaint, textDecorationLine: 'line-through' },
 
-  hint:    { fontSize: 10, fontWeight: '600', color: Colors.textFaint, marginTop: 1 },
+  hint:    { fontSize: 10, fontWeight: '600', color: colors.textFaint, marginTop: 1 },
 
   ctaBtn:  { backgroundColor: 'rgba(255,184,0,0.12)', borderRadius: Radii.pill, paddingHorizontal: 12, paddingVertical: 5, borderWidth: 1, borderColor: 'rgba(255,184,0,0.25)' },
-  ctaText: { fontSize: 11, fontWeight: '900', color: Colors.gold },
+  ctaText: { fontSize: 11, fontWeight: '900', color: colors.gold },
 
   celebrationZone: { position: 'relative', marginHorizontal: 12, marginTop: 4, marginBottom: 12, height: 80 },
   particle:        { position: 'absolute', bottom: 12, fontSize: 20 },
 
   allDoneBanner: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(76,175,80,0.12)', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: 'rgba(76,175,80,0.25)', alignItems: 'center' },
-  allDoneText:   { fontSize: 13, fontWeight: '800', color: Colors.green },
+  allDoneText:   { fontSize: 13, fontWeight: '800', color: colors.green },
 });
