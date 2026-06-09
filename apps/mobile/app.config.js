@@ -32,6 +32,7 @@ export default {
       'expo-secure-store',
       'expo-image-picker',
       'expo-web-browser',
+      'expo-auth-session',
       [
         'expo-notifications',
         {
