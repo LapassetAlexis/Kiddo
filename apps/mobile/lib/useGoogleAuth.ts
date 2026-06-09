@@ -20,6 +20,7 @@ export function useGoogleAuth(onToken: (accessToken: string) => Promise<void>) {
       redirectUri: REDIRECT_URI,
       scopes: ['openid', 'profile', 'email'],
       responseType: AuthSession.ResponseType.Token,
+      usePKCE: false,
     },
     { authorizationEndpoint: GOOGLE_AUTH_ENDPOINT },
   );
