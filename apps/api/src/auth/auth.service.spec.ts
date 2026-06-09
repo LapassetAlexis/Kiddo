@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { UnauthorizedException, BadRequestException, ConflictException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -94,6 +95,7 @@ describe('AuthService', () => {
         { provide: getRepositoryToken(QrToken),           useValue: qrTokenRepo },
         { provide: JwtService,                            useValue: jwtService },
         { provide: EmailService,                          useValue: emailSvc },
+        { provide: ConfigService,                         useValue: { get: jest.fn().mockReturnValue('mock-client-id') } },
       ],
     }).compile();
 
