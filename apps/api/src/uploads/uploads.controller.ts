@@ -5,7 +5,6 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { extname } from 'path';
-import { v4 as uuid } from 'uuid';
 import { createClient } from '@supabase/supabase-js';
 import { ConfigService } from '@nestjs/config';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -39,7 +38,7 @@ export class UploadsController {
   async uploadPhoto(@UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException('Aucun fichier reçu');
 
-    const filename = `${uuid()}${extname(file.originalname)}`;
+    const filename = `${crypto.randomUUID()}${extname(file.originalname)}`;
 
     const { error } = await this.supabase.storage
       .from(this.bucket)
