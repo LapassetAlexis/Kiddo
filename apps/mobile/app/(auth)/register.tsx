@@ -1,10 +1,8 @@
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, ScrollView, Alert,
+  KeyboardAvoidingView, Platform, ScrollView,
 } from 'react-native';
-import { useState, useMemo, useEffect } from 'react';
-import * as Google from 'expo-auth-session/providers/google';
-import * as WebBrowser from 'expo-web-browser';
+import { useState, useMemo } from 'react';
 import { authApi } from '@/lib/api/auth';
 import { ApiError } from '@/lib/api-client';
 import { router } from 'expo-router';
@@ -13,12 +11,7 @@ import type { ThemeColors } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
-
-WebBrowser.maybeCompleteAuthSession();
-
-const GOOGLE_WEB_CLIENT_ID     = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '';
-const GOOGLE_IOS_CLIENT_ID     = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? '';
-const GOOGLE_ANDROID_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? '';
+import { useGoogleAuth } from '@/lib/useGoogleAuth';
 
 export default function RegisterScreen() {
   const [step, setStep]           = useState<1 | 2 | 3>(1);
@@ -29,7 +22,6 @@ export default function RegisterScreen() {
   const [confirm, setConfirm]     = useState('');
   const [accepted, setAccepted]   = useState(false);
   const [loading, setLoading]     = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [code, setCode]           = useState('');
   const [resending, setResending] = useState(false);
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
@@ -38,31 +30,10 @@ export default function RegisterScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
-  const [, response, promptGoogleAsync] = Google.useAuthRequest({
-    webClientId:     GOOGLE_WEB_CLIENT_ID     || undefined,
-    iosClientId:     GOOGLE_IOS_CLIENT_ID     || undefined,
-    androidClientId: GOOGLE_ANDROID_CLIENT_ID || undefined,
+  const google = useGoogleAuth(async (accessToken) => {
+    await loginWithGoogle(accessToken);
+    router.replace('/(parent)/dashboard');
   });
-
-  useEffect(() => {
-    if (response?.type !== 'success') {
-      if (response?.type === 'error') setGoogleLoading(false);
-      return;
-    }
-    const idToken = response.authentication?.idToken;
-    if (!idToken) {
-      setGoogleLoading(false);
-      Alert.alert('Erreur Google', 'Token introuvable. Réessaie.');
-      return;
-    }
-    loginWithGoogle(idToken)
-      .then(() => router.replace('/(parent)/dashboard'))
-      .catch(err => {
-        const msg = err instanceof ApiError ? err.message : 'Connexion Google échouée.';
-        Alert.alert('Erreur', msg);
-      })
-      .finally(() => setGoogleLoading(false));
-  }, [response]);
 
   // ── Étape 1 : infos ──────────────────────────────────────────────────────
   function nextStep() {
@@ -210,13 +181,13 @@ export default function RegisterScreen() {
               <View style={styles.dividerLine} />
             </View>
             <TouchableOpacity
-              style={[styles.googleBtn, googleLoading && { opacity: 0.6 }]}
-              onPress={async () => { setGoogleLoading(true); await promptGoogleAsync(); }}
-              disabled={googleLoading}
+              style={[styles.googleBtn, google.loading && { opacity: 0.6 }]}
+              onPress={google.prompt}
+              disabled={google.loading}
               activeOpacity={0.8}
             >
               <Text style={styles.googleIcon}>G</Text>
-              <Text style={styles.googleText}>{googleLoading ? 'Connexion…' : 'Continuer avec Google'}</Text>
+              <Text style={styles.googleText}>{google.loading ? 'Connexion…' : 'Continuer avec Google'}</Text>
             </TouchableOpacity>
           </View>
         )}

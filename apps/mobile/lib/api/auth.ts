@@ -38,8 +38,8 @@ export const authApi = {
   loginQr: (token: string) =>
     api.post<AuthResponse>('/auth/child/qr-login', { token }, false),
 
-  googleSignIn: (idToken: string) =>
-    api.post<AuthResponse>('/auth/google', { idToken }, false),
+  googleSignIn: (accessToken: string) =>
+    api.post<AuthResponse>('/auth/google', { accessToken }, false),
 
   saveToken,
   clearToken,

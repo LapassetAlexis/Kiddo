@@ -213,15 +213,17 @@ export class AuthService {
     return { accessToken };
   }
 
-  async googleLogin(idToken: string) {
-    const clientId = this.config.get<string>('GOOGLE_CLIENT_ID');
+  async googleLogin(accessToken: string) {
     let payload: { sub: string; email: string; name?: string; } | undefined;
 
     try {
-      const ticket = await this.googleClient.verifyIdToken({ idToken, audience: clientId });
-      const p = ticket.getPayload();
-      if (!p?.sub || !p?.email) throw new Error('Missing payload');
-      payload = { sub: p.sub, email: p.email.toLowerCase(), name: p.name };
+      const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!res.ok) throw new Error(`Google returned ${res.status}`);
+      const data = await res.json() as { sub?: string; email?: string; name?: string };
+      if (!data.sub || !data.email) throw new Error('Missing fields');
+      payload = { sub: data.sub, email: data.email.toLowerCase(), name: data.name };
     } catch {
       throw new UnauthorizedException('Token Google invalide');
     }
