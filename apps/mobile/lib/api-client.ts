@@ -11,7 +11,8 @@ export async function saveToken(token: string) {
 }
 
 export async function getToken(): Promise<string | null> {
-  return SecureStore.getItemAsync(TOKEN_KEY);
+  const v = await SecureStore.getItemAsync(TOKEN_KEY);
+  return v ? v.trim() : null;
 }
 
 export async function clearToken() {
@@ -23,7 +24,8 @@ export async function saveParentToken(token: string) {
 }
 
 export async function getParentToken(): Promise<string | null> {
-  return SecureStore.getItemAsync(PARENT_TOKEN_KEY);
+  const v = await SecureStore.getItemAsync(PARENT_TOKEN_KEY);
+  return v ? v.trim() : null;
 }
 
 export async function clearParentToken() {
