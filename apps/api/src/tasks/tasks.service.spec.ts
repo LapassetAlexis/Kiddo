@@ -187,7 +187,7 @@ describe('TasksService', () => {
 
       const result = await service.create({ childId: 'child-1', title: 'Clean room', goldReward: 10 }, 'fam-1');
 
-      expect(childRepo.findOne).toHaveBeenCalledWith({ where: { id: 'child-1', family: { id: 'fam-1' } }, relations: ['family'] });
+      expect(childRepo.findOne).toHaveBeenCalledWith({ where: { id: 'child-1', family: { id: 'fam-1' } }, relations: { family: true } });
       expect(taskRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({ title: 'Clean room', goldReward: 10 }),
       );
@@ -638,7 +638,7 @@ describe('TasksService', () => {
 
       expect(taskRepo.find).toHaveBeenCalledWith({
         where: { child: { id: 'child-1', family: { id: 'fam-1' } } },
-        relations: ['child'],
+        relations: { child: true },
         order: { createdAt: 'DESC' },
       });
       expect(result).toHaveLength(2);

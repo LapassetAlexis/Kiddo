@@ -193,7 +193,7 @@ export class RewardsService {
       const reward = await em.findOne(Reward, {
         where: { id: rewardId, family: { id: familyId } },
         lock: { mode: 'pessimistic_write' },
-        relations: ['family'],
+        relations: { family: true },
       });
       if (!reward) throw new NotFoundException('Reward not found');
       if (reward.status !== 'claimed') throw new ConflictException('Récompense déjà traitée par l\'autre parent');
@@ -263,7 +263,7 @@ export class RewardsService {
       const reward = await em.findOne(Reward, {
         where: { id: rewardId, family: { id: familyId } },
         lock: { mode: 'pessimistic_write' },
-        relations: ['family'],
+        relations: { family: true },
       });
       if (!reward) throw new NotFoundException('Reward not found');
       if (reward.status !== 'claimed') throw new ConflictException('Récompense déjà traitée par l\'autre parent');
@@ -298,7 +298,7 @@ export class RewardsService {
   private async assertOwnership(rewardId: string, familyId: string): Promise<Reward> {
     const reward = await this.rewards.findOne({
       where: { id: rewardId, family: { id: familyId } },
-      relations: ['family'],
+      relations: { family: true },
     });
     if (!reward) throw new NotFoundException('Reward not found');
     return reward;

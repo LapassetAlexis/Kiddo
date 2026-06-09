@@ -38,7 +38,7 @@ async function seed() {
   const txRepo      = ds.getRepository(Transaction);
 
   // ── Find existing account ─────────────────────────────────────────────────
-  const accounts = await accountRepo.find({ relations: ['family'] });
+  const accounts = await accountRepo.find({ relations: { family: true } });
   let family: Family;
 
   if (accounts.length > 0) {
@@ -46,7 +46,7 @@ async function seed() {
     family = account.family;
     console.log(`✓ Compte existant trouvé — ${account.email} (famille: ${family.id})`);
 
-    const existingChildren = await childRepo.find({ where: { family: { id: family.id } }, relations: ['family'] });
+    const existingChildren = await childRepo.find({ where: { family: { id: family.id } }, relations: { family: true } });
     if (existingChildren.length > 0) {
       console.log(`  ${existingChildren.length} enfant(s) déjà présents — suppression pour re-seed propre…`);
       for (const child of existingChildren) {

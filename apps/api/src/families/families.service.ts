@@ -15,7 +15,7 @@ export class FamiliesService {
   ) {}
 
   async findById(id: string) {
-    const family = await this.repo.findOne({ where: { id }, relations: ['children'] });
+    const family = await this.repo.findOne({ where: { id }, relations: { children: true } });
     if (!family) throw new NotFoundException('Famille introuvable');
     return family;
   }
@@ -23,7 +23,7 @@ export class FamiliesService {
   async getMe(accountId: string) {
     const account = await this.accounts.findOne({
       where: { id: accountId },
-      relations: ['family', 'family.children'],
+      relations: { family: { children: true } },
     });
     if (!account) throw new NotFoundException();
     return {
@@ -41,7 +41,7 @@ export class FamiliesService {
   }
 
   async updateProfile(accountId: string, dto: { name?: string; email?: string; timezone?: string }) {
-    const account = await this.accounts.findOneOrFail({ where: { id: accountId }, relations: ['family'] });
+    const account = await this.accounts.findOneOrFail({ where: { id: accountId }, relations: { family: true } });
 
     if (dto.email && dto.email !== account.email) {
       const exists = await this.accounts.findOne({ where: { email: dto.email } });
@@ -100,7 +100,7 @@ export class FamiliesService {
   }
 
   async regenerateInviteCode(accountId: string) {
-    const account = await this.accounts.findOneOrFail({ where: { id: accountId }, relations: ['family'] });
+    const account = await this.accounts.findOneOrFail({ where: { id: accountId }, relations: { family: true } });
     const inviteCode = crypto.randomBytes(4).toString('hex').toUpperCase();
     await this.repo.update(account.family.id, { inviteCode });
     return this.getMe(accountId);

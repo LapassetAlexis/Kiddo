@@ -53,7 +53,7 @@ export class TasksService {
   async getForChild(childId: string, familyId?: string) {
     const tasks = await this.tasks.find({
       where: { child: { id: childId, family: { id: familyId } } },
-      relations: ['child'],
+      relations: { child: true },
       order: { createdAt: 'DESC' },
     });
     return this.enrichTasks(tasks);
@@ -65,7 +65,7 @@ export class TasksService {
     else return [];
     if (childId) where.child = { ...where.child, id: childId };
     if (status)  where.status = status;
-    const tasks = await this.tasks.find({ where, relations: ['child'], order: { createdAt: 'DESC' } });
+    const tasks = await this.tasks.find({ where, relations: { child: true }, order: { createdAt: 'DESC' } });
     return this.enrichTasks(tasks);
   }
 
@@ -74,7 +74,7 @@ export class TasksService {
   }
 
   async createExceptional(body: { childId: string; title: string; goldReward: number; difficulty?: TaskDifficulty }, familyId: string, approverName: string) {
-    const child = await this.children.findOne({ where: { id: body.childId, family: { id: familyId } }, relations: ['family'] });
+    const child = await this.children.findOne({ where: { id: body.childId, family: { id: familyId } }, relations: { family: true } });
     if (!child) throw new ForbiddenException('Enfant introuvable dans cette famille');
 
     const difficulty = body.difficulty ?? 'easy';
@@ -115,7 +115,7 @@ export class TasksService {
   }
 
   async create(body: { childId: string; title: string; goldReward: number; difficulty?: TaskDifficulty; frequency?: string; timesPerDay?: number; bonusGold?: number }, familyId: string) {
-    const child = await this.children.findOne({ where: { id: body.childId, family: { id: familyId } }, relations: ['family'] })
+    const child = await this.children.findOne({ where: { id: body.childId, family: { id: familyId } }, relations: { family: true } })
       .then(c => { if (!c) throw new ForbiddenException('Enfant introuvable dans cette famille'); return c; });
     const task  = this.tasks.create({
       title:       body.title,
@@ -130,7 +130,7 @@ export class TasksService {
   }
 
   async complete(id: string, childId: string, photoUrl?: string, note?: string) {
-    const task = await this.tasks.findOne({ where: { id }, relations: ['child', 'child.family'] });
+    const task = await this.tasks.findOne({ where: { id }, relations: { child: { family: true } } });
     if (!task) throw new NotFoundException('Tâche introuvable');
     if (task.child.id !== childId) throw new ForbiddenException('Cette tâche ne t\'appartient pas');
     if (task.status !== 'created') throw new ConflictException('Tâche déjà soumise');
@@ -171,7 +171,7 @@ export class TasksService {
   }
 
   async approve(id: string, accountId: string, familyId: string) {
-    const task = await this.tasks.findOne({ where: { id }, relations: ['child', 'child.family'] });
+    const task = await this.tasks.findOne({ where: { id }, relations: { child: { family: true } } });
     if (!task) throw new NotFoundException('Tâche introuvable');
     if ((task.child.family as any).id !== familyId) throw new ForbiddenException('Accès refusé');
     if (task.status !== 'pending_approval') throw new ConflictException('Tâche déjà traitée');
@@ -273,7 +273,7 @@ export class TasksService {
   }
 
   async reject(id: string, accountId: string, familyId: string, reason?: string) {
-    const task = await this.tasks.findOne({ where: { id }, relations: ['child', 'child.family'] });
+    const task = await this.tasks.findOne({ where: { id }, relations: { child: { family: true } } });
     if (!task) throw new NotFoundException('Tâche introuvable');
     if ((task.child.family as any).id !== familyId) throw new ForbiddenException('Accès refusé');
     if (task.status !== 'pending_approval') throw new ConflictException('Tâche déjà traitée');
