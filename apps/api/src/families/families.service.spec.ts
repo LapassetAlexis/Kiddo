@@ -116,7 +116,7 @@ describe('FamiliesService', () => {
 
       expect(accountsRepo.findOne).toHaveBeenCalledWith({
         where:     { id: 'acc-1' },
-        relations: ['family', 'family.children'],
+        relations: { family: { children: true } },
       });
     });
 

@@ -128,7 +128,7 @@ export class AuthService {
 
     await this.emailVerifs.update(record.id, { usedAt: new Date() });
 
-    const account = await this.accounts.findOne({ where: { email }, relations: ['family'] });
+    const account = await this.accounts.findOne({ where: { email }, relations: { family: true } });
     if (!account) throw new NotFoundException('Compte introuvable.');
 
     const accessToken = this.parentJwt(account as any);
@@ -199,7 +199,7 @@ export class AuthService {
 
   async parentLogin(email: string, password: string) {
     email = email.toLowerCase().trim();
-    const account = await this.accounts.findOne({ where: { email }, relations: ['family'] });
+    const account = await this.accounts.findOne({ where: { email }, relations: { family: true } });
     if (!account || !(await bcrypt.compare(password, account.passwordHash))) {
       throw new UnauthorizedException('Identifiants invalides');
     }
@@ -208,7 +208,7 @@ export class AuthService {
   }
 
   async childPin(childId: string, pin: string) {
-    const child = await this.children.findOne({ where: { id: childId }, relations: ['family'] });
+    const child = await this.children.findOne({ where: { id: childId }, relations: { family: true } });
     if (!child) throw new UnauthorizedException();
 
     let attempt = await this.pinAttempts.findOne({ where: { child: { id: childId } } });
@@ -267,7 +267,7 @@ export class AuthService {
     if (user.role === 'parent') {
       const account = await this.accounts.findOne({
         where: { id: user.sub },
-        relations: ['family', 'family.children'],
+        relations: { family: { children: true } },
       });
       if (!account) throw new UnauthorizedException();
       return {
@@ -281,7 +281,7 @@ export class AuthService {
       };
     }
 
-    const child = await this.children.findOne({ where: { id: user.sub }, relations: ['family'] });
+    const child = await this.children.findOne({ where: { id: user.sub }, relations: { family: true } });
     if (!child) throw new UnauthorizedException();
     return {
       role:     'child',
@@ -296,7 +296,7 @@ export class AuthService {
   // ── QR Login ───────────────────────────────────────────────────────────────
 
   async generateQr(childId: string, familyId: string) {
-    const child = await this.children.findOne({ where: { id: childId }, relations: ['family'] });
+    const child = await this.children.findOne({ where: { id: childId }, relations: { family: true } });
     if (!child || (child.family as any).id !== familyId) throw new ForbiddenException('Enfant introuvable');
 
     const plainToken = crypto.randomBytes(32).toString('hex');
@@ -317,7 +317,7 @@ export class AuthService {
 
     await this.qrTokens.update(record.id, { usedAt: new Date() });
 
-    const child = await this.children.findOne({ where: { id: record.childId }, relations: ['family'] });
+    const child = await this.children.findOne({ where: { id: record.childId }, relations: { family: true } });
     if (!child) throw new UnauthorizedException();
 
     // Session longue : le scan QR est réservé au téléphone personnel de l'enfant

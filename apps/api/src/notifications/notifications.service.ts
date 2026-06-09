@@ -9,7 +9,7 @@ import { Child } from '../children/child.entity';
 @Injectable()
 export class NotificationsService implements OnModuleInit {
   private readonly log = new Logger(NotificationsService.name);
-  private messaging: any | null = null;
+  private messaging: import('firebase-admin/messaging').Messaging | null = null;
 
   constructor(
     @InjectRepository(NotificationIntent)
@@ -30,20 +30,21 @@ export class NotificationsService implements OnModuleInit {
     }
 
     try {
-      const admin = await import('firebase-admin');
-      if (!admin.default.apps.length) {
-        admin.default.initializeApp({
-          credential: admin.default.credential.cert({
+      const { initializeApp, getApps, cert } = await import('firebase-admin/app');
+      const { getMessaging } = await import('firebase-admin/messaging');
+      if (!getApps().length) {
+        initializeApp({
+          credential: cert({
             projectId,
             clientEmail,
             privateKey: privateKey.replace(/\\n/g, '\n'),
           }),
         });
       }
-      this.messaging = admin.default.messaging();
+      this.messaging = getMessaging();
       this.log.log('Firebase Admin initialized ✓');
     } catch (err) {
-      this.log.error(`Firebase Admin init failed: ${err.message}`);
+      this.log.error(`Firebase Admin init failed: ${(err as Error).message}`);
     }
   }
 
@@ -63,7 +64,7 @@ export class NotificationsService implements OnModuleInit {
         const attempts = intent.attempts + 1;
         const status: NotifStatus = attempts >= 3 ? 'failed' : 'pending';
         await this.intents.update(intent.id, { attempts, status });
-        this.log.warn(`FCM attempt ${attempts} failed for intent ${intent.id}: ${err.message}`);
+        this.log.warn(`FCM attempt ${attempts} failed for intent ${intent.id}: ${(err as Error).message}`);
       }
     }));
   }
