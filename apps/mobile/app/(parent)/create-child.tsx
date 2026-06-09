@@ -2,17 +2,91 @@ import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, KeyboardAvoidingView, Platform, FlatList,
 } from 'react-native';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { childrenApi } from '@/lib/api/children';
 import { ApiError } from '@/lib/api-client';
-import { Colors, Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing } from '@/constants/theme';
+import type { ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import HeroSprite from '@/components/HeroSprite';
 import { CHARACTER_PRESETS, DEFAULT_PRESET, getPresetById, CLASS_META } from '@/lib/character-presets';
 
 type Step = 'name' | 'character' | 'pin' | 'confirm';
+
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.bgScreen },
+
+  navbar: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: Spacing.screen, paddingVertical: 12,
+    borderBottomWidth: 1, borderBottomColor: colors.border,
+  },
+  backBtn:  { fontSize: 22, color: colors.textDim, fontWeight: '700', width: 40 },
+  navTitle: { fontSize: 16, fontWeight: '900', color: colors.textPrimary },
+
+  steps: { flexDirection: 'row', justifyContent: 'center', gap: 8, paddingVertical: 14 },
+  stepDot:      { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border },
+  stepDotActive:{ backgroundColor: colors.gold, borderColor: colors.gold },
+  stepDotDone:  { backgroundColor: 'rgba(255,184,0,0.3)', borderColor: 'rgba(255,184,0,0.4)' },
+
+  // Étape 1 : nom
+  content:   { padding: Spacing.screen, gap: 20 },
+  stepTitle: { fontSize: 26, fontWeight: '900', color: colors.textPrimary, lineHeight: 32 },
+  stepSub:   { fontSize: 14, fontWeight: '600', color: colors.textDim, marginTop: -12 },
+  nameInput: {
+    backgroundColor: colors.bgCard, borderRadius: Radii.md,
+    borderWidth: 1, borderColor: colors.border,
+    padding: 18, fontSize: 22, fontWeight: '800', color: colors.textPrimary,
+  },
+
+  // Étape 2 : personnage
+  characterList:   { padding: Spacing.screen, gap: 10 },
+  characterHeader: { gap: 6, marginBottom: 8 },
+  characterCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    backgroundColor: colors.bgCard, borderRadius: Radii.card,
+    borderWidth: 1.5, borderColor: colors.border, padding: 14,
+  },
+  characterCardSelected: {
+    borderColor: colors.gold, backgroundColor: 'rgba(255,184,0,0.05)',
+  },
+  spriteWrap:         { width: 72, height: 80, borderRadius: 16, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.04)', alignItems: 'center', justifyContent: 'center' },
+  spriteWrapSelected: { backgroundColor: 'rgba(255,184,0,0.1)' },
+  characterInfo:     { flex: 1, gap: 4 },
+  characterNameRow:  { gap: 2 },
+  characterName:     { fontSize: 17, fontWeight: '900', color: colors.textDim },
+  characterNameSelected: { color: colors.textPrimary },
+  characterTagline:  { fontSize: 12, fontWeight: '700', color: colors.textFaint },
+  classBadge:        { alignSelf: 'flex-start', borderRadius: 99, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 2, marginTop: 6 },
+  classBadgeText:    { fontSize: 11, fontWeight: '800' },
+  characterStory:    { fontSize: 13, fontWeight: '500', color: colors.textDim, lineHeight: 18, marginTop: 4 },
+  radioOuter:        { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: colors.textFaint, alignItems: 'center', justifyContent: 'center' },
+  radioOuterActive:  { borderColor: colors.gold },
+  radioInner:        { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.gold },
+
+  nextBtn:     { backgroundColor: colors.gold, borderRadius: Radii.md, padding: 16, alignItems: 'center' },
+  nextBtnText: { fontSize: 16, fontWeight: '900', color: '#1a1000' },
+
+  // PIN
+  pinContent:     { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 18, paddingHorizontal: 32 },
+  pinTitle:       { fontSize: 20, fontWeight: '900', color: colors.textPrimary, textAlign: 'center' },
+  pinSub:         { fontSize: 13, fontWeight: '600', color: colors.textDim, textAlign: 'center', lineHeight: 18, marginTop: -10 },
+  spriteContainer: { width: 100, height: 100, borderRadius: 16, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  pinCharPreview: { alignItems: 'center', gap: 6 },
+  pinCharName:    { fontSize: 14, fontWeight: '800', color: colors.textDim },
+  dots: { flexDirection: 'row', gap: 16 },
+  dot:       { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: colors.textFaint, backgroundColor: 'transparent' },
+  dotFilled: { backgroundColor: colors.gold, borderColor: colors.gold },
+  numpad:    { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center', width: '100%' },
+  key:       { width: 84, height: 84, borderRadius: Radii.hero, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  keyEmpty:  { width: 84, height: 84 },
+  keyDelete: { backgroundColor: 'transparent', borderColor: 'transparent' },
+  keyText:       { fontSize: 26, fontWeight: '800', color: colors.textPrimary },
+  keyDeleteText: { fontSize: 22, color: colors.textDim },
+});
 
 export default function CreateChildScreen() {
   const [step, setStep]         = useState<Step>('name');
@@ -22,6 +96,9 @@ export default function CreateChildScreen() {
   const [pinConfirm, setPinConfirm] = useState('');
   const [loading, setLoading]   = useState(false);
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
+
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const selectedChar = getPresetById(character)!;
 
@@ -136,7 +213,7 @@ export default function CreateChildScreen() {
               <TextInput
                 style={styles.nameInput}
                 placeholder="Ex : Lucas, Doudou, Princesse…"
-                placeholderTextColor={Colors.textFaint}
+                placeholderTextColor={colors.textFaint}
                 value={name}
                 onChangeText={setName}
                 autoFocus
@@ -270,75 +347,3 @@ export default function CreateChildScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.bgScreen },
-
-  navbar: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: Spacing.screen, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
-  },
-  backBtn:  { fontSize: 22, color: Colors.textDim, fontWeight: '700', width: 40 },
-  navTitle: { fontSize: 16, fontWeight: '900', color: Colors.textPrimary },
-
-  steps: { flexDirection: 'row', justifyContent: 'center', gap: 8, paddingVertical: 14 },
-  stepDot:      { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border },
-  stepDotActive:{ backgroundColor: Colors.gold, borderColor: Colors.gold },
-  stepDotDone:  { backgroundColor: 'rgba(255,184,0,0.3)', borderColor: 'rgba(255,184,0,0.4)' },
-
-  // Étape 1 : nom
-  content:   { padding: Spacing.screen, gap: 20 },
-  stepTitle: { fontSize: 26, fontWeight: '900', color: Colors.textPrimary, lineHeight: 32 },
-  stepSub:   { fontSize: 14, fontWeight: '600', color: Colors.textDim, marginTop: -12 },
-  nameInput: {
-    backgroundColor: Colors.bgCard, borderRadius: Radii.md,
-    borderWidth: 1, borderColor: Colors.border,
-    padding: 18, fontSize: 22, fontWeight: '800', color: Colors.textPrimary,
-  },
-
-  // Étape 2 : personnage
-  characterList:   { padding: Spacing.screen, gap: 10 },
-  characterHeader: { gap: 6, marginBottom: 8 },
-  characterCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 14,
-    backgroundColor: Colors.bgCard, borderRadius: Radii.card,
-    borderWidth: 1.5, borderColor: Colors.border, padding: 14,
-  },
-  characterCardSelected: {
-    borderColor: Colors.gold, backgroundColor: 'rgba(255,184,0,0.05)',
-  },
-  spriteWrap:         { width: 72, height: 80, borderRadius: 16, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.04)', alignItems: 'center', justifyContent: 'center' },
-  spriteWrapSelected: { backgroundColor: 'rgba(255,184,0,0.1)' },
-  characterInfo:     { flex: 1, gap: 4 },
-  characterNameRow:  { gap: 2 },
-  characterName:     { fontSize: 17, fontWeight: '900', color: Colors.textDim },
-  characterNameSelected: { color: Colors.textPrimary },
-  characterTagline:  { fontSize: 12, fontWeight: '700', color: Colors.textFaint },
-  classBadge:        { alignSelf: 'flex-start', borderRadius: 99, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 2, marginTop: 6 },
-  classBadgeText:    { fontSize: 11, fontWeight: '800' },
-  characterStory:    { fontSize: 13, fontWeight: '500', color: Colors.textDim, lineHeight: 18, marginTop: 4 },
-  radioOuter:        { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: Colors.textFaint, alignItems: 'center', justifyContent: 'center' },
-  radioOuterActive:  { borderColor: Colors.gold },
-  radioInner:        { width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.gold },
-
-  nextBtn:     { backgroundColor: Colors.gold, borderRadius: Radii.md, padding: 16, alignItems: 'center' },
-  nextBtnText: { fontSize: 16, fontWeight: '900', color: '#1a1000' },
-
-  // PIN
-  pinContent:     { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 18, paddingHorizontal: 32 },
-  pinTitle:       { fontSize: 20, fontWeight: '900', color: Colors.textPrimary, textAlign: 'center' },
-  pinSub:         { fontSize: 13, fontWeight: '600', color: Colors.textDim, textAlign: 'center', lineHeight: 18, marginTop: -10 },
-  spriteContainer: { width: 100, height: 100, borderRadius: 16, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-  pinCharPreview: { alignItems: 'center', gap: 6 },
-  pinCharName:    { fontSize: 14, fontWeight: '800', color: Colors.textDim },
-  dots: { flexDirection: 'row', gap: 16 },
-  dot:       { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: Colors.textFaint, backgroundColor: 'transparent' },
-  dotFilled: { backgroundColor: Colors.gold, borderColor: Colors.gold },
-  numpad:    { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center', width: '100%' },
-  key:       { width: 84, height: 84, borderRadius: Radii.hero, backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
-  keyEmpty:  { width: 84, height: 84 },
-  keyDelete: { backgroundColor: 'transparent', borderColor: 'transparent' },
-  keyText:       { fontSize: 26, fontWeight: '800', color: Colors.textPrimary },
-  keyDeleteText: { fontSize: 22, color: Colors.textDim },
-});

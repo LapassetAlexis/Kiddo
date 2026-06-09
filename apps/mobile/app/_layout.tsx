@@ -1,8 +1,8 @@
 import { Stack, router, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { Colors } from '@/constants/theme';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 import { BASE_URL } from '@/lib/api-client';
 import WakeUpScreen from '@/components/WakeUpScreen';
 
@@ -23,6 +23,7 @@ async function pingUntilAlive(signal: AbortSignal) {
 
 function RootNavigator() {
   const { user, loading } = useAuth();
+  const { colors, preference } = useTheme();
   const segments = useSegments();
   const [awake, setAwake] = useState(false);
 
@@ -59,20 +60,27 @@ function RootNavigator() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.bgScreen } }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="(auth)" />
-      <Stack.Screen name="(child)" />
-      <Stack.Screen name="(parent)" />
-    </Stack>
+    <>
+      <StatusBar
+        style={preference === 'light' ? 'dark' : preference === 'dark' ? 'light' : 'auto'}
+        backgroundColor={colors.bgScreen}
+      />
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bgScreen } }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(child)" />
+        <Stack.Screen name="(parent)" />
+      </Stack>
+    </>
   );
 }
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <StatusBar style="light" backgroundColor={Colors.bgScreen} />
-      <RootNavigator />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <RootNavigator />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

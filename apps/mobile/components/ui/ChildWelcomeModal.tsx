@@ -1,7 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { Animated, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Colors, Radii } from '@/constants/theme';
+import { Radii } from '@/constants/theme';
+import type { ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const key = (uid: string) => `@kiddo:welcome:${uid}`;
 
@@ -13,6 +15,8 @@ interface Props {
 }
 
 export default function ChildWelcomeModal({ userId, name, avatar, onDismiss }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [visible, setVisible] = useState(false);
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -83,7 +87,7 @@ export default function ChildWelcomeModal({ userId, name, avatar, onDismiss }: P
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.75)',
@@ -102,15 +106,15 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,184,0,0.2)',
   },
   avatar:  { fontSize: 56 },
-  title:   { fontSize: 22, fontWeight: '900', color: Colors.textPrimary, textAlign: 'center' },
-  desc:    { fontSize: 14, fontWeight: '600', color: Colors.textDim, textAlign: 'center', lineHeight: 22 },
+  title:   { fontSize: 22, fontWeight: '900', color: colors.textPrimary, textAlign: 'center' },
+  desc:    { fontSize: 14, fontWeight: '600', color: colors.textDim, textAlign: 'center', lineHeight: 22 },
 
   loopRow:   { flexDirection: 'row', alignItems: 'center', gap: 6, marginVertical: 4 },
   loopStep:  { alignItems: 'center', gap: 4 },
   loopEmoji: { fontSize: 22 },
-  loopLabel: { fontSize: 10, fontWeight: '800', color: Colors.textFaint },
-  loopArrow: { fontSize: 14, color: Colors.textFaint, marginBottom: 12 },
+  loopLabel: { fontSize: 10, fontWeight: '800', color: colors.textFaint },
+  loopArrow: { fontSize: 14, color: colors.textFaint, marginBottom: 12 },
 
-  btn:     { backgroundColor: Colors.gold, borderRadius: Radii.pill, paddingHorizontal: 28, paddingVertical: 14, marginTop: 4 },
+  btn:     { backgroundColor: colors.gold, borderRadius: Radii.pill, paddingHorizontal: 28, paddingVertical: 14, marginTop: 4 },
   btnText: { fontSize: 15, fontWeight: '900', color: '#1a1000' },
 });

@@ -2,9 +2,11 @@ import {
   View, Text, TouchableOpacity, StyleSheet, Modal,
   Pressable, Animated, TextInput, Keyboard, Image, Alert,
 } from 'react-native';
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useMemo } from 'react';
 import * as ImagePicker from 'expo-image-picker';
-import { Colors, Radii } from '@/constants/theme';
+import { Radii } from '@/constants/theme';
+import type { ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { BASE_URL, getToken } from '@/lib/api-client';
 
 interface Task { id: string; name: string; gold: number; xp: number; }
@@ -16,6 +18,8 @@ type Props = {
 };
 
 export default function TaskCompleteSheet({ task, onConfirm, onClose }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const slideAnim = useRef(new Animated.Value(500)).current;
   const [note, setNote]           = useState('');
   const [photoUri, setPhotoUri]   = useState<string | null>(null);
@@ -143,7 +147,7 @@ export default function TaskCompleteSheet({ task, onConfirm, onClose }: Props) {
               <TextInput
                 style={styles.noteInput}
                 placeholder="Ex : J'ai tout rangé, même sous le bureau !"
-                placeholderTextColor={Colors.textFaint}
+                placeholderTextColor={colors.textFaint}
                 value={note}
                 onChangeText={setNote}
                 multiline
@@ -196,7 +200,7 @@ export default function TaskCompleteSheet({ task, onConfirm, onClose }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.65)',
@@ -228,14 +232,14 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   taskIconText: { fontSize: 28 },
-  taskName:     { fontSize: 18, fontWeight: '900', color: Colors.textPrimary },
+  taskName:     { fontSize: 18, fontWeight: '900', color: colors.textPrimary },
   ptsBadge: {
     alignSelf: 'flex-start',
     backgroundColor: 'rgba(255,184,0,0.1)',
     borderRadius: 99, paddingHorizontal: 10, paddingVertical: 3,
     borderWidth: 1, borderColor: 'rgba(255,184,0,0.2)',
   },
-  ptsBadgeText: { fontSize: 12, fontWeight: '800', color: Colors.gold },
+  ptsBadgeText: { fontSize: 12, fontWeight: '800', color: colors.gold },
 
   divider: {
     height: 1, backgroundColor: 'rgba(255,255,255,0.07)',
@@ -244,21 +248,21 @@ const styles = StyleSheet.create({
 
   section: { marginBottom: 20, gap: 8 },
   sectionLabel: {
-    fontSize: 12, fontWeight: '900', color: Colors.textPrimary,
+    fontSize: 12, fontWeight: '900', color: colors.textPrimary,
     textTransform: 'uppercase', letterSpacing: 0.8,
   },
   sectionHint: {
-    fontSize: 12, fontWeight: '600', color: Colors.textFaint,
+    fontSize: 12, fontWeight: '600', color: colors.textFaint,
     marginTop: -4,
   },
 
   noteInput: {
-    backgroundColor: Colors.bgCard,
+    backgroundColor: colors.bgCard,
     borderRadius: Radii.md,
-    borderWidth: 1, borderColor: Colors.border,
+    borderWidth: 1, borderColor: colors.border,
     padding: 14,
     fontSize: 14, fontWeight: '600',
-    color: Colors.textPrimary,
+    color: colors.textPrimary,
     minHeight: 88,
     textAlignVertical: 'top',
   },
@@ -267,20 +271,20 @@ const styles = StyleSheet.create({
   photoBtn: {
     flex: 1,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: Colors.bgCard,
+    backgroundColor: colors.bgCard,
     borderRadius: Radii.md,
-    borderWidth: 1, borderColor: Colors.border,
+    borderWidth: 1, borderColor: colors.border,
     borderStyle: 'dashed',
     paddingVertical: 14,
   },
   photoBtnIcon: { fontSize: 20 },
-  photoBtnText: { fontSize: 13, fontWeight: '700', color: Colors.textDim },
+  photoBtnText: { fontSize: 13, fontWeight: '700', color: colors.textDim },
 
   photoPreviewWrap: { position: 'relative' },
   photoPreview: {
     width: '100%', height: 160,
     borderRadius: Radii.md,
-    backgroundColor: Colors.bgCard,
+    backgroundColor: colors.bgCard,
   },
   photoRemove: {
     position: 'absolute', top: 8, right: 8,
@@ -292,10 +296,10 @@ const styles = StyleSheet.create({
 
   actions: { gap: 10 },
   confirmBtn: {
-    backgroundColor: Colors.green,
+    backgroundColor: colors.green,
     borderRadius: Radii.md,
     padding: 18, alignItems: 'center',
-    shadowColor: Colors.green,
+    shadowColor: colors.green,
     shadowOpacity: 0.3, shadowRadius: 10,
   },
   confirmBtnText: { fontSize: 17, fontWeight: '900', color: '#fff' },
@@ -303,7 +307,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', padding: 14,
     backgroundColor: 'rgba(255,255,255,0.04)',
     borderRadius: Radii.md,
-    borderWidth: 1, borderColor: Colors.border,
+    borderWidth: 1, borderColor: colors.border,
   },
-  cancelBtnText: { fontSize: 14, fontWeight: '700', color: Colors.textFaint },
+  cancelBtnText: { fontSize: 14, fontWeight: '700', color: colors.textFaint },
 });

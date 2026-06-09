@@ -1,8 +1,11 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { View, Text, Image, StyleSheet, Animated } from 'react-native';
-import { Colors } from '@/constants/theme';
+import type { ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function WakeUpScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const pulse  = useRef(new Animated.Value(1)).current;
   const dot1   = useRef(new Animated.Value(0.3)).current;
   const dot2   = useRef(new Animated.Value(0.3)).current;
@@ -56,10 +59,10 @@ export default function WakeUpScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: Colors.bgScreen,
+    backgroundColor: colors.bgScreen,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 16,
@@ -72,7 +75,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '900',
-    color: Colors.textPrimary,
+    color: colors.textPrimary,
     letterSpacing: 1,
   },
   dotsRow: {
@@ -84,12 +87,12 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: Colors.gold,
+    backgroundColor: colors.gold,
   },
   hint: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.textFaint,
+    color: colors.textFaint,
     marginTop: -8,
   },
 });

@@ -2,11 +2,13 @@ import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, KeyboardAvoidingView, Platform, Modal,
 } from 'react-native';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import QRCode from 'react-native-qrcode-svg';
-import { Colors, Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing } from '@/constants/theme';
+import type { ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
 import { childrenApi } from '@/lib/api/children';
 import { authApi } from '@/lib/api/auth';
@@ -17,6 +19,80 @@ import { useTour } from '@/lib/useTour';
 import type { ChildClass } from '@/lib/rpg';
 
 const QR_TTL = 30;
+
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.bgScreen },
+  navbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.screen, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
+  backBtn:     { fontSize: 22, color: colors.textDim, fontWeight: '700', width: 40 },
+  navTitle:    { fontSize: 16, fontWeight: '900', color: colors.textPrimary },
+  saveBtn:     { backgroundColor: colors.gold, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 8 },
+  saveBtnText: { fontSize: 13, fontWeight: '900', color: '#1a1000' },
+
+  content: { padding: Spacing.screen, gap: 12 },
+
+  avatarSection: { alignItems: 'center', paddingVertical: 8, gap: 6 },
+  avatarPreviewCircle: { width: 96, height: 96, borderRadius: 48, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  bigEmoji:      { fontSize: 52 },
+
+  childNameDisplay: { fontSize: 20, fontWeight: '900', color: colors.textPrimary },
+
+  rpgCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: colors.bgCard, borderRadius: Radii.card,
+    borderWidth: 1, borderColor: 'rgba(139,92,246,0.2)',
+    padding: 14,
+  },
+  rpgEmoji:      { fontSize: 34 },
+  rpgInfo:       { flex: 1, gap: 4 },
+  rpgTitleRow:   { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  rpgLevelBadge: { backgroundColor: 'rgba(139,92,246,0.15)', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2, borderWidth: 1, borderColor: 'rgba(139,92,246,0.3)' },
+  rpgLevelText:  { fontSize: 11, fontWeight: '900', color: '#a78bfa' },
+  rpgTitle:      { fontSize: 14, fontWeight: '800', color: colors.textPrimary },
+  rpgClass:      { fontSize: 12, fontWeight: '600', color: colors.textDim },
+
+  sectionLabel: { fontSize: 11, fontWeight: '900', color: colors.textFaint, textTransform: 'uppercase', letterSpacing: 1.1, marginTop: 4 },
+  card:         { backgroundColor: colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: colors.border, padding: 16 },
+  input:        { fontSize: 17, fontWeight: '700', color: colors.textPrimary },
+
+  actionRow:  { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: colors.border, padding: 16 },
+  deleteRow:  { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: 'rgba(239,83,80,0.06)', borderRadius: Radii.card, borderWidth: 1, borderColor: 'rgba(239,83,80,0.18)', padding: 16 },
+  actionIcon: { fontSize: 22 },
+  actionText: { flex: 1, fontSize: 15, fontWeight: '700', color: colors.textPrimary },
+  actionArrow:{ fontSize: 20, color: colors.textFaint },
+
+  pinContent: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, paddingHorizontal: 32 },
+  pinTitle:   { fontSize: 18, fontWeight: '900', color: colors.textPrimary, textAlign: 'center' },
+  pinSub:     { fontSize: 13, fontWeight: '600', color: colors.textDim, textAlign: 'center', marginTop: -8 },
+  pinStep:    { fontSize: 14, fontWeight: '800', color: colors.textDim },
+  dots:       { flexDirection: 'row', gap: 16 },
+  dot:        { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: colors.textFaint },
+  dotFilled:  { backgroundColor: colors.gold, borderColor: colors.gold },
+  numpad:     { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center', width: '100%' },
+  key:        { width: 82, height: 82, borderRadius: 41, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  keyEmpty:   { width: 82, height: 82 },
+  keyDelete:  { backgroundColor: 'transparent', borderColor: 'transparent' },
+  keyText:       { fontSize: 26, fontWeight: '800', color: colors.textPrimary },
+  keyDeleteText: { fontSize: 22, color: colors.textDim },
+
+  goalHint:        { fontSize: 12, fontWeight: '600', color: colors.textFaint, marginBottom: 10 },
+  goalRow:         { flexDirection: 'row', gap: 8, marginBottom: 10 },
+  goalLevelInput:  { width: 56, fontSize: 16, fontWeight: '800', color: colors.textPrimary, borderBottomWidth: 1, borderBottomColor: colors.border, textAlign: 'center', paddingBottom: 4 },
+  goalRewardInput: { flex: 1, fontSize: 14, fontWeight: '600', color: colors.textPrimary, borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: 4 },
+  goalSaveBtn:     { backgroundColor: 'rgba(255,184,0,0.12)', borderRadius: 10, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,184,0,0.25)' },
+  goalSaveBtnText: { fontSize: 13, fontWeight: '800', color: colors.gold },
+
+  qrOverlay:     { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', alignItems: 'center', justifyContent: 'center' },
+  qrSheet:       { backgroundColor: colors.bgCard, borderRadius: 28, padding: 28, alignItems: 'center', gap: 16, marginHorizontal: 24, width: 320 },
+  qrTitle:       { fontSize: 20, fontWeight: '900', color: colors.textPrimary, textAlign: 'center' },
+  qrSub:         { fontSize: 13, fontWeight: '600', color: colors.textDim, textAlign: 'center', marginTop: -8 },
+  qrBox:         { backgroundColor: '#fff', padding: 16, borderRadius: 16 },
+  qrTimer:       { alignItems: 'center' },
+  qrTimerText:   { fontSize: 14, fontWeight: '800', color: colors.textDim },
+  qrRefreshBtn:  { backgroundColor: 'rgba(255,184,0,0.12)', borderRadius: 12, paddingHorizontal: 20, paddingVertical: 10, borderWidth: 1, borderColor: 'rgba(255,184,0,0.3)' },
+  qrRefreshText: { fontSize: 14, fontWeight: '800', color: colors.gold },
+  qrCloseBtn:    { paddingVertical: 8 },
+  qrCloseBtnText:{ fontSize: 14, fontWeight: '700', color: colors.textFaint },
+});
 
 export default function EditChildScreen() {
   const { childId, childName, childEmoji, childColor } = useLocalSearchParams<{
@@ -40,6 +116,9 @@ export default function EditChildScreen() {
   const goalRef   = useRef<any>(null);
   const { active: tourActive, finish: finishTour } = useTour('edit-child');
   const [tourVisible, setTourVisible] = useState(false);
+
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   useEffect(() => {
     if (tourActive) {
@@ -224,7 +303,7 @@ export default function EditChildScreen() {
             {/* Prénom */}
             <Text style={styles.sectionLabel}>Prénom</Text>
             <View style={styles.card}>
-              <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Prénom de l'enfant" placeholderTextColor={Colors.textFaint} />
+              <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Prénom de l'enfant" placeholderTextColor={colors.textFaint} />
             </View>
 
             {/* Actions */}
@@ -234,11 +313,11 @@ export default function EditChildScreen() {
               <Text style={styles.actionText}>Changer le code secret</Text>
               <Text style={styles.actionArrow}>›</Text>
             </TouchableOpacity>
-            <TouchableOpacity ref={qrBtnRef} collapsable={false} style={styles.actionRow} onPress={generateQr} activeOpacity={0.7} disabled={qrLoading}>
+            <TouchableOpacity ref={qrBtnRef} style={styles.actionRow} onPress={generateQr} activeOpacity={0.7} disabled={qrLoading}>
               <Text style={styles.actionIcon}>📱</Text>
               <View style={{ flex: 1 }}>
                 <Text style={styles.actionText}>Connecter le téléphone de {name}</Text>
-                <Text style={{ fontSize: 11, color: Colors.textFaint, fontWeight: '600' }}>Génère un QR code valable 30s</Text>
+                <Text style={{ fontSize: 11, color: colors.textFaint, fontWeight: '600' }}>Génère un QR code valable 30s</Text>
               </View>
               <Text style={styles.actionArrow}>{qrLoading ? '…' : '›'}</Text>
             </TouchableOpacity>
@@ -252,7 +331,7 @@ export default function EditChildScreen() {
                   value={goalLevel}
                   onChangeText={setGoalLevel}
                   placeholder="Niv."
-                  placeholderTextColor={Colors.textFaint}
+                  placeholderTextColor={colors.textFaint}
                   keyboardType="number-pad"
                   maxLength={3}
                 />
@@ -261,7 +340,7 @@ export default function EditChildScreen() {
                   value={goalReward}
                   onChangeText={setGoalReward}
                   placeholder="Récompense promise (ex: pizza 🍕)"
-                  placeholderTextColor={Colors.textFaint}
+                  placeholderTextColor={colors.textFaint}
                 />
               </View>
               <TouchableOpacity
@@ -363,77 +442,3 @@ export default function EditChildScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.bgScreen },
-  navbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.screen, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  backBtn:     { fontSize: 22, color: Colors.textDim, fontWeight: '700', width: 40 },
-  navTitle:    { fontSize: 16, fontWeight: '900', color: Colors.textPrimary },
-  saveBtn:     { backgroundColor: Colors.gold, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 8 },
-  saveBtnText: { fontSize: 13, fontWeight: '900', color: '#1a1000' },
-
-  content: { padding: Spacing.screen, gap: 12 },
-
-  avatarSection: { alignItems: 'center', paddingVertical: 8, gap: 6 },
-  avatarPreviewCircle: { width: 96, height: 96, borderRadius: 48, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-  bigEmoji:      { fontSize: 52 },
-
-  childNameDisplay: { fontSize: 20, fontWeight: '900', color: Colors.textPrimary },
-
-  rpgCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: Colors.bgCard, borderRadius: Radii.card,
-    borderWidth: 1, borderColor: 'rgba(139,92,246,0.2)',
-    padding: 14,
-  },
-  rpgEmoji:      { fontSize: 34 },
-  rpgInfo:       { flex: 1, gap: 4 },
-  rpgTitleRow:   { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  rpgLevelBadge: { backgroundColor: 'rgba(139,92,246,0.15)', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2, borderWidth: 1, borderColor: 'rgba(139,92,246,0.3)' },
-  rpgLevelText:  { fontSize: 11, fontWeight: '900', color: '#a78bfa' },
-  rpgTitle:      { fontSize: 14, fontWeight: '800', color: Colors.textPrimary },
-  rpgClass:      { fontSize: 12, fontWeight: '600', color: Colors.textDim },
-
-  sectionLabel: { fontSize: 11, fontWeight: '900', color: Colors.textFaint, textTransform: 'uppercase', letterSpacing: 1.1, marginTop: 4 },
-  card:         { backgroundColor: Colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: Colors.border, padding: 16 },
-  input:        { fontSize: 17, fontWeight: '700', color: Colors.textPrimary },
-
-  actionRow:  { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: Colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: Colors.border, padding: 16 },
-  deleteRow:  { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: 'rgba(239,83,80,0.06)', borderRadius: Radii.card, borderWidth: 1, borderColor: 'rgba(239,83,80,0.18)', padding: 16 },
-  actionIcon: { fontSize: 22 },
-  actionText: { flex: 1, fontSize: 15, fontWeight: '700', color: Colors.textPrimary },
-  actionArrow:{ fontSize: 20, color: Colors.textFaint },
-
-  pinContent: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, paddingHorizontal: 32 },
-  pinTitle:   { fontSize: 18, fontWeight: '900', color: Colors.textPrimary, textAlign: 'center' },
-  pinSub:     { fontSize: 13, fontWeight: '600', color: Colors.textDim, textAlign: 'center', marginTop: -8 },
-  pinStep:    { fontSize: 14, fontWeight: '800', color: Colors.textDim },
-  dots:       { flexDirection: 'row', gap: 16 },
-  dot:        { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: Colors.textFaint },
-  dotFilled:  { backgroundColor: Colors.gold, borderColor: Colors.gold },
-  numpad:     { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center', width: '100%' },
-  key:        { width: 82, height: 82, borderRadius: 41, backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
-  keyEmpty:   { width: 82, height: 82 },
-  keyDelete:  { backgroundColor: 'transparent', borderColor: 'transparent' },
-  keyText:       { fontSize: 26, fontWeight: '800', color: Colors.textPrimary },
-  keyDeleteText: { fontSize: 22, color: Colors.textDim },
-
-  goalHint:        { fontSize: 12, fontWeight: '600', color: Colors.textFaint, marginBottom: 10 },
-  goalRow:         { flexDirection: 'row', gap: 8, marginBottom: 10 },
-  goalLevelInput:  { width: 56, fontSize: 16, fontWeight: '800', color: Colors.textPrimary, borderBottomWidth: 1, borderBottomColor: Colors.border, textAlign: 'center', paddingBottom: 4 },
-  goalRewardInput: { flex: 1, fontSize: 14, fontWeight: '600', color: Colors.textPrimary, borderBottomWidth: 1, borderBottomColor: Colors.border, paddingBottom: 4 },
-  goalSaveBtn:     { backgroundColor: 'rgba(255,184,0,0.12)', borderRadius: 10, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,184,0,0.25)' },
-  goalSaveBtnText: { fontSize: 13, fontWeight: '800', color: Colors.gold },
-
-  qrOverlay:     { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', alignItems: 'center', justifyContent: 'center' },
-  qrSheet:       { backgroundColor: Colors.bgCard, borderRadius: 28, padding: 28, alignItems: 'center', gap: 16, marginHorizontal: 24, width: 320 },
-  qrTitle:       { fontSize: 20, fontWeight: '900', color: Colors.textPrimary, textAlign: 'center' },
-  qrSub:         { fontSize: 13, fontWeight: '600', color: Colors.textDim, textAlign: 'center', marginTop: -8 },
-  qrBox:         { backgroundColor: '#fff', padding: 16, borderRadius: 16 },
-  qrTimer:       { alignItems: 'center' },
-  qrTimerText:   { fontSize: 14, fontWeight: '800', color: Colors.textDim },
-  qrRefreshBtn:  { backgroundColor: 'rgba(255,184,0,0.12)', borderRadius: 12, paddingHorizontal: 20, paddingVertical: 10, borderWidth: 1, borderColor: 'rgba(255,184,0,0.3)' },
-  qrRefreshText: { fontSize: 14, fontWeight: '800', color: Colors.gold },
-  qrCloseBtn:    { paddingVertical: 8 },
-  qrCloseBtnText:{ fontSize: 14, fontWeight: '700', color: Colors.textFaint },
-});

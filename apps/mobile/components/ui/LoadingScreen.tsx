@@ -1,10 +1,11 @@
 import { View, Text, ActivityIndicator, TouchableOpacity, StyleSheet } from 'react-native';
-import { Colors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export function LoadingScreen() {
+  const { colors } = useTheme();
   return (
     <View style={styles.root}>
-      <ActivityIndicator size="large" color={Colors.gold} />
+      <ActivityIndicator size="large" color={colors.gold} />
     </View>
   );
 }

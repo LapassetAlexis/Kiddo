@@ -1,8 +1,10 @@
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, TextInput, Animated, Pressable, Image } from 'react-native';
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors, Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing } from '@/constants/theme';
+import type { ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
 import { tasksApi } from '@/lib/api/tasks';
 import { rewardsApi } from '@/lib/api/rewards';
@@ -21,6 +23,140 @@ import OnboardingChecklist from '@/components/ui/OnboardingChecklist';
 
 type PendingTask = { id: string; childName: string; childEmoji: string; childColor: string; taskName: string; goldReward: number; ago: string; note?: string; photoUrl?: string; timesPerDay: number; completedToday: number; bonusGold: number; };
 type RewardRequest = { id: string; childName: string; childEmoji: string; rewardName: string; emoji: string; pts: number; };
+
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.bgScreen },
+
+  header:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: Spacing.screen, paddingTop: 12 },
+  headerLeft:    { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  headerLogo:    { width: 32, height: 32, borderRadius: 8 },
+  headerActions: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+  sub:           { fontSize: 13, fontWeight: '600', color: colors.textDim },
+  title:         { fontSize: 22, fontWeight: '900', color: colors.textPrimary },
+  addBtn:        { width: 44, height: 44, backgroundColor: colors.gold, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  addBtnText:    { fontSize: 24, fontWeight: '900', color: '#1a1000', lineHeight: 28 },
+  exceptBtn:     { width: 44, height: 44, backgroundColor: 'rgba(255,184,0,0.12)', borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,184,0,0.3)' },
+  exceptBtnText: { fontSize: 22 },
+
+  fieldLabel:    { fontSize: 11, fontWeight: '900', color: colors.textFaint, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 },
+  exceptInput:   { backgroundColor: colors.bgScreen, borderRadius: 12, borderWidth: 1, borderColor: colors.border, padding: 13, fontSize: 14, fontWeight: '600', color: colors.textPrimary, marginBottom: 14 },
+  childChip:     { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.bgScreen, borderRadius: 12, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12, paddingVertical: 8 },
+  childChipActive: { borderColor: 'rgba(255,184,0,0.5)', backgroundColor: 'rgba(255,184,0,0.08)' },
+  childChipText: { fontSize: 13, fontWeight: '800', color: colors.textDim },
+  goldChip:      { flex: 1, alignItems: 'center', paddingVertical: 10, backgroundColor: colors.bgScreen, borderRadius: 10, borderWidth: 1, borderColor: colors.border },
+  goldChipActive:{ borderColor: 'rgba(255,184,0,0.5)', backgroundColor: 'rgba(255,184,0,0.08)' },
+  goldChipText:  { fontSize: 14, fontWeight: '900', color: colors.textDim },
+  diffRow:       { paddingHorizontal: 14, paddingVertical: 10, backgroundColor: colors.bgScreen, borderRadius: 10, borderWidth: 1, borderColor: colors.border },
+  diffRowActive: { borderColor: 'rgba(255,184,0,0.5)', backgroundColor: 'rgba(255,184,0,0.08)' },
+  diffText:      { fontSize: 13, fontWeight: '700', color: colors.textDim },
+  confirmBtn:    { backgroundColor: colors.gold, borderRadius: 14, padding: 16, alignItems: 'center' },
+  confirmBtnText:{ fontSize: 16, fontWeight: '900', color: '#1a1000' },
+
+  urgentBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: Spacing.screen, marginBottom: 14, backgroundColor: 'rgba(255,107,53,0.1)', borderWidth: 1, borderColor: 'rgba(255,107,53,0.22)', borderRadius: 16, padding: 12 },
+  urgentCount:  { fontSize: 14, fontWeight: '900', color: colors.orange },
+  urgentSub:    { fontSize: 11, fontWeight: '600', color: 'rgba(255,107,53,0.6)', marginTop: 1 },
+
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginHorizontal: Spacing.screen, marginBottom: 10 },
+  sectionTitle:  { fontSize: 11, fontWeight: '900', color: colors.textFaint, textTransform: 'uppercase', letterSpacing: 1.2 },
+  pendingCount:  { fontSize: 12, fontWeight: '900', color: colors.orange },
+  todoCount:     { fontSize: 12, fontWeight: '900', color: colors.textDim },
+  todoCard:         { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.bgCard, borderRadius: Radii.card, padding: 14, borderWidth: 1, borderColor: colors.border },
+  todoCardRejected: { borderColor: 'rgba(239,83,80,0.25)', backgroundColor: 'rgba(239,83,80,0.05)' },
+  todoRejectedLabel:{ fontSize: 11, fontWeight: '700', color: 'rgba(239,83,80,0.8)', marginTop: 2 },
+
+  childScroll: { paddingHorizontal: Spacing.screen, gap: 12, paddingBottom: 4 },
+  childCard:   { backgroundColor: colors.bgCard, borderRadius: 20, borderWidth: 1, borderColor: colors.border, padding: 16, width: 150, minHeight: 160, gap: 8, marginBottom: 16, position: 'relative' },
+  childCardAlert: { borderColor: 'rgba(255,184,0,0.2)' },
+  childAvatar: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', shadowOpacity: 0.3, shadowRadius: 6 },
+  childName:  { fontSize: 15, fontWeight: '900', color: colors.textPrimary },
+  childLevelRow:       { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  childLevelEmoji:     { fontSize: 14 },
+  childLevelBadge:     { backgroundColor: 'rgba(139,92,246,0.15)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: 'rgba(139,92,246,0.3)' },
+  childLevelBadgeText: { fontSize: 10, fontWeight: '900', color: '#a78bfa' },
+  childPts:   { fontSize: 13, fontWeight: '800', color: colors.gold },
+  addChildCard: { backgroundColor: colors.bgCard, borderRadius: 20, borderWidth: 1.5, borderColor: colors.border, borderStyle: 'dashed', width: 150, minHeight: 160, alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 16, opacity: 0.5 },
+  addChildText: { fontSize: 13, fontWeight: '800', color: colors.textDim },
+
+  list:       { paddingHorizontal: Spacing.screen, gap: 10 },
+  pendingCard:{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.bgCard, borderRadius: Radii.card, padding: 14, borderWidth: 1, borderColor: colors.border },
+  childAvatarSm: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  pendingTask:{ fontSize: 14, fontWeight: '800', color: colors.textPrimary },
+  pendingMeta:{ fontSize: 11, fontWeight: '600', color: colors.textDim, marginTop: 2 },
+  repBadge:     { backgroundColor: 'rgba(255,255,255,0.07)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', borderRadius: Radii.pill, paddingHorizontal: 8, paddingVertical: 3, marginRight: 2 },
+  repBadgeText: { fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.45)' },
+  ptsBadge:   { backgroundColor: 'rgba(255,184,0,0.1)', borderWidth: 1, borderColor: 'rgba(255,184,0,0.18)', borderRadius: Radii.pill, paddingHorizontal: 10, paddingVertical: 4 },
+  ptsBadgeText: { fontSize: 12, fontWeight: '900', color: colors.gold },
+  btnApprove: { width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(76,175,80,0.15)', borderWidth: 1, borderColor: 'rgba(76,175,80,0.25)', alignItems: 'center', justifyContent: 'center' },
+  btnReject:  { width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(239,83,80,0.1)',  borderWidth: 1, borderColor: 'rgba(239,83,80,0.2)',  alignItems: 'center', justifyContent: 'center' },
+  grantBtn:   { backgroundColor: colors.gold, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 9 },
+  grantBtnText: { fontSize: 13, fontWeight: '900', color: '#1a1000' },
+  emptyPending:  { alignItems: 'center', padding: 32, gap: 8 },
+  emptyText:     { fontSize: 15, fontWeight: '800', color: colors.textDim },
+  emptySubText:  { fontSize: 13, fontWeight: '600', color: colors.textFaint, textAlign: 'center', lineHeight: 18 },
+  emptyCTA:      { marginTop: 8, backgroundColor: colors.gold, borderRadius: Radii.md, paddingHorizontal: 24, paddingVertical: 12 },
+  emptyCTAText:  { fontSize: 14, fontWeight: '900', color: '#1a1000' },
+  // Review modal
+  reviewSheet: {
+    backgroundColor: '#1e1e26', borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    padding: 20, paddingBottom: 36, borderTopWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
+    gap: 16,
+  },
+  reviewHeader:   { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  reviewTaskName: { fontSize: 16, fontWeight: '900', color: colors.textPrimary },
+  reviewMeta:     { fontSize: 12, fontWeight: '600', color: colors.textDim, marginTop: 2 },
+  reviewNote: {
+    backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 14,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 14,
+  },
+  reviewNoteLabel: { fontSize: 11, fontWeight: '700', color: colors.textFaint, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 },
+  reviewNoteText:  { fontSize: 15, fontWeight: '600', color: colors.textPrimary, fontStyle: 'italic' },
+  reviewPhoto:     { width: '100%', height: 200, borderRadius: 16 },
+  reviewActions:   { flexDirection: 'row', gap: 12 },
+  btnRejectLg:     { flex: 1, backgroundColor: 'rgba(239,83,80,0.1)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(239,83,80,0.25)', padding: 16, alignItems: 'center' },
+  btnRejectLgText: { fontSize: 15, fontWeight: '900', color: '#EF5350' },
+  btnApproveLg:    { flex: 1, backgroundColor: colors.green, borderRadius: 16, padding: 16, alignItems: 'center' },
+  btnApproveLgText:{ fontSize: 15, fontWeight: '900', color: '#fff' },
+
+  sheetHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.15)', alignSelf: 'center', marginBottom: 8 },
+  sheetTitle:  { fontSize: 18, fontWeight: '900', color: colors.textPrimary },
+
+  // Modal
+  modalOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    backgroundColor: '#1e1e26',
+    borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    padding: 20, paddingBottom: 36,
+    borderTopWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
+  },
+  modalHandle: {
+    width: 36, height: 4, borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignSelf: 'center', marginBottom: 20,
+  },
+  modalTitle: { fontSize: 20, fontWeight: '900', color: colors.textPrimary, marginBottom: 4 },
+  modalSub:   { fontSize: 13, fontWeight: '600', color: colors.textDim, marginBottom: 20 },
+
+  modalBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    backgroundColor: colors.orange,
+    borderRadius: 18, padding: 18, marginBottom: 12,
+  },
+  modalBtnIcon:  { fontSize: 26 },
+  modalBtnText:  { flex: 1 },
+  modalBtnLabel: { fontSize: 16, fontWeight: '900', color: '#fff' },
+  modalBtnDesc:  { fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.7)', marginTop: 2 },
+  modalBtnArrow: { fontSize: 22, color: 'rgba(255,255,255,0.5)', fontWeight: '300' },
+
+  modalCancel: {
+    alignItems: 'center', padding: 16,
+    backgroundColor: colors.bgCard, borderRadius: 18,
+    borderWidth: 1, borderColor: colors.border, marginTop: 4,
+  },
+  modalCancelText: { fontSize: 15, fontWeight: '800', color: colors.textDim },
+});
 
 export default function ParentDashboardScreen() {
   const { bottom } = useSafeAreaInsets();
@@ -52,6 +188,9 @@ export default function ParentDashboardScreen() {
   const [tourVisible,        setTourVisible]        = useState(false);
   const [validateTourVisible, setValidateTourVisible] = useState(false);
   const [childLoginVisible,  setChildLoginVisible]  = useState(false);
+
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const {
     data: childrenData,
@@ -404,7 +543,7 @@ export default function ParentDashboardScreen() {
             onPress={() => router.push('/(parent)/create-child')}
             activeOpacity={0.7}
           >
-            <Text style={{ fontSize: 28, color: Colors.textFaint }}>＋</Text>
+            <Text style={{ fontSize: 28, color: colors.textFaint }}>＋</Text>
             <Text style={styles.addChildText}>Ajouter</Text>
           </TouchableOpacity>
         </ScrollView>
@@ -492,7 +631,7 @@ export default function ParentDashboardScreen() {
                   </View>
                 )}
                 <View style={styles.ptsBadge}><Text style={styles.ptsBadgeText}>+{task.goldReward} 🪙</Text></View>
-                <Text style={{ fontSize: 16, color: Colors.textFaint }}>›</Text>
+                <Text style={{ fontSize: 16, color: colors.textFaint }}>›</Text>
               </TouchableOpacity>
               </View>
             ))}
@@ -532,7 +671,7 @@ export default function ParentDashboardScreen() {
                   </Text>
                 </View>
                 <TouchableOpacity style={styles.btnApprove} onPress={() => grantReward(r.id)} aria-label="Accorder">
-                  <Text style={{ color: Colors.green, fontSize: 17 }}>✓</Text>
+                  <Text style={{ color: colors.green, fontSize: 17 }}>✓</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.btnReject} onPress={() => refuseReward(r.id)} aria-label="Refuser">
                   <Text style={{ color: '#EF5350', fontSize: 17 }}>✕</Text>
@@ -566,7 +705,7 @@ export default function ParentDashboardScreen() {
                     activeOpacity={0.7}
                   >
                     <Text style={{ fontSize: 18 }}>{child.avatar}</Text>
-                    <Text style={[styles.childChipText, exceptChildId === child.id && { color: Colors.gold }]}>{child.name}</Text>
+                    <Text style={[styles.childChipText, exceptChildId === child.id && { color: colors.gold }]}>{child.name}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -577,7 +716,7 @@ export default function ParentDashboardScreen() {
             <TextInput
               style={styles.exceptInput}
               placeholder="Ex : A aidé à ranger sans qu'on le demande"
-              placeholderTextColor={Colors.textFaint}
+              placeholderTextColor={colors.textFaint}
               value={exceptTitle}
               onChangeText={setExceptTitle}
               maxLength={80}
@@ -588,7 +727,7 @@ export default function ParentDashboardScreen() {
             <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
               {['10','20','30','50','100'].map(v => (
                 <TouchableOpacity key={v} style={[styles.goldChip, exceptGold === v && styles.goldChipActive]} onPress={() => setExceptGold(v)} activeOpacity={0.7}>
-                  <Text style={[styles.goldChipText, exceptGold === v && { color: Colors.gold }]}>{v}</Text>
+                  <Text style={[styles.goldChipText, exceptGold === v && { color: colors.gold }]}>{v}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -598,7 +737,7 @@ export default function ParentDashboardScreen() {
             <View style={{ gap: 6, marginBottom: 20 }}>
               {DIFFS.map(d => (
                 <TouchableOpacity key={d} style={[styles.diffRow, exceptDiff === d && styles.diffRowActive]} onPress={() => setExceptDiff(d)} activeOpacity={0.7}>
-                  <Text style={[styles.diffText, exceptDiff === d && { color: Colors.gold }]}>{XP_LABELS[d]}</Text>
+                  <Text style={[styles.diffText, exceptDiff === d && { color: colors.gold }]}>{XP_LABELS[d]}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -728,137 +867,3 @@ export default function ParentDashboardScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.bgScreen },
-
-  header:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: Spacing.screen, paddingTop: 12 },
-  headerLeft:    { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  headerLogo:    { width: 32, height: 32, borderRadius: 8 },
-  headerActions: { flexDirection: 'row', gap: 10, alignItems: 'center' },
-  sub:           { fontSize: 13, fontWeight: '600', color: Colors.textDim },
-  title:         { fontSize: 22, fontWeight: '900', color: Colors.textPrimary },
-  addBtn:        { width: 44, height: 44, backgroundColor: Colors.gold, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  addBtnText:    { fontSize: 24, fontWeight: '900', color: '#1a1000', lineHeight: 28 },
-  exceptBtn:     { width: 44, height: 44, backgroundColor: 'rgba(255,184,0,0.12)', borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,184,0,0.3)' },
-  exceptBtnText: { fontSize: 22 },
-
-  fieldLabel:    { fontSize: 11, fontWeight: '900', color: Colors.textFaint, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 },
-  exceptInput:   { backgroundColor: Colors.bgScreen, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, padding: 13, fontSize: 14, fontWeight: '600', color: Colors.textPrimary, marginBottom: 14 },
-  childChip:     { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: Colors.bgScreen, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, paddingHorizontal: 12, paddingVertical: 8 },
-  childChipActive: { borderColor: 'rgba(255,184,0,0.5)', backgroundColor: 'rgba(255,184,0,0.08)' },
-  childChipText: { fontSize: 13, fontWeight: '800', color: Colors.textDim },
-  goldChip:      { flex: 1, alignItems: 'center', paddingVertical: 10, backgroundColor: Colors.bgScreen, borderRadius: 10, borderWidth: 1, borderColor: Colors.border },
-  goldChipActive:{ borderColor: 'rgba(255,184,0,0.5)', backgroundColor: 'rgba(255,184,0,0.08)' },
-  goldChipText:  { fontSize: 14, fontWeight: '900', color: Colors.textDim },
-  diffRow:       { paddingHorizontal: 14, paddingVertical: 10, backgroundColor: Colors.bgScreen, borderRadius: 10, borderWidth: 1, borderColor: Colors.border },
-  diffRowActive: { borderColor: 'rgba(255,184,0,0.5)', backgroundColor: 'rgba(255,184,0,0.08)' },
-  diffText:      { fontSize: 13, fontWeight: '700', color: Colors.textDim },
-  confirmBtn:    { backgroundColor: Colors.gold, borderRadius: 14, padding: 16, alignItems: 'center' },
-  confirmBtnText:{ fontSize: 16, fontWeight: '900', color: '#1a1000' },
-
-  urgentBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: Spacing.screen, marginBottom: 14, backgroundColor: 'rgba(255,107,53,0.1)', borderWidth: 1, borderColor: 'rgba(255,107,53,0.22)', borderRadius: 16, padding: 12 },
-  urgentCount:  { fontSize: 14, fontWeight: '900', color: Colors.orange },
-  urgentSub:    { fontSize: 11, fontWeight: '600', color: 'rgba(255,107,53,0.6)', marginTop: 1 },
-
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginHorizontal: Spacing.screen, marginBottom: 10 },
-  sectionTitle:  { fontSize: 11, fontWeight: '900', color: Colors.textFaint, textTransform: 'uppercase', letterSpacing: 1.2 },
-  pendingCount:  { fontSize: 12, fontWeight: '900', color: Colors.orange },
-  todoCount:     { fontSize: 12, fontWeight: '900', color: Colors.textDim },
-  todoCard:         { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: Colors.bgCard, borderRadius: Radii.card, padding: 14, borderWidth: 1, borderColor: Colors.border },
-  todoCardRejected: { borderColor: 'rgba(239,83,80,0.25)', backgroundColor: 'rgba(239,83,80,0.05)' },
-  todoRejectedLabel:{ fontSize: 11, fontWeight: '700', color: 'rgba(239,83,80,0.8)', marginTop: 2 },
-
-  childScroll: { paddingHorizontal: Spacing.screen, gap: 12, paddingBottom: 4 },
-  childCard:   { backgroundColor: Colors.bgCard, borderRadius: 20, borderWidth: 1, borderColor: Colors.border, padding: 16, width: 150, minHeight: 160, gap: 8, marginBottom: 16, position: 'relative' },
-  childCardAlert: { borderColor: 'rgba(255,184,0,0.2)' },
-  childAvatar: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', shadowOpacity: 0.3, shadowRadius: 6 },
-  childName:  { fontSize: 15, fontWeight: '900', color: Colors.textPrimary },
-  childLevelRow:       { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  childLevelEmoji:     { fontSize: 14 },
-  childLevelBadge:     { backgroundColor: 'rgba(139,92,246,0.15)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: 'rgba(139,92,246,0.3)' },
-  childLevelBadgeText: { fontSize: 10, fontWeight: '900', color: '#a78bfa' },
-  childPts:   { fontSize: 13, fontWeight: '800', color: Colors.gold },
-  addChildCard: { backgroundColor: Colors.bgCard, borderRadius: 20, borderWidth: 1.5, borderColor: Colors.border, borderStyle: 'dashed', width: 150, minHeight: 160, alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 16, opacity: 0.5 },
-  addChildText: { fontSize: 13, fontWeight: '800', color: Colors.textDim },
-
-  list:       { paddingHorizontal: Spacing.screen, gap: 10 },
-  pendingCard:{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: Colors.bgCard, borderRadius: Radii.card, padding: 14, borderWidth: 1, borderColor: Colors.border },
-  childAvatarSm: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  pendingTask:{ fontSize: 14, fontWeight: '800', color: Colors.textPrimary },
-  pendingMeta:{ fontSize: 11, fontWeight: '600', color: Colors.textDim, marginTop: 2 },
-  repBadge:     { backgroundColor: 'rgba(255,255,255,0.07)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', borderRadius: Radii.pill, paddingHorizontal: 8, paddingVertical: 3, marginRight: 2 },
-  repBadgeText: { fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.45)' },
-  ptsBadge:   { backgroundColor: 'rgba(255,184,0,0.1)', borderWidth: 1, borderColor: 'rgba(255,184,0,0.18)', borderRadius: Radii.pill, paddingHorizontal: 10, paddingVertical: 4 },
-  ptsBadgeText: { fontSize: 12, fontWeight: '900', color: Colors.gold },
-  btnApprove: { width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(76,175,80,0.15)', borderWidth: 1, borderColor: 'rgba(76,175,80,0.25)', alignItems: 'center', justifyContent: 'center' },
-  btnReject:  { width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(239,83,80,0.1)',  borderWidth: 1, borderColor: 'rgba(239,83,80,0.2)',  alignItems: 'center', justifyContent: 'center' },
-  grantBtn:   { backgroundColor: Colors.gold, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 9 },
-  grantBtnText: { fontSize: 13, fontWeight: '900', color: '#1a1000' },
-  emptyPending:  { alignItems: 'center', padding: 32, gap: 8 },
-  emptyText:     { fontSize: 15, fontWeight: '800', color: Colors.textDim },
-  emptySubText:  { fontSize: 13, fontWeight: '600', color: Colors.textFaint, textAlign: 'center', lineHeight: 18 },
-  emptyCTA:      { marginTop: 8, backgroundColor: Colors.gold, borderRadius: Radii.md, paddingHorizontal: 24, paddingVertical: 12 },
-  emptyCTAText:  { fontSize: 14, fontWeight: '900', color: '#1a1000' },
-  // Review modal
-  reviewSheet: {
-    backgroundColor: '#1e1e26', borderTopLeftRadius: 28, borderTopRightRadius: 28,
-    padding: 20, paddingBottom: 36, borderTopWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
-    gap: 16,
-  },
-  reviewHeader:   { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  reviewTaskName: { fontSize: 16, fontWeight: '900', color: Colors.textPrimary },
-  reviewMeta:     { fontSize: 12, fontWeight: '600', color: Colors.textDim, marginTop: 2 },
-  reviewNote: {
-    backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 14,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 14,
-  },
-  reviewNoteLabel: { fontSize: 11, fontWeight: '700', color: Colors.textFaint, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 },
-  reviewNoteText:  { fontSize: 15, fontWeight: '600', color: Colors.textPrimary, fontStyle: 'italic' },
-  reviewPhoto:     { width: '100%', height: 200, borderRadius: 16 },
-  reviewActions:   { flexDirection: 'row', gap: 12 },
-  btnRejectLg:     { flex: 1, backgroundColor: 'rgba(239,83,80,0.1)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(239,83,80,0.25)', padding: 16, alignItems: 'center' },
-  btnRejectLgText: { fontSize: 15, fontWeight: '900', color: '#EF5350' },
-  btnApproveLg:    { flex: 1, backgroundColor: Colors.green, borderRadius: 16, padding: 16, alignItems: 'center' },
-  btnApproveLgText:{ fontSize: 15, fontWeight: '900', color: '#fff' },
-
-  sheetHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.15)', alignSelf: 'center', marginBottom: 8 },
-  sheetTitle:  { fontSize: 18, fontWeight: '900', color: Colors.textPrimary },
-
-  // Modal
-  modalOverlay: {
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'flex-end',
-  },
-  modalSheet: {
-    backgroundColor: '#1e1e26',
-    borderTopLeftRadius: 28, borderTopRightRadius: 28,
-    padding: 20, paddingBottom: 36,
-    borderTopWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
-  },
-  modalHandle: {
-    width: 36, height: 4, borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    alignSelf: 'center', marginBottom: 20,
-  },
-  modalTitle: { fontSize: 20, fontWeight: '900', color: Colors.textPrimary, marginBottom: 4 },
-  modalSub:   { fontSize: 13, fontWeight: '600', color: Colors.textDim, marginBottom: 20 },
-
-  modalBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 14,
-    backgroundColor: Colors.orange,
-    borderRadius: 18, padding: 18, marginBottom: 12,
-  },
-  modalBtnIcon:  { fontSize: 26 },
-  modalBtnText:  { flex: 1 },
-  modalBtnLabel: { fontSize: 16, fontWeight: '900', color: '#fff' },
-  modalBtnDesc:  { fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.7)', marginTop: 2 },
-  modalBtnArrow: { fontSize: 22, color: 'rgba(255,255,255,0.5)', fontWeight: '300' },
-
-  modalCancel: {
-    alignItems: 'center', padding: 16,
-    backgroundColor: Colors.bgCard, borderRadius: 18,
-    borderWidth: 1, borderColor: Colors.border, marginTop: 4,
-  },
-  modalCancelText: { fontSize: 15, fontWeight: '800', color: Colors.textDim },
-});

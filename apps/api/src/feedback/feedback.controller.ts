@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Logger, Post, UseGuards } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -18,18 +18,21 @@ const CATEGORY_LABELS: Record<string, string> = {
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('parent')
 export class FeedbackController {
+  private readonly log = new Logger(FeedbackController.name);
   private readonly adminEmail: string;
 
   constructor(
     private readonly emailService: EmailService,
     private readonly config: ConfigService,
   ) {
-    this.adminEmail = this.config.get<string>('ADMIN_EMAIL') ?? 'alexis.lapasset@iadinternational.com';
+    this.adminEmail = this.config.getOrThrow<string>('ADMIN_EMAIL');
+    this.log.log(`FeedbackController init — adminEmail: ${this.adminEmail}, resendEnabled: ${this.emailService.isEnabled}`);
   }
 
   @Post()
   @HttpCode(HttpStatus.OK)
   async send(@Body() dto: CreateFeedbackDto, @CurrentUser() user: JwtPayload) {
+    this.log.log(`Feedback received — category: ${dto.category}, from: ${user.email ?? user.sub}, to: ${this.adminEmail}`);
     const category = CATEGORY_LABELS[dto.category] ?? dto.category;
     const html = `
       <div style="font-family:sans-serif;max-width:600px;margin:auto">
@@ -42,11 +45,17 @@ export class FeedbackController {
         <p style="color:#aaa;font-size:11px;margin-top:16px">Envoyé depuis l'app Kiddo</p>
       </div>`;
 
-    await this.emailService['send'](
-      this.adminEmail,
-      `[Kiddo] ${category} — ${user.email ?? user.sub}`,
-      html,
-    );
+    try {
+      await this.emailService['send'](
+        this.adminEmail,
+        `[Kiddo] ${category} — ${user.email ?? user.sub}`,
+        html,
+      );
+      this.log.log('Feedback email sent successfully');
+    } catch (err) {
+      this.log.error(`Feedback email failed: ${(err as Error).message}`, (err as Error).stack);
+      throw err;
+    }
     return { message: 'Message envoyé' };
   }
 }

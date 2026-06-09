@@ -3,14 +3,16 @@ import {
   Animated, Image, useWindowDimensions,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRef, useState, useCallback, useEffect } from 'react';
+import { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import SpotlightTour, { TourStep } from '@/components/ui/SpotlightTour';
 import { useTour } from '@/lib/useTour';
 import ChildWelcomeModal from '@/components/ui/ChildWelcomeModal';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Easing } from 'react-native';
-import { Colors, Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing } from '@/constants/theme';
+import type { ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import TaskCompleteSheet from '@/components/ui/TaskCompleteSheet';
 import LevelUpModal from '@/components/LevelUpModal';
 import HeroSprite from '@/components/HeroSprite';
@@ -41,6 +43,14 @@ const SCENE_H     = 220;
 const SPRITE_SIZE = 80;
 const GROUND_OFF  = -4;
 
+// ── Static styles for HeroScene (no theme colors) ────────────────────────────
+const sceneStyles = StyleSheet.create({
+  scene:        { overflow: 'hidden', backgroundColor: '#0a1a0a' },
+  bgRow:        { position: 'absolute', top: 0, left: 0, bottom: 0, flexDirection: 'row' },
+  sceneGradient:{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 80, backgroundColor: 'rgba(0,0,0,0.55)' },
+  spriteAnchor: { position: 'absolute', bottom: GROUND_OFF, left: '50%', marginLeft: -(SPRITE_SIZE / 2) },
+});
+
 // ── HeroScene ────────────────────────────────────────────────────────────────
 function HeroScene({ preset, level, chapterIndex }: {
   preset: ReturnType<typeof getPresetById> & {};
@@ -63,8 +73,8 @@ function HeroScene({ preset, level, chapterIndex }: {
   }, [tileW]);
 
   return (
-    <View style={[styles.scene, { height: SCENE_H }]}>
-      <Animated.View style={[styles.bgRow, { width: totalW, transform: [{ translateX: scrollX }] }]}>
+    <View style={[sceneStyles.scene, { height: SCENE_H }]}>
+      <Animated.View style={[sceneStyles.bgRow, { width: totalW, transform: [{ translateX: scrollX }] }]}>
         {Array.from({ length: copies }).map((_, i) => (
           <Image
             key={i}
@@ -74,8 +84,8 @@ function HeroScene({ preset, level, chapterIndex }: {
           />
         ))}
       </Animated.View>
-      <View style={styles.sceneGradient} />
-      <View style={styles.spriteAnchor}>
+      <View style={sceneStyles.sceneGradient} />
+      <View style={sceneStyles.spriteAnchor}>
         <HeroSprite
           source={preset.baseStrip}
           items={getEquippedItems(preset, level)}
@@ -116,6 +126,8 @@ export default function ChildHomeScreen() {
   const { fromParent } = useLocalSearchParams<{ fromParent?: string }>();
   const { user } = useAuth();
   const { top } = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const { data: tasksData,   loading: tasksLoading,   error: tasksError,   refresh: refreshTasks }   = useApiData(() => tasksApi.list(user?.id), [user?.id]);
   const { data: balanceData, loading: balanceLoading, error: balanceError, refresh: refreshBalance } = useApiData(() => transactionsApi.getBalance(user?.id ?? ''), [user?.id]);
@@ -360,59 +372,55 @@ export default function ChildHomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root:   { flex: 1, backgroundColor: Colors.bgScreen },
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  root:   { flex: 1, backgroundColor: colors.bgScreen },
   scroll: { paddingBottom: 20 },
 
   // ── Hero zone ──────────────────────────────────────────────────────────────
   heroZone:     { position: 'relative' },
-  scene:        { overflow: 'hidden', backgroundColor: '#0a1a0a' },
-  bgRow:        { position: 'absolute', top: 0, left: 0, bottom: 0, flexDirection: 'row' },
-  sceneGradient:{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 80, backgroundColor: 'rgba(0,0,0,0.55)' },
-  spriteAnchor: { position: 'absolute', bottom: GROUND_OFF, left: '50%', marginLeft: -(SPRITE_SIZE / 2) },
 
   hudTop:       { position: 'absolute', left: 0, right: 0, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 8 },
   namePill:     { backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 10, paddingHorizontal: 9, paddingVertical: 4 },
   namePillText: { fontSize: 12, fontWeight: '900', color: '#fff' },
   goldChip:     { backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 10, paddingHorizontal: 9, paddingVertical: 4 },
-  goldChipText: { fontSize: 12, fontWeight: '900', color: Colors.gold },
+  goldChipText: { fontSize: 12, fontWeight: '900', color: colors.gold },
 
   // XP bar au-dessus du sprite
   spriteHud:     { position: 'absolute', bottom: GROUND_OFF + SPRITE_SIZE + 8, left: '50%', marginLeft: -80, width: 160, gap: 2 },
   spriteHudRow:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   spriteLevel:   { fontSize: 9, fontWeight: '900', color: 'rgba(255,255,255,0.85)', letterSpacing: 0.5 },
-  spriteStreak:  { fontSize: 9, fontWeight: '800', color: Colors.orange },
+  spriteStreak:  { fontSize: 9, fontWeight: '800', color: colors.orange },
   spriteXpTrack: { height: 3, borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.2)', overflow: 'hidden' },
-  spriteXpFill:  { height: '100%', borderRadius: 99, backgroundColor: Colors.gold },
+  spriteXpFill:  { height: '100%', borderRadius: 99, backgroundColor: colors.gold },
 
   // ── Objectif ──────────────────────────────────────────────────────────────
   goalBanner:  { marginHorizontal: Spacing.screen, marginTop: 12, backgroundColor: 'rgba(255,184,0,0.06)', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: 'rgba(255,184,0,0.2)', gap: 8 },
   goalHeader:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
   goalIcon:    { fontSize: 18 },
-  goalTitle:   { fontSize: 13, fontWeight: '900', color: Colors.textPrimary },
-  goalReward:  { fontSize: 11, fontWeight: '600', color: Colors.textDim, marginTop: 1 },
-  goalPct:     { fontSize: 14, fontWeight: '900', color: Colors.gold },
+  goalTitle:   { fontSize: 13, fontWeight: '900', color: colors.textPrimary },
+  goalReward:  { fontSize: 11, fontWeight: '600', color: colors.textDim, marginTop: 1 },
+  goalPct:     { fontSize: 14, fontWeight: '900', color: colors.gold },
   goalTrack:   { height: 5, borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.08)', overflow: 'hidden' },
-  goalFill:    { height: '100%', borderRadius: 99, backgroundColor: Colors.gold },
+  goalFill:    { height: '100%', borderRadius: 99, backgroundColor: colors.gold },
 
   // ── Sections ──────────────────────────────────────────────────────────────
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginHorizontal: Spacing.screen, marginTop: 18, marginBottom: 10 },
-  sectionTitle:  { fontSize: 11, fontWeight: '900', color: Colors.textFaint, textTransform: 'uppercase', letterSpacing: 1.2 },
-  sectionCount:  { fontSize: 12, fontWeight: '700', color: Colors.textFaint },
+  sectionTitle:  { fontSize: 11, fontWeight: '900', color: colors.textFaint, textTransform: 'uppercase', letterSpacing: 1.2 },
+  sectionCount:  { fontSize: 12, fontWeight: '700', color: colors.textFaint },
 
   // ── Tasks ─────────────────────────────────────────────────────────────────
-  emptyTasks:    { alignItems: 'center', marginHorizontal: Spacing.screen, marginTop: 4, marginBottom: 12, padding: 28, backgroundColor: Colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: Colors.border, gap: 8 },
+  emptyTasks:    { alignItems: 'center', marginHorizontal: Spacing.screen, marginTop: 4, marginBottom: 12, padding: 28, backgroundColor: colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: colors.border, gap: 8 },
   emptyTasksIcon:{ fontSize: 40 },
-  emptyTasksTitle:{ fontSize: 16, fontWeight: '900', color: Colors.textPrimary, textAlign: 'center' },
-  emptyTasksSub: { fontSize: 13, fontWeight: '600', color: Colors.textDim, textAlign: 'center', lineHeight: 20 },
+  emptyTasksTitle:{ fontSize: 16, fontWeight: '900', color: colors.textPrimary, textAlign: 'center' },
+  emptyTasksSub: { fontSize: 13, fontWeight: '600', color: colors.textDim, textAlign: 'center', lineHeight: 20 },
 
-  taskCard:    { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: Spacing.screen, marginBottom: 10, backgroundColor: Colors.bgCard, borderRadius: Radii.card, padding: 14, borderWidth: 1, borderColor: Colors.border, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 8 },
-  taskDone:    { backgroundColor: Colors.bgCardDone,    borderColor: 'rgba(76,175,80,0.2)' },
-  taskPending: { backgroundColor: Colors.bgCardPending, borderColor: 'rgba(255,184,0,0.2)' },
+  taskCard:    { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: Spacing.screen, marginBottom: 10, backgroundColor: colors.bgCard, borderRadius: Radii.card, padding: 14, borderWidth: 1, borderColor: colors.border, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 8 },
+  taskDone:    { backgroundColor: colors.bgCardDone,    borderColor: 'rgba(76,175,80,0.2)' },
+  taskPending: { backgroundColor: colors.bgCardPending, borderColor: 'rgba(255,184,0,0.2)' },
   checkbox:    { width: 30, height: 30, borderRadius: 10, borderWidth: 2, borderColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' },
-  checkDone:   { backgroundColor: Colors.green, borderColor: Colors.green },
+  checkDone:   { backgroundColor: colors.green, borderColor: colors.green },
   checkPending:{ backgroundColor: 'rgba(255,184,0,0.1)', borderColor: 'rgba(255,184,0,0.35)' },
-  taskName:    { fontSize: 15, fontWeight: '800', color: Colors.textPrimary },
+  taskName:    { fontSize: 15, fontWeight: '800', color: colors.textPrimary },
   taskNameDone:{ color: 'rgba(255,255,255,0.22)', textDecorationLine: 'line-through', fontWeight: '700' },
   taskSub:     { fontSize: 11, fontWeight: '700', color: 'rgba(255,184,0,0.7)', marginTop: 2 },
   taskRejected:{ fontSize: 11, fontWeight: '700', color: 'rgba(239,83,80,0.8)', marginTop: 2 },
@@ -420,20 +428,20 @@ const styles = StyleSheet.create({
   repBadgeText:{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.5)' },
   rewardBadge:    { alignItems: 'flex-end', gap: 2 },
   rewardBadgeDone:{ opacity: 0.45 },
-  rewardText:     { fontSize: 13, fontWeight: '900', color: Colors.gold },
-  rewardTextDone: { color: Colors.greenDim },
+  rewardText:     { fontSize: 13, fontWeight: '900', color: colors.gold },
+  rewardTextDone: { color: colors.greenDim },
   rewardXp:       { fontSize: 12, fontWeight: '800', color: '#a78bfa' },
 
   // ── Histoire ──────────────────────────────────────────────────────────────
-  chapterCard:      { marginHorizontal: Spacing.screen, marginBottom: 10, backgroundColor: Colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: Colors.border, padding: 16, gap: 8 },
+  chapterCard:      { marginHorizontal: Spacing.screen, marginBottom: 10, backgroundColor: colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: colors.border, padding: 16, gap: 8 },
   chapterHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   chapterBadge:     { backgroundColor: 'rgba(255,184,0,0.12)', borderRadius: Radii.pill, paddingHorizontal: 10, paddingVertical: 3, borderWidth: 1, borderColor: 'rgba(255,184,0,0.25)' },
-  chapterBadgeText: { fontSize: 11, fontWeight: '900', color: Colors.gold },
-  chapterMinLevel:  { fontSize: 11, fontWeight: '700', color: Colors.textFaint },
-  chapterTitle:     { fontSize: 16, fontWeight: '900', color: Colors.textPrimary },
-  chapterText:      { fontSize: 14, fontWeight: '500', color: Colors.textDim, lineHeight: 22 },
+  chapterBadgeText: { fontSize: 11, fontWeight: '900', color: colors.gold },
+  chapterMinLevel:  { fontSize: 11, fontWeight: '700', color: colors.textFaint },
+  chapterTitle:     { fontSize: 16, fontWeight: '900', color: colors.textPrimary },
+  chapterText:      { fontSize: 14, fontWeight: '500', color: colors.textDim, lineHeight: 22 },
   chapterLocked:    { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: Spacing.screen, marginBottom: 10, backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: Radii.card, borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)', padding: 14 },
   lockIcon:         { fontSize: 20 },
-  chapterTitleLocked:{ fontSize: 14, fontWeight: '800', color: Colors.textFaint },
-  lockHint:         { fontSize: 11, fontWeight: '600', color: Colors.textFaint, marginTop: 2, opacity: 0.6 },
+  chapterTitleLocked:{ fontSize: 14, fontWeight: '800', color: colors.textFaint },
+  lockHint:         { fontSize: 11, fontWeight: '600', color: colors.textFaint, marginTop: 2, opacity: 0.6 },
 });

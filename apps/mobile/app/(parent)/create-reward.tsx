@@ -2,13 +2,15 @@ import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, KeyboardAvoidingView, Platform, Modal, Pressable,
 } from 'react-native';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { router } from 'expo-router';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { rewardsApi } from '@/lib/api/rewards';
 import { ApiError } from '@/lib/api-client';
-import { Colors, Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing } from '@/constants/theme';
+import type { ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 type Availability = 'unlimited' | 'once';
 
@@ -34,6 +36,135 @@ const AVAIL_OPTIONS: { value: Availability; label: string; desc: string; icon: s
   { value: 'once',      label: 'Une seule fois', desc: 'Disparaît une fois réclamée',      icon: '1️⃣' },
 ];
 
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.bgScreen },
+
+  navbar: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: Spacing.screen, paddingVertical: 12,
+    borderBottomWidth: 1, borderBottomColor: colors.border,
+  },
+  backBtn:     { fontSize: 22, color: colors.textDim, fontWeight: '700', width: 40 },
+  navTitle:    { fontSize: 16, fontWeight: '900', color: colors.textPrimary },
+  saveBtn:     { backgroundColor: colors.gold, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 8 },
+  saveBtnText: { fontSize: 14, fontWeight: '900', color: '#1a1000' },
+
+  content: { padding: Spacing.screen, gap: 16 },
+  sectionLabel: {
+    fontSize: 11, fontWeight: '900', color: colors.textFaint,
+    textTransform: 'uppercase', letterSpacing: 1.2,
+  },
+
+  quickScroll: { marginHorizontal: -Spacing.screen, paddingHorizontal: Spacing.screen },
+  quickChip: {
+    backgroundColor: colors.bgCard, borderRadius: Radii.card,
+    borderWidth: 1, borderColor: colors.border,
+    paddingHorizontal: 14, paddingVertical: 10, marginRight: 8,
+    alignItems: 'center', gap: 4,
+  },
+  quickChipActive:    { backgroundColor: 'rgba(255,184,0,0.12)', borderColor: 'rgba(255,184,0,0.3)' },
+  quickEmoji:         { fontSize: 22 },
+  quickChipText:      { fontSize: 12, fontWeight: '700', color: colors.textDim },
+  quickChipTextActive:{ color: colors.gold },
+  quickChipPts:       { fontSize: 11, fontWeight: '900', color: colors.textFaint },
+
+  titleRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+  emojiBtn: {
+    width: 56, height: 56, borderRadius: Radii.md,
+    backgroundColor: colors.bgCard, borderWidth: 1.5, borderColor: colors.border,
+    alignItems: 'center', justifyContent: 'center',
+    position: 'relative',
+  },
+  emojiBtnText: { fontSize: 28 },
+  emojiBtnHint: {
+    position: 'absolute', bottom: 2, right: 4,
+    fontSize: 9, color: colors.textFaint, fontWeight: '900',
+  },
+
+  // Emoji picker
+  pickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+  pickerSheet: {
+    backgroundColor: '#1e1e26', borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    padding: 20, paddingBottom: 40, maxHeight: '65%',
+    borderTopWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
+  },
+  pickerHandle: {
+    width: 36, height: 4, borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignSelf: 'center', marginBottom: 16,
+  },
+  pickerTitle: { fontSize: 16, fontWeight: '900', color: colors.textPrimary, marginBottom: 16 },
+  pickerGrid:  { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  pickerItem: {
+    width: 52, height: 52, borderRadius: 14,
+    backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  pickerItemActive: { borderColor: colors.gold, backgroundColor: 'rgba(255,184,0,0.1)' },
+  pickerEmoji: { fontSize: 26 },
+
+  input: {
+    backgroundColor: colors.bgCard, borderRadius: Radii.md,
+    borderWidth: 1, borderColor: colors.border,
+    padding: 16, fontSize: 16, fontWeight: '700', color: colors.textPrimary,
+    height: 56,
+  },
+
+  ptsRow:  { flexDirection: 'row', gap: 10, alignItems: 'center' },
+  ptsChip: {
+    width: 56, height: 56, borderRadius: Radii.card,
+    backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  ptsChipActive:     { backgroundColor: 'rgba(255,184,0,0.12)', borderColor: 'rgba(255,184,0,0.3)' },
+  ptsChipText:       { fontSize: 15, fontWeight: '900', color: colors.textDim },
+  ptsChipTextActive: { color: colors.gold },
+  ptsInput: {
+    flex: 1, height: 56, backgroundColor: colors.bgCard,
+    borderRadius: Radii.card, borderWidth: 1, borderColor: colors.border,
+    textAlign: 'center', fontSize: 16, fontWeight: '900', color: colors.textPrimary,
+  },
+  ptsInputActive: { borderColor: 'rgba(255,184,0,0.3)', backgroundColor: 'rgba(255,184,0,0.08)' },
+
+  availGroup:  { gap: 10 },
+  availOption: {
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    backgroundColor: colors.bgCard, borderRadius: Radii.card,
+    borderWidth: 1, borderColor: colors.border, padding: 16,
+  },
+  availOptionActive: { borderColor: 'rgba(255,184,0,0.3)', backgroundColor: 'rgba(255,184,0,0.06)' },
+  availIcon:         { fontSize: 24 },
+  availLabel:        { fontSize: 15, fontWeight: '800', color: colors.textDim },
+  availLabelActive:  { color: colors.textPrimary },
+  availDesc:         { fontSize: 12, fontWeight: '600', color: colors.textFaint, marginTop: 2 },
+  radio: {
+    width: 22, height: 22, borderRadius: 11,
+    borderWidth: 2, borderColor: colors.textFaint,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  radioActive: { borderColor: colors.gold },
+  radioDot:    { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.gold },
+
+  preview:     { gap: 10 },
+  previewCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    backgroundColor: colors.bgCard, borderRadius: Radii.card,
+    borderWidth: 1, borderColor: 'rgba(255,184,0,0.2)', padding: 16,
+  },
+  previewEmoji: { fontSize: 32 },
+  previewTitle: { fontSize: 16, fontWeight: '900', color: colors.textPrimary },
+  previewAvail: { fontSize: 12, fontWeight: '600', color: colors.textFaint, marginTop: 2 },
+  previewCost:  { alignItems: 'center' },
+  previewCostText: { fontSize: 22, fontWeight: '900', color: colors.gold },
+  previewCostPts:  { fontSize: 11, fontWeight: '700', color: colors.textFaint },
+
+  createBtn: {
+    backgroundColor: colors.gold, borderRadius: Radii.md,
+    padding: 18, alignItems: 'center',
+  },
+  createBtnText: { fontSize: 16, fontWeight: '900', color: '#1a1000' },
+});
+
 export default function CreateRewardScreen() {
   const { bottom } = useSafeAreaInsets();
   const [title, setTitle]           = useState('');
@@ -43,6 +174,9 @@ export default function CreateRewardScreen() {
   const [loading, setLoading]       = useState(false);
   const [emojiPicker, setEmojiPicker] = useState(false);
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
+
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   function applyQuick(q: typeof QUICK_REWARDS[0]) {
     setTitle(q.label);
@@ -135,7 +269,7 @@ export default function CreateRewardScreen() {
             <TextInput
               style={[styles.input, { flex: 1 }]}
               placeholder="Ex : Soirée TV"
-              placeholderTextColor={Colors.textFaint}
+              placeholderTextColor={colors.textFaint}
               value={title}
               onChangeText={setTitle}
               returnKeyType="next"
@@ -164,7 +298,7 @@ export default function CreateRewardScreen() {
                 !([30,50,80,100].map(String).includes(cost)) && cost !== '' && styles.ptsInputActive,
               ]}
               placeholder="Autre"
-              placeholderTextColor={Colors.textFaint}
+              placeholderTextColor={colors.textFaint}
               value={[30,50,80,100].map(String).includes(cost) ? '' : cost}
               onChangeText={v => setCost(v.replace(/[^0-9]/g, ''))}
               keyboardType="numeric"
@@ -258,132 +392,3 @@ export default function CreateRewardScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.bgScreen },
-
-  navbar: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: Spacing.screen, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
-  },
-  backBtn:     { fontSize: 22, color: Colors.textDim, fontWeight: '700', width: 40 },
-  navTitle:    { fontSize: 16, fontWeight: '900', color: Colors.textPrimary },
-  saveBtn:     { backgroundColor: Colors.gold, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 8 },
-  saveBtnText: { fontSize: 14, fontWeight: '900', color: '#1a1000' },
-
-  content: { padding: Spacing.screen, gap: 16 },
-  sectionLabel: {
-    fontSize: 11, fontWeight: '900', color: Colors.textFaint,
-    textTransform: 'uppercase', letterSpacing: 1.2,
-  },
-
-  quickScroll: { marginHorizontal: -Spacing.screen, paddingHorizontal: Spacing.screen },
-  quickChip: {
-    backgroundColor: Colors.bgCard, borderRadius: Radii.card,
-    borderWidth: 1, borderColor: Colors.border,
-    paddingHorizontal: 14, paddingVertical: 10, marginRight: 8,
-    alignItems: 'center', gap: 4,
-  },
-  quickChipActive:    { backgroundColor: 'rgba(255,184,0,0.12)', borderColor: 'rgba(255,184,0,0.3)' },
-  quickEmoji:         { fontSize: 22 },
-  quickChipText:      { fontSize: 12, fontWeight: '700', color: Colors.textDim },
-  quickChipTextActive:{ color: Colors.gold },
-  quickChipPts:       { fontSize: 11, fontWeight: '900', color: Colors.textFaint },
-
-  titleRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
-  emojiBtn: {
-    width: 56, height: 56, borderRadius: Radii.md,
-    backgroundColor: Colors.bgCard, borderWidth: 1.5, borderColor: Colors.border,
-    alignItems: 'center', justifyContent: 'center',
-    position: 'relative',
-  },
-  emojiBtnText: { fontSize: 28 },
-  emojiBtnHint: {
-    position: 'absolute', bottom: 2, right: 4,
-    fontSize: 9, color: Colors.textFaint, fontWeight: '900',
-  },
-
-  // Emoji picker
-  pickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
-  pickerSheet: {
-    backgroundColor: '#1e1e26', borderTopLeftRadius: 28, borderTopRightRadius: 28,
-    padding: 20, paddingBottom: 40, maxHeight: '65%',
-    borderTopWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
-  },
-  pickerHandle: {
-    width: 36, height: 4, borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    alignSelf: 'center', marginBottom: 16,
-  },
-  pickerTitle: { fontSize: 16, fontWeight: '900', color: Colors.textPrimary, marginBottom: 16 },
-  pickerGrid:  { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  pickerItem: {
-    width: 52, height: 52, borderRadius: 14,
-    backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  pickerItemActive: { borderColor: Colors.gold, backgroundColor: 'rgba(255,184,0,0.1)' },
-  pickerEmoji: { fontSize: 26 },
-
-  input: {
-    backgroundColor: Colors.bgCard, borderRadius: Radii.md,
-    borderWidth: 1, borderColor: Colors.border,
-    padding: 16, fontSize: 16, fontWeight: '700', color: Colors.textPrimary,
-    height: 56,
-  },
-
-  ptsRow:  { flexDirection: 'row', gap: 10, alignItems: 'center' },
-  ptsChip: {
-    width: 56, height: 56, borderRadius: Radii.card,
-    backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  ptsChipActive:     { backgroundColor: 'rgba(255,184,0,0.12)', borderColor: 'rgba(255,184,0,0.3)' },
-  ptsChipText:       { fontSize: 15, fontWeight: '900', color: Colors.textDim },
-  ptsChipTextActive: { color: Colors.gold },
-  ptsInput: {
-    flex: 1, height: 56, backgroundColor: Colors.bgCard,
-    borderRadius: Radii.card, borderWidth: 1, borderColor: Colors.border,
-    textAlign: 'center', fontSize: 16, fontWeight: '900', color: Colors.textPrimary,
-  },
-  ptsInputActive: { borderColor: 'rgba(255,184,0,0.3)', backgroundColor: 'rgba(255,184,0,0.08)' },
-
-  availGroup:  { gap: 10 },
-  availOption: {
-    flexDirection: 'row', alignItems: 'center', gap: 14,
-    backgroundColor: Colors.bgCard, borderRadius: Radii.card,
-    borderWidth: 1, borderColor: Colors.border, padding: 16,
-  },
-  availOptionActive: { borderColor: 'rgba(255,184,0,0.3)', backgroundColor: 'rgba(255,184,0,0.06)' },
-  availIcon:         { fontSize: 24 },
-  availLabel:        { fontSize: 15, fontWeight: '800', color: Colors.textDim },
-  availLabelActive:  { color: Colors.textPrimary },
-  availDesc:         { fontSize: 12, fontWeight: '600', color: Colors.textFaint, marginTop: 2 },
-  radio: {
-    width: 22, height: 22, borderRadius: 11,
-    borderWidth: 2, borderColor: Colors.textFaint,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  radioActive: { borderColor: Colors.gold },
-  radioDot:    { width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.gold },
-
-  preview:     { gap: 10 },
-  previewCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 14,
-    backgroundColor: Colors.bgCard, borderRadius: Radii.card,
-    borderWidth: 1, borderColor: 'rgba(255,184,0,0.2)', padding: 16,
-  },
-  previewEmoji: { fontSize: 32 },
-  previewTitle: { fontSize: 16, fontWeight: '900', color: Colors.textPrimary },
-  previewAvail: { fontSize: 12, fontWeight: '600', color: Colors.textFaint, marginTop: 2 },
-  previewCost:  { alignItems: 'center' },
-  previewCostText: { fontSize: 22, fontWeight: '900', color: Colors.gold },
-  previewCostPts:  { fontSize: 11, fontWeight: '700', color: Colors.textFaint },
-
-  createBtn: {
-    backgroundColor: Colors.gold, borderRadius: Radii.md,
-    padding: 18, alignItems: 'center',
-  },
-  createBtnText: { fontSize: 16, fontWeight: '900', color: '#1a1000' },
-});

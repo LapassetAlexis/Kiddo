@@ -2,9 +2,11 @@ import {
   Modal, View, Text, TouchableOpacity, StyleSheet,
   Pressable, Animated,
 } from 'react-native';
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors, Radii } from '@/constants/theme';
+import { Radii } from '@/constants/theme';
+import type { ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export type ModalButton = {
   label: string;
@@ -37,6 +39,8 @@ type Props = {
 
 export default function AppModal({ config, onHide }: Props) {
   const { bottom } = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const slideAnim = useRef(new Animated.Value(300)).current;
   const visible   = config !== null;
 
@@ -103,7 +107,7 @@ export default function AppModal({ config, onHide }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.6)',
@@ -131,7 +135,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: 'transparent',
   },
   btnDefault: {
-    backgroundColor: Colors.orange,
+    backgroundColor: colors.orange,
   },
   btnCancel: {
     backgroundColor: 'rgba(255,255,255,0.06)',

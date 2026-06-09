@@ -2,11 +2,13 @@ import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, ScrollView,
 } from 'react-native';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { authApi } from '@/lib/api/auth';
 import { ApiError } from '@/lib/api-client';
 import { router } from 'expo-router';
-import { Colors, Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing } from '@/constants/theme';
+import type { ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
 
 type Step = 'email' | 'code' | 'password';
@@ -20,6 +22,9 @@ export default function ForgotPasswordScreen() {
   const [loading, setLoading]   = useState(false);
   const [resending, setResending] = useState(false);
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
+
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   // ── Étape 1 : envoi du code ───────────────────────────────────────────────
   async function sendCode() {
@@ -136,7 +141,7 @@ export default function ForgotPasswordScreen() {
         {/* Barre de progression */}
         <View style={styles.stepsRow}>
           {steps.map((s, i) => (
-            <View key={s} style={[styles.stepBar, steps.indexOf(step) >= i && { backgroundColor: Colors.gold }]} />
+            <View key={s} style={[styles.stepBar, steps.indexOf(step) >= i && { backgroundColor: colors.gold }]} />
           ))}
         </View>
         <Text style={styles.stepLabel}>Étape {current.index} sur 3 — {current.label}</Text>
@@ -149,7 +154,7 @@ export default function ForgotPasswordScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="marie@exemple.com"
-                placeholderTextColor={Colors.textFaint}
+                placeholderTextColor={colors.textFaint}
                 value={email}
                 onChangeText={setEmail}
                 autoCapitalize="none"
@@ -185,7 +190,7 @@ export default function ForgotPasswordScreen() {
               <TextInput
                 style={[styles.input, styles.codeInput]}
                 placeholder="· · · · · ·"
-                placeholderTextColor={Colors.textFaint}
+                placeholderTextColor={colors.textFaint}
                 value={code}
                 onChangeText={v => setCode(v.replace(/[^0-9]/g, '').slice(0, 6))}
                 keyboardType="numeric"
@@ -229,7 +234,7 @@ export default function ForgotPasswordScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="8 caractères minimum"
-                placeholderTextColor={Colors.textFaint}
+                placeholderTextColor={colors.textFaint}
                 value={newPwd}
                 onChangeText={setNewPwd}
                 secureTextEntry
@@ -241,9 +246,9 @@ export default function ForgotPasswordScreen() {
                   {[...Array(3)].map((_, i) => (
                     <View key={i} style={[
                       styles.strengthBar,
-                      i === 0 && newPwd.length >= 1  && { backgroundColor: newPwd.length < 6 ? '#EF5350' : Colors.gold },
-                      i === 1 && newPwd.length >= 6  && { backgroundColor: newPwd.length < 10 ? Colors.gold : Colors.green },
-                      i === 2 && newPwd.length >= 10 && { backgroundColor: Colors.green },
+                      i === 0 && newPwd.length >= 1  && { backgroundColor: newPwd.length < 6 ? '#EF5350' : colors.gold },
+                      i === 1 && newPwd.length >= 6  && { backgroundColor: newPwd.length < 10 ? colors.gold : colors.green },
+                      i === 2 && newPwd.length >= 10 && { backgroundColor: colors.green },
                     ]} />
                   ))}
                   <Text style={styles.strengthLabel}>
@@ -258,7 +263,7 @@ export default function ForgotPasswordScreen() {
               <TextInput
                 style={[styles.input, confirmPwd.length > 0 && confirmPwd !== newPwd && styles.inputError]}
                 placeholder="Répète ton mot de passe"
-                placeholderTextColor={Colors.textFaint}
+                placeholderTextColor={colors.textFaint}
                 value={confirmPwd}
                 onChangeText={setConfirmPwd}
                 secureTextEntry
@@ -291,48 +296,48 @@ export default function ForgotPasswordScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root:      { flex: 1, backgroundColor: Colors.bgScreen },
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  root:      { flex: 1, backgroundColor: colors.bgScreen },
   container: { paddingHorizontal: Spacing.screen, gap: 20 },
 
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingTop: 56, paddingBottom: 4,
   },
-  backBtn:  { fontSize: 22, color: Colors.textDim, fontWeight: '700', width: 40 },
-  navTitle: { fontSize: 16, fontWeight: '900', color: Colors.textPrimary },
+  backBtn:  { fontSize: 22, color: colors.textDim, fontWeight: '700', width: 40 },
+  navTitle: { fontSize: 16, fontWeight: '900', color: colors.textPrimary },
 
   illusWrap:  { alignItems: 'center', gap: 10, paddingVertical: 8 },
   illusEmoji: { fontSize: 56 },
-  illusTitle: { fontSize: 20, fontWeight: '900', color: Colors.textPrimary },
-  illusDesc:  { fontSize: 14, fontWeight: '600', color: Colors.textDim, textAlign: 'center', lineHeight: 22 },
+  illusTitle: { fontSize: 20, fontWeight: '900', color: colors.textPrimary },
+  illusDesc:  { fontSize: 14, fontWeight: '600', color: colors.textDim, textAlign: 'center', lineHeight: 22 },
 
   stepsRow: { flexDirection: 'row', gap: 8 },
   stepBar:  { flex: 1, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.1)' },
-  stepLabel:{ fontSize: 12, fontWeight: '700', color: Colors.textFaint, marginTop: -10 },
+  stepLabel:{ fontSize: 12, fontWeight: '700', color: colors.textFaint, marginTop: -10 },
 
   form:       { gap: 14 },
   fieldWrap:  { gap: 6 },
-  fieldLabel: { fontSize: 12, fontWeight: '800', color: Colors.textDim, textTransform: 'uppercase', letterSpacing: 0.8 },
+  fieldLabel: { fontSize: 12, fontWeight: '800', color: colors.textDim, textTransform: 'uppercase', letterSpacing: 0.8 },
   input: {
-    backgroundColor: Colors.bgCard, borderRadius: Radii.md,
-    borderWidth: 1, borderColor: Colors.border,
-    padding: 16, fontSize: 16, fontWeight: '600', color: Colors.textPrimary,
+    backgroundColor: colors.bgCard, borderRadius: Radii.md,
+    borderWidth: 1, borderColor: colors.border,
+    padding: 16, fontSize: 16, fontWeight: '600', color: colors.textPrimary,
   },
   inputError: { borderColor: 'rgba(239,83,80,0.5)' },
-  codeInput:  { fontSize: 28, fontWeight: '900', letterSpacing: 12, color: Colors.gold },
-  codeHint:   { fontSize: 11, fontWeight: '600', color: Colors.textFaint, textAlign: 'center' },
+  codeInput:  { fontSize: 28, fontWeight: '900', letterSpacing: 12, color: colors.gold },
+  codeHint:   { fontSize: 11, fontWeight: '600', color: colors.textFaint, textAlign: 'center' },
 
   strengthRow:  { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
   strengthBar:  { flex: 1, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.1)' },
-  strengthLabel:{ fontSize: 11, fontWeight: '700', color: Colors.textFaint, minWidth: 50 },
-  matchOk:      { fontSize: 12, fontWeight: '700', color: Colors.green, marginTop: 4 },
+  strengthLabel:{ fontSize: 11, fontWeight: '700', color: colors.textFaint, minWidth: 50 },
+  matchOk:      { fontSize: 12, fontWeight: '700', color: colors.green, marginTop: 4 },
 
-  btnPrimary:     { backgroundColor: Colors.gold, borderRadius: Radii.md, padding: 16, alignItems: 'center' },
+  btnPrimary:     { backgroundColor: colors.gold, borderRadius: Radii.md, padding: 16, alignItems: 'center' },
   btnPrimaryText: { fontSize: 16, fontWeight: '900', color: '#1a1000' },
 
-  resendBtn:  { alignItems: 'center', padding: 14, backgroundColor: Colors.bgCard, borderRadius: Radii.md, borderWidth: 1, borderColor: Colors.border },
-  resendText: { fontSize: 14, fontWeight: '700', color: Colors.textDim },
+  resendBtn:  { alignItems: 'center', padding: 14, backgroundColor: colors.bgCard, borderRadius: Radii.md, borderWidth: 1, borderColor: colors.border },
+  resendText: { fontSize: 14, fontWeight: '700', color: colors.textDim },
   cancelBtn:  { alignItems: 'center', padding: 10 },
-  cancelText: { fontSize: 13, fontWeight: '700', color: Colors.textFaint },
+  cancelText: { fontSize: 13, fontWeight: '700', color: colors.textFaint },
 });

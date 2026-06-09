@@ -1,7 +1,9 @@
 import { View, Text, SectionList, TouchableOpacity, StyleSheet } from 'react-native';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors, Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing } from '@/constants/theme';
+import type { ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
 import { useAuth } from '@/contexts/AuthContext';
 import { useApiData } from '@/lib/useApiData';
@@ -97,6 +99,8 @@ type Filter = 'all' | 'earn' | 'spend';
 export default function HistoryScreen() {
   const { user } = useAuth();
   const [filter, setFilter] = useState<Filter>('all');
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const {
     data: txResponse,
@@ -186,11 +190,11 @@ export default function HistoryScreen() {
             {/* Stats + Streak */}
             <View style={styles.statsRow}>
               <View style={styles.stat}>
-                <Text style={[styles.statValue, { color: Colors.green }]}>+{earnedW}</Text>
+                <Text style={[styles.statValue, { color: colors.green }]}>+{earnedW}</Text>
                 <Text style={styles.statLabel}>Gagnés</Text>
               </View>
               <View style={styles.stat}>
-                <Text style={[styles.statValue, { color: Colors.orange }]}>{spentW > 0 ? `−${spentW}` : '0'}</Text>
+                <Text style={[styles.statValue, { color: colors.orange }]}>{spentW > 0 ? `−${spentW}` : '0'}</Text>
                 <Text style={styles.statLabel}>Dépensés</Text>
               </View>
               <View style={[styles.stat, styles.statStreak]}>
@@ -231,7 +235,7 @@ export default function HistoryScreen() {
               styles.row,
               isFirst && styles.rowFirst,
               isLast  && styles.rowLast,
-              !isFirst && { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.04)' },
+              !isFirst && { borderTopWidth: 1, borderTopColor: colors.border },
             ]}>
               <View style={[styles.rowIcon, item.type === 'earn' ? styles.iconEarn : styles.iconSpend]}>
                 <Text style={{ fontSize: 18 }}>{item.icon}</Text>
@@ -242,7 +246,7 @@ export default function HistoryScreen() {
               </View>
               <View style={{ alignItems: 'flex-end', gap: 2 }}>
                 {item.amount > 0 && (
-                  <Text style={[styles.rowAmount, { color: item.type === 'earn' ? Colors.green : Colors.orange }]}>
+                  <Text style={[styles.rowAmount, { color: item.type === 'earn' ? colors.green : colors.orange }]}>
                     {item.type === 'earn' ? '+' : '−'}{item.amount} 🪙
                   </Text>
                 )}
@@ -266,20 +270,20 @@ export default function HistoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root:        { flex: 1, backgroundColor: Colors.bgScreen },
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  root:        { flex: 1, backgroundColor: colors.bgScreen },
   listContent: { padding: Spacing.screen, gap: 4, paddingTop: 0 },
 
   title: {
-    fontSize: 22, fontWeight: '900', color: Colors.textPrimary,
+    fontSize: 22, fontWeight: '900', color: colors.textPrimary,
     paddingTop: 12, marginBottom: 14,
   },
 
   // Hero balance
   hero: {
-    backgroundColor: '#25252d',
+    backgroundColor: colors.bgCard,
     borderRadius: 24, padding: 22,
-    borderWidth: 1, borderColor: 'rgba(255,184,0,0.2)',
+    borderWidth: 1, borderColor: colors.borderGold,
     overflow: 'hidden', marginBottom: 12,
     shadowColor: '#000', shadowOpacity: 0.4, shadowRadius: 12,
   },
@@ -289,64 +293,64 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,184,0,0.06)',
   },
   heroLabel: {
-    fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.4)',
+    fontSize: 11, fontWeight: '700', color: colors.textDim,
     letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 4,
   },
   heroRow:  { flexDirection: 'row', alignItems: 'flex-end', gap: 4, marginBottom: 14 },
-  heroValue:{ fontSize: 64, fontWeight: '900', color: Colors.gold, lineHeight: 58, letterSpacing: -3 },
-  heroUnit: { fontSize: 20, fontWeight: '700', color: Colors.goldDim, marginBottom: 8 },
+  heroValue:{ fontSize: 64, fontWeight: '900', color: colors.gold, lineHeight: 58, letterSpacing: -3 },
+  heroUnit: { fontSize: 20, fontWeight: '700', color: colors.goldDim, marginBottom: 8 },
 
   progressWrap: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: colors.bgScreen,
     borderRadius: 14, padding: 10,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1, borderColor: colors.border,
   },
   progressInfo:  { flex: 1 },
-  progressName:  { fontSize: 13, fontWeight: '800', color: 'rgba(255,255,255,0.75)' },
-  progressTrack: { height: 6, borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.08)', marginTop: 5, overflow: 'hidden' },
-  progressFill:  { height: '100%', borderRadius: 99, backgroundColor: Colors.gold },
-  progressPct:   { fontSize: 14, fontWeight: '900', color: Colors.gold },
+  progressName:  { fontSize: 13, fontWeight: '800', color: colors.textPrimary },
+  progressTrack: { height: 6, borderRadius: 99, backgroundColor: colors.border, marginTop: 5, overflow: 'hidden' },
+  progressFill:  { height: '100%', borderRadius: 99, backgroundColor: colors.gold },
+  progressPct:   { fontSize: 14, fontWeight: '900', color: colors.gold },
 
   // Stats
   statsRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
   stat: {
-    flex: 1, backgroundColor: Colors.bgCard, borderRadius: 16,
-    borderWidth: 1, borderColor: Colors.border,
+    flex: 1, backgroundColor: colors.bgCard, borderRadius: 16,
+    borderWidth: 1, borderColor: colors.border,
     padding: 14, alignItems: 'center', gap: 4,
   },
   statStreak: { borderColor: 'rgba(255,107,53,0.2)', backgroundColor: 'rgba(255,107,53,0.06)' },
-  statValue:  { fontSize: 18, fontWeight: '900', color: Colors.textPrimary, lineHeight: 20 },
-  statLabel:  { fontSize: 10, fontWeight: '700', color: Colors.textFaint, textTransform: 'uppercase', letterSpacing: 0.6 },
+  statValue:  { fontSize: 18, fontWeight: '900', color: colors.textPrimary, lineHeight: 20 },
+  statLabel:  { fontSize: 10, fontWeight: '700', color: colors.textFaint, textTransform: 'uppercase', letterSpacing: 0.6 },
 
   // Filtres
   filterRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
   filterChip: {
     borderRadius: 99, paddingHorizontal: 14, paddingVertical: 7,
-    backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border,
   },
   filterChipActive: { backgroundColor: 'rgba(255,184,0,0.1)', borderColor: 'rgba(255,184,0,0.3)' },
-  filterText:       { fontSize: 12, fontWeight: '800', color: Colors.textDim },
-  filterTextActive: { color: Colors.gold },
+  filterText:       { fontSize: 12, fontWeight: '800', color: colors.textDim },
+  filterTextActive: { color: colors.gold },
 
   // Section
   sectionLabel: {
-    fontSize: 11, fontWeight: '900', color: Colors.textFaint,
+    fontSize: 11, fontWeight: '900', color: colors.textFaint,
     textTransform: 'uppercase', letterSpacing: 1, marginTop: 12, marginBottom: 4,
   },
 
   // Rows
-  row:      { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: Colors.bgCard, padding: 13 },
+  row:      { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.bgCard, padding: 13 },
   rowFirst: { borderTopLeftRadius: Radii.card, borderTopRightRadius: Radii.card },
   rowLast:  { borderBottomLeftRadius: Radii.card, borderBottomRightRadius: Radii.card },
   rowIcon:  { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   iconEarn: { backgroundColor: 'rgba(76,175,80,0.12)' },
   iconSpend:{ backgroundColor: 'rgba(255,107,53,0.10)' },
-  rowName:  { fontSize: 14, fontWeight: '800', color: Colors.textPrimary },
-  rowMeta:  { fontSize: 11, fontWeight: '600', color: Colors.textFaint, marginTop: 2 },
+  rowName:  { fontSize: 14, fontWeight: '800', color: colors.textPrimary },
+  rowMeta:  { fontSize: 11, fontWeight: '600', color: colors.textFaint, marginTop: 2 },
   rowAmount:{ fontSize: 14, fontWeight: '900' },
 
   empty:      { alignItems: 'center', paddingVertical: 40, gap: 10 },
   emptyEmoji: { fontSize: 40 },
-  emptyText:  { fontSize: 15, fontWeight: '800', color: Colors.textDim },
+  emptyText:  { fontSize: 15, fontWeight: '800', color: colors.textDim },
 });

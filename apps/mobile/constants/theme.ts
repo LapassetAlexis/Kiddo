@@ -1,5 +1,6 @@
 // Kiddo Design Tokens
-export const Colors = {
+
+export const darkColors = {
   bgScreen:       '#18181e',
   bgCard:         '#26262e',
   bgCardDone:     '#1e2820',
@@ -21,6 +22,41 @@ export const Colors = {
   border:         'rgba(255,255,255,0.07)',
   borderGold:     'rgba(255,184,0,0.20)',
 } as const;
+
+export const lightColors = {
+  bgScreen:       '#F2F2F7',
+  bgCard:         '#FFFFFF',
+  bgCardDone:     '#EEF7EF',
+  bgCardPending:  '#FFF9E6',
+  bgHero:         '#EBEBF0',
+  bgStreak:       '#E5E5EC',
+  bgNav:          '#FFFFFF',
+
+  gold:           '#FFB800',
+  goldDim:        'rgba(255,184,0,0.5)',
+  orange:         '#FF7040',
+  green:          '#4CAF50',
+  greenDim:       '#66BB6A',
+  red:            '#EF5350',
+
+  textPrimary:    'rgba(0,0,0,0.87)',
+  textDim:        'rgba(0,0,0,0.45)',
+  textFaint:      'rgba(0,0,0,0.25)',
+  border:         'rgba(0,0,0,0.08)',
+  borderGold:     'rgba(255,184,0,0.25)',
+} as const;
+
+export type ThemeColors = {
+  bgScreen: string; bgCard: string; bgCardDone: string; bgCardPending: string;
+  bgHero: string; bgStreak: string; bgNav: string;
+  gold: string; goldDim: string; orange: string;
+  green: string; greenDim: string; red: string;
+  textPrimary: string; textDim: string; textFaint: string;
+  border: string; borderGold: string;
+};
+
+// Keep Colors as a static dark export for backward compat during migration
+export const Colors = darkColors;
 
 export const Radii = {
   card:   18,
