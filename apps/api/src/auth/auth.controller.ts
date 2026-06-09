@@ -59,6 +59,10 @@ class JoinFamilyDto {
   @IsString()                  inviteCode: string;
 }
 
+class GoogleAuthDto {
+  @IsString() idToken: string;
+}
+
 // ─── Controller ───────────────────────────────────────────────────────────────
 
 @Controller('auth')
@@ -136,6 +140,12 @@ export class AuthController {
   @HttpCode(200)
   joinFamily(@Body() dto: JoinFamilyDto) {
     return this.auth.joinFamily(dto.name, dto.email, dto.password, dto.inviteCode);
+  }
+
+  @Post('google')
+  @HttpCode(200)
+  googleAuth(@Body() dto: GoogleAuthDto) {
+    return this.auth.googleLogin(dto.idToken);
   }
 
   // ── Me ──────────────────────────────────────────────────────────────────────

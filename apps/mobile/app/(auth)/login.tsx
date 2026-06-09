@@ -6,15 +6,21 @@ import type { ThemeColors } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { ApiError } from '@/lib/api-client';
+import { useGoogleAuth } from '@/lib/useGoogleAuth';
 
 export default function LoginScreen() {
-  const [email, setEmail]       = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading]   = useState(false);
-  const { loginParent } = useAuth();
+  const [email, setEmail]         = useState('');
+  const [password, setPassword]   = useState('');
+  const [loading, setLoading]     = useState(false);
+  const { loginParent, loginWithGoogle } = useAuth();
 
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+
+  const google = useGoogleAuth(async (accessToken) => {
+    await loginWithGoogle(accessToken);
+    router.replace('/(parent)/dashboard');
+  });
 
   async function handleParentLogin() {
     if (!email || !password) return;
@@ -31,6 +37,7 @@ export default function LoginScreen() {
       setLoading(false);
     }
   }
+
 
   return (
     <KeyboardAvoidingView
@@ -82,6 +89,24 @@ export default function LoginScreen() {
 
           <TouchableOpacity style={styles.forgotBtn} onPress={() => router.push('/(auth)/forgot-password')} activeOpacity={0.7}>
             <Text style={styles.forgotText}>Mot de passe oublié ?</Text>
+          </TouchableOpacity>
+
+          {/* Divider */}
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>ou</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          {/* Google */}
+          <TouchableOpacity
+            style={[styles.googleBtn, google.loading && styles.btnDisabled]}
+            onPress={google.prompt}
+            disabled={google.loading}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.googleIcon}>G</Text>
+            <Text style={styles.googleText}>{google.loading ? 'Connexion…' : 'Continuer avec Google'}</Text>
           </TouchableOpacity>
         </View>
 
@@ -188,8 +213,45 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   forgotBtn:  { alignItems: 'center', paddingTop: 8 },
   forgotText: { fontSize: 13, fontWeight: '700', color: colors.textFaint },
 
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginVertical: 4,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border,
+  },
+  dividerText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textFaint,
+  },
+  googleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.bgCard,
+    borderRadius: Radii.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 14,
+    gap: 10,
+  },
+  googleIcon: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#4285F4',
+  },
+  googleText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+
   authLinks:    { gap: 10 },
   registerBtn:  { alignItems: 'center', paddingVertical: 14, backgroundColor: colors.bgCard, borderRadius: Radii.md, borderWidth: 1, borderColor: colors.border },
   registerText: { fontSize: 14, fontWeight: '600', color: colors.textDim },
-
 });

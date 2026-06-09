@@ -12,7 +12,20 @@
           "package_name": "io.kiddo.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "267595289963-vkhfatt5glurrng9kofv6vfdkikh3u77.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "io.kiddo.app",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "267595289963-sf6371k4tks1u9abq80non2ebt8oocie.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBvgO3eEC7EOV0soMGXYlM9MprLmRkOipo"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "267595289963-sf6371k4tks1u9abq80non2ebt8oocie.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

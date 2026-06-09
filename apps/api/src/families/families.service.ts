@@ -71,6 +71,7 @@ export class FamiliesService {
 
   async changePassword(accountId: string, currentPassword: string, newPassword: string) {
     const account = await this.accounts.findOneOrFail({ where: { id: accountId } });
+    if (!account.passwordHash) throw new UnauthorizedException('Compte Google — utilise la connexion Google');
     const valid = await bcrypt.compare(currentPassword, account.passwordHash);
     if (!valid) throw new UnauthorizedException('Mot de passe actuel incorrect');
     const passwordHash = await bcrypt.hash(newPassword, 12);

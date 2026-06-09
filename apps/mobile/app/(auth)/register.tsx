@@ -9,7 +9,9 @@ import { router } from 'expo-router';
 import { Radii, Spacing } from '@/constants/theme';
 import type { ThemeColors } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useAuth } from '@/contexts/AuthContext';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
+import { useGoogleAuth } from '@/lib/useGoogleAuth';
 
 export default function RegisterScreen() {
   const [step, setStep]           = useState<1 | 2 | 3>(1);
@@ -23,9 +25,15 @@ export default function RegisterScreen() {
   const [code, setCode]           = useState('');
   const [resending, setResending] = useState(false);
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
+  const { loginWithGoogle } = useAuth();
 
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+
+  const google = useGoogleAuth(async (accessToken) => {
+    await loginWithGoogle(accessToken);
+    router.replace('/(parent)/dashboard');
+  });
 
   // ── Étape 1 : infos ──────────────────────────────────────────────────────
   function nextStep() {
@@ -164,6 +172,22 @@ export default function RegisterScreen() {
 
             <TouchableOpacity style={styles.btnPrimary} onPress={nextStep} activeOpacity={0.85}>
               <Text style={styles.btnPrimaryText}>Continuer →</Text>
+            </TouchableOpacity>
+
+            {/* Google */}
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>ou</Text>
+              <View style={styles.dividerLine} />
+            </View>
+            <TouchableOpacity
+              style={[styles.googleBtn, google.loading && { opacity: 0.6 }]}
+              onPress={google.prompt}
+              disabled={google.loading}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.googleIcon}>G</Text>
+              <Text style={styles.googleText}>{google.loading ? 'Connexion…' : 'Continuer avec Google'}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -376,4 +400,11 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
 
   resendBtn:  { alignItems: 'center', padding: 12, backgroundColor: colors.bgCard, borderRadius: Radii.md, borderWidth: 1, borderColor: colors.border },
   resendText: { fontSize: 14, fontWeight: '700', color: colors.textDim },
+
+  divider:     { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: colors.border },
+  dividerText: { fontSize: 12, fontWeight: '600', color: colors.textFaint },
+  googleBtn:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bgCard, borderRadius: Radii.md, borderWidth: 1, borderColor: colors.border, padding: 14, gap: 10 },
+  googleIcon:  { fontSize: 16, fontWeight: '900', color: '#4285F4' },
+  googleText:  { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
 });
