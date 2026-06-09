@@ -18,7 +18,7 @@ export class UploadsController {
   constructor(private config: ConfigService) {
     this.supabase = createClient(
       config.getOrThrow('SUPABASE_URL').trim(),
-      config.getOrThrow('SUPABASE_SERVICE_KEY').trim(),
+      config.getOrThrow('SUPABASE_SERVICE_KEY').replace(/\s+/g, ''),
       { auth: { autoRefreshToken: false, persistSession: false } },
     );
     this.bucket = config.get('SUPABASE_BUCKET') ?? 'task-photos';
