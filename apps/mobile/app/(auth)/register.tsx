@@ -1,15 +1,24 @@
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, ScrollView,
+  KeyboardAvoidingView, Platform, ScrollView, Alert,
 } from 'react-native';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
 import { authApi } from '@/lib/api/auth';
 import { ApiError } from '@/lib/api-client';
 import { router } from 'expo-router';
 import { Radii, Spacing } from '@/constants/theme';
 import type { ThemeColors } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useAuth } from '@/contexts/AuthContext';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
+
+WebBrowser.maybeCompleteAuthSession();
+
+const GOOGLE_WEB_CLIENT_ID     = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '';
+const GOOGLE_IOS_CLIENT_ID     = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? '';
+const GOOGLE_ANDROID_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? '';
 
 export default function RegisterScreen() {
   const [step, setStep]           = useState<1 | 2 | 3>(1);
@@ -20,12 +29,40 @@ export default function RegisterScreen() {
   const [confirm, setConfirm]     = useState('');
   const [accepted, setAccepted]   = useState(false);
   const [loading, setLoading]     = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [code, setCode]           = useState('');
   const [resending, setResending] = useState(false);
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
+  const { loginWithGoogle } = useAuth();
 
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+
+  const [, response, promptGoogleAsync] = Google.useAuthRequest({
+    webClientId:     GOOGLE_WEB_CLIENT_ID     || undefined,
+    iosClientId:     GOOGLE_IOS_CLIENT_ID     || undefined,
+    androidClientId: GOOGLE_ANDROID_CLIENT_ID || undefined,
+  });
+
+  useEffect(() => {
+    if (response?.type !== 'success') {
+      if (response?.type === 'error') setGoogleLoading(false);
+      return;
+    }
+    const idToken = response.authentication?.idToken;
+    if (!idToken) {
+      setGoogleLoading(false);
+      Alert.alert('Erreur Google', 'Token introuvable. Réessaie.');
+      return;
+    }
+    loginWithGoogle(idToken)
+      .then(() => router.replace('/(parent)/dashboard'))
+      .catch(err => {
+        const msg = err instanceof ApiError ? err.message : 'Connexion Google échouée.';
+        Alert.alert('Erreur', msg);
+      })
+      .finally(() => setGoogleLoading(false));
+  }, [response]);
 
   // ── Étape 1 : infos ──────────────────────────────────────────────────────
   function nextStep() {
@@ -164,6 +201,22 @@ export default function RegisterScreen() {
 
             <TouchableOpacity style={styles.btnPrimary} onPress={nextStep} activeOpacity={0.85}>
               <Text style={styles.btnPrimaryText}>Continuer →</Text>
+            </TouchableOpacity>
+
+            {/* Google */}
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>ou</Text>
+              <View style={styles.dividerLine} />
+            </View>
+            <TouchableOpacity
+              style={[styles.googleBtn, googleLoading && { opacity: 0.6 }]}
+              onPress={async () => { setGoogleLoading(true); await promptGoogleAsync(); }}
+              disabled={googleLoading}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.googleIcon}>G</Text>
+              <Text style={styles.googleText}>{googleLoading ? 'Connexion…' : 'Continuer avec Google'}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -376,4 +429,11 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
 
   resendBtn:  { alignItems: 'center', padding: 12, backgroundColor: colors.bgCard, borderRadius: Radii.md, borderWidth: 1, borderColor: colors.border },
   resendText: { fontSize: 14, fontWeight: '700', color: colors.textDim },
+
+  divider:     { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: colors.border },
+  dividerText: { fontSize: 12, fontWeight: '600', color: colors.textFaint },
+  googleBtn:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bgCard, borderRadius: Radii.md, borderWidth: 1, borderColor: colors.border, padding: 14, gap: 10 },
+  googleIcon:  { fontSize: 16, fontWeight: '900', color: '#4285F4' },
+  googleText:  { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
 });

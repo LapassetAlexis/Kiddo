@@ -1,20 +1,55 @@
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, Image } from 'react-native';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { router } from 'expo-router';
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
 import { Radii, Spacing } from '@/constants/theme';
 import type { ThemeColors } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { ApiError } from '@/lib/api-client';
 
+WebBrowser.maybeCompleteAuthSession();
+
+const GOOGLE_WEB_CLIENT_ID   = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '';
+const GOOGLE_IOS_CLIENT_ID   = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? '';
+const GOOGLE_ANDROID_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? '';
+
 export default function LoginScreen() {
-  const [email, setEmail]       = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading]   = useState(false);
-  const { loginParent } = useAuth();
+  const [email, setEmail]         = useState('');
+  const [password, setPassword]   = useState('');
+  const [loading, setLoading]     = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const { loginParent, loginWithGoogle } = useAuth();
 
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+
+  const [, response, promptGoogleAsync] = Google.useAuthRequest({
+    webClientId:     GOOGLE_WEB_CLIENT_ID     || undefined,
+    iosClientId:     GOOGLE_IOS_CLIENT_ID     || undefined,
+    androidClientId: GOOGLE_ANDROID_CLIENT_ID || undefined,
+  });
+
+  useEffect(() => {
+    if (response?.type !== 'success') {
+      if (response?.type === 'error') setGoogleLoading(false);
+      return;
+    }
+    const idToken = response.authentication?.idToken;
+    if (!idToken) {
+      setGoogleLoading(false);
+      Alert.alert('Erreur Google', 'Token introuvable. Réessaie.');
+      return;
+    }
+    loginWithGoogle(idToken)
+      .then(() => router.replace('/(parent)/dashboard'))
+      .catch(err => {
+        const msg = err instanceof ApiError ? err.message : 'Connexion Google échouée.';
+        Alert.alert('Erreur', msg);
+      })
+      .finally(() => setGoogleLoading(false));
+  }, [response]);
 
   async function handleParentLogin() {
     if (!email || !password) return;
@@ -30,6 +65,11 @@ export default function LoginScreen() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleGoogleSignIn() {
+    setGoogleLoading(true);
+    await promptGoogleAsync();
   }
 
   return (
@@ -82,6 +122,24 @@ export default function LoginScreen() {
 
           <TouchableOpacity style={styles.forgotBtn} onPress={() => router.push('/(auth)/forgot-password')} activeOpacity={0.7}>
             <Text style={styles.forgotText}>Mot de passe oublié ?</Text>
+          </TouchableOpacity>
+
+          {/* Divider */}
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>ou</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          {/* Google */}
+          <TouchableOpacity
+            style={[styles.googleBtn, googleLoading && styles.btnDisabled]}
+            onPress={handleGoogleSignIn}
+            disabled={googleLoading}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.googleIcon}>G</Text>
+            <Text style={styles.googleText}>{googleLoading ? 'Connexion…' : 'Continuer avec Google'}</Text>
           </TouchableOpacity>
         </View>
 
@@ -188,8 +246,45 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   forgotBtn:  { alignItems: 'center', paddingTop: 8 },
   forgotText: { fontSize: 13, fontWeight: '700', color: colors.textFaint },
 
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginVertical: 4,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border,
+  },
+  dividerText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textFaint,
+  },
+  googleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.bgCard,
+    borderRadius: Radii.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 14,
+    gap: 10,
+  },
+  googleIcon: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#4285F4',
+  },
+  googleText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+
   authLinks:    { gap: 10 },
   registerBtn:  { alignItems: 'center', paddingVertical: 14, backgroundColor: colors.bgCard, borderRadius: Radii.md, borderWidth: 1, borderColor: colors.border },
   registerText: { fontSize: 14, fontWeight: '600', color: colors.textDim },
-
 });

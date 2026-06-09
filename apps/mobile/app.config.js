@@ -31,6 +31,7 @@ export default {
       'expo-router',
       'expo-secure-store',
       'expo-image-picker',
+      'expo-web-browser',
       [
         'expo-notifications',
         {

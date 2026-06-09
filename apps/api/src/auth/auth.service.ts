@@ -14,6 +14,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, ExtractJwt } from 'passport-jwt';
 import * as bcrypt          from 'bcrypt';
 import * as crypto          from 'crypto';
+import { OAuth2Client }     from 'google-auth-library';
 import { Family }             from '../families/family.entity';
 import { ParentAccount }      from '../families/parent-account.entity';
 import { Child }              from '../children/child.entity';
@@ -54,6 +55,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
 @Injectable()
 export class AuthService {
+  private googleClient: OAuth2Client;
+
   constructor(
     @InjectRepository(Family)             private families:      Repository<Family>,
     @InjectRepository(ParentAccount)      private accounts:      Repository<ParentAccount>,
@@ -64,7 +67,10 @@ export class AuthService {
     @InjectRepository(QrToken)            private qrTokens:      Repository<QrToken>,
     private jwt:    JwtService,
     private email:  EmailService,
-  ) {}
+    private config: ConfigService,
+  ) {
+    this.googleClient = new OAuth2Client(config.get('GOOGLE_CLIENT_ID'));
+  }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -200,11 +206,50 @@ export class AuthService {
   async parentLogin(email: string, password: string) {
     email = email.toLowerCase().trim();
     const account = await this.accounts.findOne({ where: { email }, relations: { family: true } });
-    if (!account || !(await bcrypt.compare(password, account.passwordHash))) {
+    if (!account || !account.passwordHash || !(await bcrypt.compare(password, account.passwordHash))) {
       throw new UnauthorizedException('Identifiants invalides');
     }
     const accessToken = this.parentJwt(account as any);
     return { accessToken };
+  }
+
+  async googleLogin(idToken: string) {
+    const clientId = this.config.get<string>('GOOGLE_CLIENT_ID');
+    let payload: { sub: string; email: string; name?: string; } | undefined;
+
+    try {
+      const ticket = await this.googleClient.verifyIdToken({ idToken, audience: clientId });
+      const p = ticket.getPayload();
+      if (!p?.sub || !p?.email) throw new Error('Missing payload');
+      payload = { sub: p.sub, email: p.email.toLowerCase(), name: p.name };
+    } catch {
+      throw new UnauthorizedException('Token Google invalide');
+    }
+
+    // Try to find by googleId first, then by email (to link existing account)
+    let account = await this.accounts.findOne({
+      where: [{ googleId: payload.sub }, { email: payload.email }],
+      relations: { family: true },
+    });
+
+    if (account) {
+      // Link googleId if missing (existing email/password account signs in with Google)
+      if (!account.googleId) {
+        await this.accounts.update(account.id, { googleId: payload.sub });
+        account.googleId = payload.sub;
+      }
+    } else {
+      // New user — create family + account
+      const family = await this.families.save(
+        this.families.create({ name: payload.name ?? 'Ma famille', inviteCode: this.generateInviteCode() }),
+      );
+      account = await this.accounts.save(
+        this.accounts.create({ email: payload.email, googleId: payload.sub, name: payload.name, family }),
+      );
+      account.family = family;
+    }
+
+    return { accessToken: this.parentJwt(account as any) };
   }
 
   async childPin(childId: string, pin: string) {

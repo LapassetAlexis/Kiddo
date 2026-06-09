@@ -22,6 +22,7 @@ interface AuthContextType {
   loading: boolean;
   canSwitchToParent: boolean;
   loginParent: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: (idToken: string) => Promise<void>;
   loginChild: (childId: string, pin: string) => Promise<void>;
   loginChildQr: (token: string) => Promise<void>;
   joinFamily: (name: string, email: string, password: string, inviteCode: string) => Promise<void>;
@@ -116,6 +117,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }
 
+  async function loginWithGoogle(idToken: string) {
+    const { accessToken } = await authApi.googleSignIn(idToken);
+    await authApi.saveToken(accessToken);
+    const payload = parseJwt(accessToken);
+    setUser({ id: payload.sub, role: 'parent', email: payload.email, familyId: payload.familyId });
+    registerForPushNotifications().then(token => {
+      if (token) notificationsApi.registerToken(token).catch(() => null);
+    });
+  }
+
   async function loginChild(childId: string, pin: string) {
     const parentToken = await getToken();
     if (parentToken) await saveParentToken(parentToken);
@@ -186,7 +197,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, canSwitchToParent, loginParent, loginChild, loginChildQr, joinFamily, switchToParent, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, canSwitchToParent, loginParent, loginWithGoogle, loginChild, loginChildQr, joinFamily, switchToParent, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
