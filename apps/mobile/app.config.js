@@ -26,15 +26,9 @@ export default {
       versionCode: 12,
       googleServicesFile: './google-services.json',
       permissions: ['android.permission.RECORD_AUDIO'],
-      intentFilters: [
-        {
-          action: 'VIEW',
-          data: [{ scheme: 'com.googleusercontent.apps.267595289963-vkhfatt5glurrng9kofv6vfdkikh3u77' }],
-          category: ['BROWSABLE', 'DEFAULT'],
-        },
-      ],
     },
     plugins: [
+      '@react-native-google-signin/google-signin',
       'expo-router',
       'expo-secure-store',
       'expo-image-picker',
