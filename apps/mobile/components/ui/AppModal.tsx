@@ -54,10 +54,10 @@ export default function AppModal({ config, onHide }: Props) {
     }
   }, [visible]);
 
-  function close(cb?: () => void) {
+  function close() {
     Animated.timing(slideAnim, {
       toValue: 300, duration: 180, useNativeDriver: true,
-    }).start(() => { onHide(); cb?.(); });
+    }).start(() => onHide());
   }
 
   if (!config) return null;
@@ -87,7 +87,7 @@ export default function AppModal({ config, onHide }: Props) {
                     btn.style === 'default'     && styles.btnDefault,
                     (!btn.style || btn.style === 'default') && styles.btnDefault,
                   ]}
-                  onPress={() => close(btn.onPress)}
+                  onPress={() => { btn.onPress?.(); close(); }}
                   activeOpacity={0.8}
                 >
                   <Text style={[
