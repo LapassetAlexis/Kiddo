@@ -415,17 +415,13 @@ export default function SettingsScreen() {
             <Text style={styles.linkText}>Nous contacter</Text>
             <Text style={styles.linkArrow}>›</Text>
           </TouchableOpacity>
-        </View>
-
-        {/* Dev — TODO: supprimer avant prod */}
-        <Text style={styles.sectionLabel}>Dev</Text>
-        <View style={styles.card}>
+          <View style={styles.rowDivider} />
           <TouchableOpacity
             style={styles.linkRow}
-            onPress={() => AsyncStorage.multiRemove(['@kiddo:tour:dashboard', '@kiddo:tour:dashboard-validate', '@kiddo:tour:dashboard-child-login', '@kiddo:tour:tasks', '@kiddo:tour:manage', '@kiddo:tour:child-home', '@kiddo:tour:child-rewards', '@kiddo:onboarding:done', '@kiddo:tour:settings', '@kiddo:tour:edit-child']).then(() => alert("Tours et checklist réinitialisés — recharge le dashboard"))}
+            onPress={() => AsyncStorage.multiRemove(['@kiddo:tour:dashboard', '@kiddo:tour:dashboard-validate', '@kiddo:tour:dashboard-child-login', '@kiddo:tour:tasks', '@kiddo:tour:manage', '@kiddo:tour:child-home', '@kiddo:tour:child-rewards', '@kiddo:onboarding:done', '@kiddo:tour:settings', '@kiddo:tour:edit-child']).then(() => showModal({ icon: '🔄', title: 'Tour réinitialisé', message: 'Recharge le tableau de bord pour relancer le tour guidé.' }))}
             activeOpacity={0.7}
           >
-            <Text style={[styles.linkText, { color: colors.gold }]}>🔄 Réinitialiser le tour guidé</Text>
+            <Text style={styles.linkText}>Réinitialiser le tour guidé</Text>
             <Text style={styles.linkArrow}>›</Text>
           </TouchableOpacity>
         </View>
