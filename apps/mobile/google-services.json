@@ -1,26 +1,18 @@
 {
   "project_info": {
-    "project_number": "487151542754",
-    "project_id": "kiddo-d25ff",
-    "storage_bucket": "kiddo-d25ff.firebasestorage.app"
+    "project_number": "267595289963",
+    "project_id": "kiddo-497819",
+    "storage_bucket": "kiddo-497819.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:487151542754:android:0d5c5ee4b59f189dd0d9bb",
+        "mobilesdk_app_id": "1:267595289963:android:74be7d589f769ff876682e",
         "android_client_info": {
           "package_name": "io.kiddo.app"
         }
       },
       "oauth_client": [
-        {
-          "client_id": "267595289963-vkhfatt5glurrng9kofv6vfdkikh3u77.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "io.kiddo.app",
-            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
-          }
-        },
         {
           "client_id": "267595289963-sf6371k4tks1u9abq80non2ebt8oocie.apps.googleusercontent.com",
           "client_type": 3
@@ -28,7 +20,7 @@
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyBvgO3eEC7EOV0soMGXYlM9MprLmRkOipo"
+          "current_key": "AIzaSyAOz-zuTAyLs3mKDwD1KPlRGT20hlivnAo"
         }
       ],
       "services": {
