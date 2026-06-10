@@ -163,15 +163,17 @@ export class NotificationsService implements OnModuleInit {
       return;
     }
 
+    const imageUrl = payload['imageUrl'] as string | undefined;
     await this.messaging.send({
       token,
       notification: {
-        title: payload['title'] as string,
-        body:  payload['body']  as string,
+        title:    payload['title'] as string,
+        body:     payload['body']  as string,
+        ...(imageUrl ? { imageUrl } : {}),
       },
       data: payload['data'] as Record<string, string> | undefined,
       android: { priority: 'high' },
-      apns:    { payload: { aps: { sound: 'default' } } },
+      apns:    { payload: { aps: { sound: 'default', 'mutable-content': 1 } } },
     });
   }
 }
