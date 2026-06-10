@@ -68,7 +68,7 @@ export default function AppModal({ config, onHide }: Props) {
     <Modal visible={visible} transparent animationType="none" onRequestClose={() => close()}>
       <Pressable style={styles.overlay} onPress={() => close()}>
         <Animated.View style={[styles.sheet, { paddingBottom: 40 + bottom, transform: [{ translateY: slideAnim }] }]}>
-          <Pressable>
+          <Pressable onPress={() => {}}>
             <View style={styles.handle} />
 
             {config.icon && <Text style={styles.icon}>{config.icon}</Text>}
