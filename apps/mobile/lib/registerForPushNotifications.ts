@@ -52,7 +52,6 @@ export async function registerForPushNotifications(): Promise<string | null> {
 
   try {
     const token = await Notifications.getDevicePushTokenAsync();
-    console.log('[FCM] token obtained:', token.data?.slice(0, 20));
     return token.data;
   } catch (err) {
     console.error('[FCM] getDevicePushTokenAsync failed:', err);

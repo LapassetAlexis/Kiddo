@@ -35,6 +35,7 @@ export default function OnboardingChecklist({ childrenCount }: Props) {
   const [hasReward, setHasReward]       = useState(false);
   const [hasValidated, setHasValidated] = useState(false);
   const [hasGoal, setHasGoal]           = useState(false);
+  const [firstChild, setFirstChild]     = useState<{ id: string; name: string; avatar: string; color?: string } | null>(null);
   const [celebrated, setCelebrated]     = useState(false);
 
   const fadeAnim     = useRef(new Animated.Value(1)).current;
@@ -57,6 +58,7 @@ export default function OnboardingChecklist({ childrenCount }: Props) {
     }).catch(() => {});
     childrenApi.list().then(children => {
       if (!children.length) return;
+      setFirstChild({ id: children[0].id, name: children[0].name, avatar: children[0].avatar, color: (children[0] as any).color });
       Promise.all(children.map(c => childrenApi.get(c.id))).then(stats => {
         setHasGoal(stats.some(s => s.levelGoal != null));
       }).catch(() => {});
@@ -75,7 +77,7 @@ export default function OnboardingChecklist({ childrenCount }: Props) {
     { id: 'task',     label: 'Créer une première quête',       done: hasTask,           route: '/(parent)/create-task',   cta: 'Créer' },
     { id: 'reward',   label: 'Créer une première récompense',  done: hasReward,         route: '/(parent)/create-reward', cta: 'Créer' },
     { id: 'validate', label: 'Valider une quête enfant',       done: hasValidated,      route: undefined,                 cta: undefined },
-    { id: 'goal',     label: "Fixer un objectif à un enfant", hint: "Paramètres → Modifier l'enfant → Objectif de niveau", done: hasGoal, route: '/(parent)/settings', cta: 'Aller' },
+    { id: 'goal',     label: "Fixer un objectif à un enfant", hint: "Paramètres → Modifier l'enfant → Objectif de niveau", done: hasGoal, route: firstChild ? `/(parent)/edit-child?childId=${firstChild.id}&childName=${encodeURIComponent(firstChild.name)}&childEmoji=${encodeURIComponent(firstChild.avatar)}${firstChild.color ? `&childColor=${encodeURIComponent(firstChild.color)}` : ''}` : '/(parent)/settings', cta: 'Aller' },
   ];
 
   const doneCount = steps.filter(s => s.done).length;

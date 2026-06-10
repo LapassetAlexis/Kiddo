@@ -34,3 +34,4 @@ Thumbs.db
 # ── Outils locaux (ne pas committer) ──
 .claude/
 .gstack/
+.mcp.json
