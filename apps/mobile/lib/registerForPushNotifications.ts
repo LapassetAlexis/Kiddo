@@ -1,11 +1,13 @@
 import * as Device from 'expo-device';
-import { Platform } from 'react-native';
+import { Platform, Alert } from 'react-native';
 import Constants from 'expo-constants';
 
 const isExpoGo = Constants.executionEnvironment === 'storeClient';
+const DEBUG_PUSH = __DEV__ || true; // remove after debug
 
 export async function registerForPushNotifications(): Promise<string | null> {
   if (isExpoGo) {
+    if (DEBUG_PUSH) Alert.alert('FCM', `isExpoGo=true executionEnvironment=${Constants.executionEnvironment}`);
     console.warn('[FCM] Push notifications not supported in Expo Go');
     return null;
   }
@@ -52,9 +54,10 @@ export async function registerForPushNotifications(): Promise<string | null> {
 
   try {
     const token = await Notifications.getDevicePushTokenAsync();
-    console.log('[FCM] token obtained:', token.data?.slice(0, 20));
+    if (DEBUG_PUSH) Alert.alert('FCM token', token.data?.slice(0, 40) ?? 'null');
     return token.data;
   } catch (err) {
+    if (DEBUG_PUSH) Alert.alert('FCM error', String(err));
     console.error('[FCM] getDevicePushTokenAsync failed:', err);
     return null;
   }
