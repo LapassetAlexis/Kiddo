@@ -79,7 +79,7 @@ export class NotificationsService implements OnModuleInit {
 
   // Every day at 20:00 Paris time — warn parents whose child hasn't done a task today
   // but had an active streak (last task was yesterday).
-  @Cron('0 20 * * *', { timeZone: 'Europe/Paris' })
+  @Cron('0 18 * * *', { timeZone: 'Europe/Paris' })
   async checkStreakAlerts(): Promise<void> {
     const allFamilies = await this.families.find({ relations: { children: true } });
 
