@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import { useRef, useEffect, useState, useMemo } from 'react';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 import { Radii } from '@/constants/theme';
 import type { ThemeColors } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -53,20 +54,19 @@ export default function TaskCompleteSheet({ task, onConfirm, onClose }: Props) {
     if (photoUri) {
       try {
         const token = await getToken();
-        const formData = new FormData();
-        formData.append('file', { uri: photoUri, type: 'image/jpeg', name: 'photo.jpg' } as any);
-        const res = await fetch(`${BASE_URL}/uploads/photo`, {
-          method: 'POST',
+        const res = await FileSystem.uploadAsync(`${BASE_URL}/uploads/photo`, photoUri, {
+          httpMethod: 'POST',
+          uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+          fieldName: 'file',
+          mimeType: 'image/jpeg',
           headers: { Authorization: `Bearer ${token}` },
-          body: formData,
         });
-        if (res.ok) {
-          const data = await res.json();
+        if (res.status >= 200 && res.status < 300) {
+          const data = JSON.parse(res.body);
           uploadedUrl = data.url;
         } else {
-          const body = await res.text();
-          console.error('[upload] HTTP', res.status, body);
-          Alert.alert('Erreur upload', `HTTP ${res.status}: ${body}`);
+          console.error('[upload] HTTP', res.status, res.body);
+          Alert.alert('Erreur upload', `HTTP ${res.status}: ${res.body}`);
         }
       } catch (e) {
         console.error('[upload] fetch error', e);
