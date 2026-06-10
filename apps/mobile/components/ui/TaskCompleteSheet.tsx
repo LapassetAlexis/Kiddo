@@ -5,6 +5,7 @@ import {
 import { useRef, useEffect, useState, useMemo } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
+import { FileSystemUploadType } from 'expo-file-system';
 import { Radii } from '@/constants/theme';
 import type { ThemeColors } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -56,7 +57,7 @@ export default function TaskCompleteSheet({ task, onConfirm, onClose }: Props) {
         const token = await getToken();
         const res = await FileSystem.uploadAsync(`${BASE_URL}/uploads/photo`, photoUri, {
           httpMethod: 'POST',
-          uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+          uploadType: FileSystemUploadType.MULTIPART,
           fieldName: 'file',
           mimeType: 'image/jpeg',
           headers: { Authorization: `Bearer ${token}` },
