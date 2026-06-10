@@ -1,7 +1,8 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
+import { HttpLoggingInterceptor } from './common/http-logging.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -22,6 +23,7 @@ async function bootstrap() {
   });
 
   app.setGlobalPrefix('api');
+  app.useGlobalInterceptors(new HttpLoggingInterceptor());
 
   if (process.env.NODE_ENV === 'production' && !process.env.RESEND_API_KEY) {
     throw new Error('RESEND_API_KEY must be set in production');
@@ -29,6 +31,6 @@ async function bootstrap() {
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
-  console.log(`🚀 Kiddo API démarrée sur http://localhost:${port}/api`);
+  new Logger('Bootstrap').log(`Kiddo API started on http://localhost:${port}/api`);
 }
 bootstrap();

@@ -50,6 +50,12 @@ export async function registerForPushNotifications(): Promise<string | null> {
     });
   }
 
-  const token = await Notifications.getDevicePushTokenAsync();
-  return token.data;
+  try {
+    const token = await Notifications.getDevicePushTokenAsync();
+    console.log('[FCM] token obtained:', token.data?.slice(0, 20));
+    return token.data;
+  } catch (err) {
+    console.error('[FCM] getDevicePushTokenAsync failed:', err);
+    return null;
+  }
 }
