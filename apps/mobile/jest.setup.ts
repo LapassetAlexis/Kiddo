@@ -50,3 +50,11 @@ jest.mock('expo-constants', () => ({
 jest.mock('@/lib/registerForPushNotifications', () => ({
   registerForPushNotifications: jest.fn().mockResolvedValue(null),
 }));
+
+jest.mock('expo-notifications', () => ({
+  addPushTokenListener: jest.fn(() => ({ remove: jest.fn() })),
+  getDevicePushTokenAsync: jest.fn().mockResolvedValue({ data: 'mock-token' }),
+  getPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
+  requestPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
+  setNotificationHandler: jest.fn(),
+}));
