@@ -71,7 +71,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   nextBtnText: { fontSize: 16, fontWeight: '900', color: '#1a1000' },
 
   // PIN
-  pinContent:     { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 18, paddingHorizontal: 32 },
+  pinContent:     { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 18, paddingHorizontal: 32, paddingBottom: 24 },
   pinTitle:       { fontSize: 20, fontWeight: '900', color: colors.textPrimary, textAlign: 'center' },
   pinSub:         { fontSize: 13, fontWeight: '600', color: colors.textDim, textAlign: 'center', lineHeight: 18, marginTop: -10 },
   spriteContainer: { width: 100, height: 100, borderRadius: 16, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
