@@ -1,6 +1,6 @@
 import {
   View, Text, TouchableOpacity, StyleSheet, Modal,
-  Pressable, Animated, TextInput, Keyboard, Image, Alert,
+  Pressable, Animated, TextInput, Keyboard, Image,
 } from 'react-native';
 import { useRef, useEffect, useState, useMemo } from 'react';
 import * as ImagePicker from 'expo-image-picker';
@@ -53,24 +53,24 @@ export default function TaskCompleteSheet({ task, onConfirm, onClose }: Props) {
     if (photoUri) {
       try {
         const token = await getToken();
-        const formData = new FormData();
-        formData.append('file', { uri: photoUri, type: 'image/jpeg', name: 'photo.jpg' } as any);
-        const res = await fetch(`${BASE_URL}/uploads/photo`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-          body: formData,
+        uploadedUrl = await new Promise<string>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('POST', `${BASE_URL}/uploads/photo`);
+          xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve(JSON.parse(xhr.responseText).url);
+            } else {
+              reject(new Error(`HTTP ${xhr.status}: ${xhr.responseText}`));
+            }
+          };
+          xhr.onerror = () => reject(new Error('Network error'));
+          const fd = new FormData();
+          fd.append('file', { uri: photoUri, type: 'image/jpeg', name: 'photo.jpg' } as any);
+          xhr.send(fd);
         });
-        if (res.ok) {
-          const data = await res.json();
-          uploadedUrl = data.url;
-        } else {
-          const body = await res.text();
-          console.error('[upload] HTTP', res.status, body);
-          Alert.alert('Erreur upload', `HTTP ${res.status}: ${body}`);
-        }
       } catch (e) {
-        console.error('[upload] fetch error', e);
-        Alert.alert('Erreur upload', String(e));
+        console.error('[upload] error', e);
       }
     }
 

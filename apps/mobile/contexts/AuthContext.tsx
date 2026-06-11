@@ -1,4 +1,5 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
+import * as Notifications from 'expo-notifications';
 import { authApi } from '@/lib/api/auth';
 import { notificationsApi } from '@/lib/api/notifications';
 import { getToken, clearToken, saveToken, saveParentToken, getParentToken, clearParentToken } from '@/lib/api-client';
@@ -45,6 +46,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser]                     = useState<AuthUser | null>(null);
   const [loading, setLoading]               = useState(true);
   const [canSwitchToParent, setCanSwitch]   = useState(false);
+  const tokenListenerRef = useRef<Notifications.Subscription | null>(null);
+
+  useEffect(() => {
+    tokenListenerRef.current = Notifications.addPushTokenListener(({ data: token }) => {
+      notificationsApi.registerToken(token).catch(() => null);
+    });
+    return () => tokenListenerRef.current?.remove();
+  }, []);
 
   useEffect(() => {
     (async () => {

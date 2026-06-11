@@ -66,43 +66,42 @@ export default function AppModal({ config, onHide }: Props) {
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={() => close()}>
-      <Pressable style={styles.overlay} onPress={() => close()}>
+      <View style={styles.overlay}>
+        <Pressable style={StyleSheet.absoluteFillObject} onPress={() => close()} />
         <Animated.View style={[styles.sheet, { paddingBottom: 40 + bottom, transform: [{ translateY: slideAnim }] }]}>
-          <Pressable onPress={() => {}}>
-            <View style={styles.handle} />
+          <View style={styles.handle} />
 
-            {config.icon && <Text style={styles.icon}>{config.icon}</Text>}
+          {config.icon && <Text style={styles.icon}>{config.icon}</Text>}
 
-            <Text style={styles.title}>{config.title}</Text>
-            {config.message && <Text style={styles.message}>{config.message}</Text>}
+          <Text style={styles.title}>{config.title}</Text>
+          {config.message && <Text style={styles.message}>{config.message}</Text>}
 
-            <View style={styles.buttons}>
-              {buttons.map((btn, i) => (
-                <TouchableOpacity
-                  key={i}
-                  style={[
-                    styles.btn,
-                    btn.style === 'cancel'      && styles.btnCancel,
-                    btn.style === 'destructive' && styles.btnDestructive,
-                    btn.style === 'default'     && styles.btnDefault,
-                    (!btn.style || btn.style === 'default') && styles.btnDefault,
-                  ]}
-                  onPress={() => { btn.onPress?.(); close(); }}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[
-                    styles.btnText,
-                    btn.style === 'cancel'      && styles.btnTextCancel,
-                    btn.style === 'destructive' && styles.btnTextDestructive,
-                  ]}>
-                    {btn.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </Pressable>
+          <View style={styles.buttons}>
+            {buttons.map((btn, i) => (
+              <TouchableOpacity
+                key={i}
+                style={[
+                  styles.btn,
+                  btn.style === 'cancel'      && styles.btnCancel,
+                  btn.style === 'destructive' && styles.btnDestructive,
+                  btn.style === 'default'     && styles.btnDefault,
+                  (!btn.style || btn.style === 'default') && styles.btnDefault,
+                ]}
+                onPress={() => { btn.onPress?.(); close(); }}
+                activeOpacity={0.8}
+              >
+                <Text style={[
+                  styles.btnText,
+                  btn.style === 'cancel'      && styles.btnTextCancel,
+                  btn.style === 'destructive' && styles.btnTextDestructive,
+                ]}>
+                  {btn.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </Animated.View>
-      </Pressable>
+      </View>
     </Modal>
   );
 }

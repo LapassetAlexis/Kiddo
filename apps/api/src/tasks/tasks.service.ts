@@ -162,6 +162,7 @@ export class TasksService {
           payload: {
             title: `${task.child.name} a fait : ${task.title}`,
             body: 'Tape pour valider ✓',
+            ...(photoUrl ? { imageUrl: photoUrl } : {}),
             data: { taskId: id, actionToken },
           },
         }));
