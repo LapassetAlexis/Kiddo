@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { Animated, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
+import PixelText from '@/components/ui/PixelText';
 import { Radii } from '@/constants/theme';
 import type { ThemeColors } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -50,36 +51,36 @@ export default function ChildWelcomeModal({ userId, name, avatar, onDismiss }: P
     <Modal transparent visible animationType="none" onRequestClose={close}>
       <Animated.View style={[styles.overlay, { opacity: opacityAnim }]}>
         <Animated.View style={[styles.card, { transform: [{ scale: scaleAnim }] }]}>
-          <Text style={styles.avatar}>{avatar}</Text>
-          <Text style={styles.title}>Bienvenue {name} ! 🎉</Text>
-          <Text style={styles.desc}>
+          <PixelText style={styles.avatar}>{avatar}</PixelText>
+          <PixelText style={styles.title}>Bienvenue {name} ! 🎉</PixelText>
+          <PixelText style={styles.desc}>
             {'Ton gardien te confie des quêtes.\nComplète-les pour gagner de l\'or 🪙\net débloque des récompenses au Magasin 🛒 !'}
-          </Text>
+          </PixelText>
 
           <View style={styles.loopRow}>
             <View style={styles.loopStep}>
-              <Text style={styles.loopEmoji}>⚔️</Text>
-              <Text style={styles.loopLabel}>Quête</Text>
+              <PixelText style={styles.loopEmoji}>⚔️</PixelText>
+              <PixelText style={styles.loopLabel}>Quête</PixelText>
             </View>
-            <Text style={styles.loopArrow}>→</Text>
+            <PixelText style={styles.loopArrow}>→</PixelText>
             <View style={styles.loopStep}>
-              <Text style={styles.loopEmoji}>✅</Text>
-              <Text style={styles.loopLabel}>Valider</Text>
+              <PixelText style={styles.loopEmoji}>✅</PixelText>
+              <PixelText style={styles.loopLabel}>Valider</PixelText>
             </View>
-            <Text style={styles.loopArrow}>→</Text>
+            <PixelText style={styles.loopArrow}>→</PixelText>
             <View style={styles.loopStep}>
-              <Text style={styles.loopEmoji}>🪙</Text>
-              <Text style={styles.loopLabel}>Or</Text>
+              <PixelText style={styles.loopEmoji}>🪙</PixelText>
+              <PixelText style={styles.loopLabel}>Or</PixelText>
             </View>
-            <Text style={styles.loopArrow}>→</Text>
+            <PixelText style={styles.loopArrow}>→</PixelText>
             <View style={styles.loopStep}>
-              <Text style={styles.loopEmoji}>🎁</Text>
-              <Text style={styles.loopLabel}>Récompense</Text>
+              <PixelText style={styles.loopEmoji}>🎁</PixelText>
+              <PixelText style={styles.loopLabel}>Récompense</PixelText>
             </View>
           </View>
 
           <TouchableOpacity style={styles.btn} onPress={close} activeOpacity={0.85}>
-            <Text style={styles.btnText}>Commencer l'aventure ⚔️</Text>
+            <PixelText style={styles.btnText}>Commencer l'aventure ⚔️</PixelText>
           </TouchableOpacity>
         </Animated.View>
       </Animated.View>
@@ -106,15 +107,15 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     borderColor: 'rgba(255,184,0,0.2)',
   },
   avatar:  { fontSize: 56 },
-  title:   { fontSize: 22, fontWeight: '900', color: colors.textPrimary, textAlign: 'center' },
-  desc:    { fontSize: 14, fontWeight: '600', color: colors.textDim, textAlign: 'center', lineHeight: 22 },
+  title:   { fontSize: 22, color: colors.textPrimary, textAlign: 'center' },
+  desc:    { fontSize: 14, color: colors.textDim, textAlign: 'center', lineHeight: 22 },
 
   loopRow:   { flexDirection: 'row', alignItems: 'center', gap: 6, marginVertical: 4 },
   loopStep:  { alignItems: 'center', gap: 4 },
   loopEmoji: { fontSize: 22 },
-  loopLabel: { fontSize: 10, fontWeight: '800', color: colors.textFaint },
+  loopLabel: { fontSize: 10, color: colors.textFaint },
   loopArrow: { fontSize: 14, color: colors.textFaint, marginBottom: 12 },
 
   btn:     { backgroundColor: colors.gold, borderRadius: Radii.pill, paddingHorizontal: 28, paddingVertical: 14, marginTop: 4 },
-  btnText: { fontSize: 15, fontWeight: '900', color: '#1a1000' },
+  btnText: { fontSize: 15, color: '#1a1000' },
 });

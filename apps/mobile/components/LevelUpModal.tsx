@@ -1,4 +1,5 @@
-import { Modal, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Modal, TouchableOpacity, StyleSheet } from 'react-native';
+import PixelText from '@/components/ui/PixelText';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -92,13 +93,13 @@ export default function LevelUpModal({ visible, newLevel, childClass, childName,
 
           <Animated.View style={[styles.glowRing, glowStyle]} />
 
-          <Text style={styles.badge}>NIVEAU SUPÉRIEUR !</Text>
-          <Text style={styles.levelNum}>{newLevel}</Text>
-          <Text style={styles.title}>{levelTitle}</Text>
-          <Text style={styles.name}>{childName}, {message}</Text>
+          <PixelText style={styles.badge}>NIVEAU SUPÉRIEUR !</PixelText>
+          <PixelText style={styles.levelNum}>{newLevel}</PixelText>
+          <PixelText style={styles.title}>{levelTitle}</PixelText>
+          <PixelText style={styles.name}>{childName}, {message}</PixelText>
 
           <TouchableOpacity style={styles.btn} onPress={onClose} activeOpacity={0.8}>
-            <Text style={styles.btnText}>Continuer l'aventure ⚔️</Text>
+            <PixelText style={styles.btnText}>Continuer l'aventure ⚔️</PixelText>
           </TouchableOpacity>
         </Animated.View>
       </Animated.View>
@@ -140,7 +141,6 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   badge: {
     fontSize: 11,
-    fontWeight: '900',
     color: colors.gold,
     letterSpacing: 2,
     textTransform: 'uppercase',
@@ -148,7 +148,6 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   levelNum: {
     fontSize: 96,
-    fontWeight: '900',
     color: colors.gold,
     lineHeight: 100,
     letterSpacing: -4,
@@ -157,7 +156,6 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: '900',
     color: 'rgba(255,255,255,0.9)',
     marginTop: 4,
     marginBottom: 16,
@@ -165,7 +163,6 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   name: {
     fontSize: 15,
-    fontWeight: '700',
     color: 'rgba(255,255,255,0.55)',
     textAlign: 'center',
     lineHeight: 22,
@@ -182,7 +179,6 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   btnText: {
     fontSize: 15,
-    fontWeight: '900',
     color: '#1a1400',
     letterSpacing: 0.2,
   },

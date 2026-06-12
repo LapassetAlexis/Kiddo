@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { Modal, Platform, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, Platform, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
+import PixelText from '@/components/ui/PixelText';
 import { Radii } from '@/constants/theme';
 import type { ThemeColors } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -97,14 +98,14 @@ export default function SpotlightTour({ steps, visible, onFinish }: Props) {
               <View key={i} style={[styles.dot, i === index && styles.dotActive]} />
             ))}
           </View>
-          <Text style={styles.title}>{step.title}</Text>
-          <Text style={styles.body}>{step.body}</Text>
+          <PixelText style={styles.title}>{step.title}</PixelText>
+          <PixelText style={styles.body}>{step.body}</PixelText>
           <View style={styles.actions}>
             <TouchableOpacity style={styles.skipBtn} onPress={onFinish} activeOpacity={0.7}>
-              <Text style={styles.skipText}>Passer</Text>
+              <PixelText style={styles.skipText}>Passer</PixelText>
             </TouchableOpacity>
             <TouchableOpacity style={styles.nextBtn} onPress={next} activeOpacity={0.85}>
-              <Text style={styles.nextText}>{isLast ? 'Terminer ✓' : 'Suivant →'}</Text>
+              <PixelText style={styles.nextText}>{isLast ? 'Terminer ✓' : 'Suivant →'}</PixelText>
             </TouchableOpacity>
           </View>
         </View>
@@ -134,11 +135,11 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   dotActive: { width: 18, backgroundColor: colors.gold },
   title: {
-    fontSize: 17, fontWeight: '900',
+    fontSize: 17,
     color: colors.textPrimary, marginBottom: 8,
   },
   body: {
-    fontSize: 14, fontWeight: '500',
+    fontSize: 14,
     color: colors.textDim, lineHeight: 20,
     marginBottom: 16,
   },
@@ -148,11 +149,11 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: Radii.md,
     borderWidth: 1, borderColor: colors.border,
   },
-  skipText: { fontSize: 13, fontWeight: '700', color: colors.textFaint },
+  skipText: { fontSize: 13, color: colors.textFaint },
   nextBtn: {
     flex: 2, alignItems: 'center', padding: 12,
     borderRadius: Radii.md,
     backgroundColor: colors.gold,
   },
-  nextText: { fontSize: 14, fontWeight: '900', color: '#000' },
+  nextText: { fontSize: 14, color: '#000' },
 });
