@@ -10,7 +10,7 @@ import ChildWelcomeModal from '@/components/ui/ChildWelcomeModal';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Easing } from 'react-native';
-import { Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing, Fonts } from '@/constants/theme';
 import type { ThemeColors } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
 import TaskCompleteSheet from '@/components/ui/TaskCompleteSheet';
@@ -381,15 +381,15 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
 
   hudTop:       { position: 'absolute', left: 0, right: 0, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 8 },
   namePill:     { backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 10, paddingHorizontal: 9, paddingVertical: 4 },
-  namePillText: { fontSize: 12, fontWeight: '900', color: '#fff' },
+  namePillText: { fontFamily: Fonts.pixel, fontSize: 14, color: '#fff' },
   goldChip:     { backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 10, paddingHorizontal: 9, paddingVertical: 4 },
-  goldChipText: { fontSize: 12, fontWeight: '900', color: colors.gold },
+  goldChipText: { fontFamily: Fonts.pixel, fontSize: 14, color: colors.gold },
 
   // XP bar au-dessus du sprite
   spriteHud:     { position: 'absolute', bottom: GROUND_OFF + SPRITE_SIZE + 8, left: '50%', marginLeft: -80, width: 160, gap: 2 },
   spriteHudRow:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  spriteLevel:   { fontSize: 9, fontWeight: '900', color: 'rgba(255,255,255,0.85)', letterSpacing: 0.5 },
-  spriteStreak:  { fontSize: 9, fontWeight: '800', color: colors.orange },
+  spriteLevel:   { fontFamily: Fonts.pixel, fontSize: 11, color: 'rgba(255,255,255,0.85)', letterSpacing: 0.5 },
+  spriteStreak:  { fontFamily: Fonts.pixel, fontSize: 11, color: colors.orange },
   spriteXpTrack: { height: 3, borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.2)', overflow: 'hidden' },
   spriteXpFill:  { height: '100%', borderRadius: 99, backgroundColor: colors.gold },
 
@@ -397,22 +397,22 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   goalBanner:  { marginHorizontal: Spacing.screen, marginTop: 12, backgroundColor: 'rgba(255,184,0,0.06)', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: 'rgba(255,184,0,0.2)', gap: 8 },
   goalHeader:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
   goalIcon:    { fontSize: 18 },
-  goalTitle:   { fontSize: 13, fontWeight: '900', color: colors.textPrimary },
-  goalReward:  { fontSize: 11, fontWeight: '600', color: colors.textDim, marginTop: 1 },
-  goalPct:     { fontSize: 14, fontWeight: '900', color: colors.gold },
+  goalTitle:   { fontFamily: Fonts.pixelBold, fontSize: 9, color: colors.textPrimary },
+  goalReward:  { fontFamily: Fonts.pixel, fontSize: 13, color: colors.textDim, marginTop: 1 },
+  goalPct:     { fontFamily: Fonts.pixelBold, fontSize: 10, color: colors.gold },
   goalTrack:   { height: 5, borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.08)', overflow: 'hidden' },
   goalFill:    { height: '100%', borderRadius: 99, backgroundColor: colors.gold },
 
   // ── Sections ──────────────────────────────────────────────────────────────
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginHorizontal: Spacing.screen, marginTop: 18, marginBottom: 10 },
-  sectionTitle:  { fontSize: 11, fontWeight: '900', color: colors.textFaint, textTransform: 'uppercase', letterSpacing: 1.2 },
-  sectionCount:  { fontSize: 12, fontWeight: '700', color: colors.textFaint },
+  sectionTitle:  { fontFamily: Fonts.pixel, fontSize: 13, color: colors.textFaint, textTransform: 'uppercase', letterSpacing: 1.2 },
+  sectionCount:  { fontFamily: Fonts.pixel, fontSize: 14, color: colors.textFaint },
 
   // ── Tasks ─────────────────────────────────────────────────────────────────
   emptyTasks:    { alignItems: 'center', marginHorizontal: Spacing.screen, marginTop: 4, marginBottom: 12, padding: 28, backgroundColor: colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: colors.border, gap: 8 },
   emptyTasksIcon:{ fontSize: 40 },
-  emptyTasksTitle:{ fontSize: 16, fontWeight: '900', color: colors.textPrimary, textAlign: 'center' },
-  emptyTasksSub: { fontSize: 13, fontWeight: '600', color: colors.textDim, textAlign: 'center', lineHeight: 20 },
+  emptyTasksTitle:{ fontFamily: Fonts.pixelBold, fontSize: 12, color: colors.textPrimary, textAlign: 'center' },
+  emptyTasksSub: { fontFamily: Fonts.pixel, fontSize: 15, color: colors.textDim, textAlign: 'center', lineHeight: 20 },
 
   taskCard:    { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: Spacing.screen, marginBottom: 10, backgroundColor: colors.bgCard, borderRadius: Radii.card, padding: 14, borderWidth: 1, borderColor: colors.border, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 8 },
   taskDone:    { backgroundColor: colors.bgCardDone,    borderColor: 'rgba(76,175,80,0.2)' },
@@ -420,7 +420,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   checkbox:    { width: 30, height: 30, borderRadius: 10, borderWidth: 2, borderColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' },
   checkDone:   { backgroundColor: colors.green, borderColor: colors.green },
   checkPending:{ backgroundColor: 'rgba(255,184,0,0.1)', borderColor: 'rgba(255,184,0,0.35)' },
-  taskName:    { fontSize: 15, fontWeight: '800', color: colors.textPrimary },
+  taskName:    { fontFamily: Fonts.pixel, fontSize: 17, color: colors.textPrimary },
   taskNameDone:{ color: 'rgba(255,255,255,0.22)', textDecorationLine: 'line-through', fontWeight: '700' },
   taskSub:     { fontSize: 11, fontWeight: '700', color: 'rgba(255,184,0,0.7)', marginTop: 2 },
   taskRejected:{ fontSize: 11, fontWeight: '700', color: 'rgba(239,83,80,0.8)', marginTop: 2 },
@@ -428,18 +428,18 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   repBadgeText:{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.5)' },
   rewardBadge:    { alignItems: 'flex-end', gap: 2 },
   rewardBadgeDone:{ opacity: 0.45 },
-  rewardText:     { fontSize: 13, fontWeight: '900', color: colors.gold },
+  rewardText:     { fontFamily: Fonts.pixelBold, fontSize: 9, color: colors.gold },
   rewardTextDone: { color: colors.greenDim },
-  rewardXp:       { fontSize: 12, fontWeight: '800', color: '#a78bfa' },
+  rewardXp:       { fontFamily: Fonts.pixel, fontSize: 14, color: '#a78bfa' },
 
   // ── Histoire ──────────────────────────────────────────────────────────────
   chapterCard:      { marginHorizontal: Spacing.screen, marginBottom: 10, backgroundColor: colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: colors.border, padding: 16, gap: 8 },
   chapterHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   chapterBadge:     { backgroundColor: 'rgba(255,184,0,0.12)', borderRadius: Radii.pill, paddingHorizontal: 10, paddingVertical: 3, borderWidth: 1, borderColor: 'rgba(255,184,0,0.25)' },
-  chapterBadgeText: { fontSize: 11, fontWeight: '900', color: colors.gold },
-  chapterMinLevel:  { fontSize: 11, fontWeight: '700', color: colors.textFaint },
-  chapterTitle:     { fontSize: 16, fontWeight: '900', color: colors.textPrimary },
-  chapterText:      { fontSize: 14, fontWeight: '500', color: colors.textDim, lineHeight: 22 },
+  chapterBadgeText: { fontFamily: Fonts.pixelBold, fontSize: 7, color: colors.gold },
+  chapterMinLevel:  { fontFamily: Fonts.pixel, fontSize: 13, color: colors.textFaint },
+  chapterTitle:     { fontFamily: Fonts.pixelBold, fontSize: 12, color: colors.textPrimary },
+  chapterText:      { fontFamily: Fonts.pixel, fontSize: 16, color: colors.textDim, lineHeight: 22 },
   chapterLocked:    { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: Spacing.screen, marginBottom: 10, backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: Radii.card, borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)', padding: 14 },
   lockIcon:         { fontSize: 20 },
   chapterTitleLocked:{ fontSize: 14, fontWeight: '800', color: colors.textFaint },

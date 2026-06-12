@@ -2,7 +2,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, TextInput,
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing, Fonts } from '@/constants/theme';
 import type { ThemeColors } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
@@ -31,10 +31,10 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   headerLeft:    { flexDirection: 'row', alignItems: 'center', gap: 10 },
   headerLogo:    { width: 32, height: 32, borderRadius: 8 },
   headerActions: { flexDirection: 'row', gap: 10, alignItems: 'center' },
-  sub:           { fontSize: 13, fontWeight: '600', color: colors.textDim },
-  title:         { fontSize: 22, fontWeight: '900', color: colors.textPrimary },
+  sub:           { fontFamily: Fonts.pixel, fontSize: 15, color: colors.textDim },
+  title:         { fontFamily: Fonts.pixelBold, fontSize: 15, color: colors.textPrimary },
   addBtn:        { width: 44, height: 44, backgroundColor: colors.gold, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  addBtnText:    { fontSize: 24, fontWeight: '900', color: '#1a1000', lineHeight: 28 },
+  addBtnText:    { fontFamily: Fonts.pixelBold, fontSize: 16, color: '#1a1000', lineHeight: 28 },
   exceptBtn:     { width: 44, height: 44, backgroundColor: 'rgba(255,184,0,0.12)', borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,184,0,0.3)' },
   exceptBtnText: { fontSize: 22 },
 
@@ -50,14 +50,14 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   diffRowActive: { borderColor: 'rgba(255,184,0,0.5)', backgroundColor: 'rgba(255,184,0,0.08)' },
   diffText:      { fontSize: 13, fontWeight: '700', color: colors.textDim },
   confirmBtn:    { backgroundColor: colors.gold, borderRadius: 14, padding: 16, alignItems: 'center' },
-  confirmBtnText:{ fontSize: 16, fontWeight: '900', color: '#1a1000' },
+  confirmBtnText:{ fontFamily: Fonts.pixelBold, fontSize: 11, color: '#1a1000' },
 
   urgentBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: Spacing.screen, marginBottom: 14, backgroundColor: 'rgba(255,107,53,0.1)', borderWidth: 1, borderColor: 'rgba(255,107,53,0.22)', borderRadius: 16, padding: 12 },
-  urgentCount:  { fontSize: 14, fontWeight: '900', color: colors.orange },
+  urgentCount:  { fontFamily: Fonts.pixelBold, fontSize: 11, color: colors.orange },
   urgentSub:    { fontSize: 11, fontWeight: '600', color: 'rgba(255,107,53,0.6)', marginTop: 1 },
 
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginHorizontal: Spacing.screen, marginBottom: 10 },
-  sectionTitle:  { fontSize: 11, fontWeight: '900', color: colors.textFaint, textTransform: 'uppercase', letterSpacing: 1.2 },
+  sectionTitle:  { fontFamily: Fonts.pixel, fontSize: 13, color: colors.textFaint, textTransform: 'uppercase', letterSpacing: 1.2 },
   pendingCount:  { fontSize: 12, fontWeight: '900', color: colors.orange },
   todoCount:     { fontSize: 12, fontWeight: '900', color: colors.textDim },
   todoCard:         { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.bgCard, borderRadius: Radii.card, padding: 14, borderWidth: 1, borderColor: colors.border },
@@ -68,19 +68,19 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   childCard:   { backgroundColor: colors.bgCard, borderRadius: 20, borderWidth: 1, borderColor: colors.border, padding: 16, width: 150, minHeight: 160, gap: 8, marginBottom: 16, position: 'relative' },
   childCardAlert: { borderColor: 'rgba(255,184,0,0.2)' },
   childAvatar: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', shadowOpacity: 0.3, shadowRadius: 6 },
-  childName:  { fontSize: 15, fontWeight: '900', color: colors.textPrimary },
+  childName:  { fontFamily: Fonts.pixel, fontSize: 17, color: colors.textPrimary },
   childLevelRow:       { flexDirection: 'row', alignItems: 'center', gap: 5 },
   childLevelEmoji:     { fontSize: 14 },
   childLevelBadge:     { backgroundColor: 'rgba(139,92,246,0.15)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: 'rgba(139,92,246,0.3)' },
   childLevelBadgeText: { fontSize: 10, fontWeight: '900', color: '#a78bfa' },
-  childPts:   { fontSize: 13, fontWeight: '800', color: colors.gold },
+  childPts:   { fontFamily: Fonts.pixel, fontSize: 15, color: colors.gold },
   addChildCard: { backgroundColor: colors.bgCard, borderRadius: 20, borderWidth: 1.5, borderColor: colors.border, borderStyle: 'dashed', width: 150, minHeight: 160, alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 16, opacity: 0.5 },
   addChildText: { fontSize: 13, fontWeight: '800', color: colors.textDim },
 
   list:       { paddingHorizontal: Spacing.screen, gap: 10 },
   pendingCard:{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.bgCard, borderRadius: Radii.card, padding: 14, borderWidth: 1, borderColor: colors.border },
   childAvatarSm: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  pendingTask:{ fontSize: 14, fontWeight: '800', color: colors.textPrimary },
+  pendingTask:{ fontFamily: Fonts.pixel, fontSize: 16, color: colors.textPrimary },
   pendingMeta:{ fontSize: 11, fontWeight: '600', color: colors.textDim, marginTop: 2 },
   repBadge:     { backgroundColor: 'rgba(255,255,255,0.07)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', borderRadius: Radii.pill, paddingHorizontal: 8, paddingVertical: 3, marginRight: 2 },
   repBadgeText: { fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.45)' },

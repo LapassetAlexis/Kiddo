@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Radii } from '@/constants/theme';
+import { Radii, Fonts, PixelShadow } from '@/constants/theme';
 import type { ThemeColors } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -67,7 +67,7 @@ export default function AppModal({ config, onHide }: Props) {
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={() => close()}>
       <View style={styles.overlay}>
-        <Pressable style={StyleSheet.absoluteFillObject} onPress={() => close()} />
+        <Pressable style={StyleSheet.absoluteFill} onPress={() => close()} />
         <Animated.View style={[styles.sheet, { paddingBottom: 40 + bottom, transform: [{ translateY: slideAnim }] }]}>
           <View style={styles.handle} />
 
@@ -124,8 +124,8 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     alignSelf: 'center', marginBottom: 20,
   },
   icon:    { fontSize: 44, textAlign: 'center', marginBottom: 12 },
-  title:   { fontSize: 18, fontWeight: '900', color: '#fff', textAlign: 'center', marginBottom: 8 },
-  message: { fontSize: 14, fontWeight: '600', color: 'rgba(255,255,255,0.5)', textAlign: 'center', lineHeight: 20, marginBottom: 24 },
+  title:   { fontSize: 14, fontWeight: '900', fontFamily: Fonts.pixelBold, color: '#fff', textAlign: 'center', marginBottom: 8 },
+  message: { fontSize: 16, fontWeight: '600', fontFamily: Fonts.pixel, color: 'rgba(255,255,255,0.5)', textAlign: 'center', lineHeight: 20, marginBottom: 24 },
 
   buttons: { gap: 10 },
 
@@ -135,17 +135,20 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   btnDefault: {
     backgroundColor: colors.orange,
+    ...PixelShadow.orange,
   },
   btnCancel: {
     backgroundColor: 'rgba(255,255,255,0.06)',
     borderColor: 'rgba(255,255,255,0.08)',
+    ...PixelShadow.subtle,
   },
   btnDestructive: {
     backgroundColor: 'rgba(239,83,80,0.15)',
     borderColor: 'rgba(239,83,80,0.25)',
+    ...PixelShadow.red,
   },
 
-  btnText:            { fontSize: 15, fontWeight: '900', color: '#fff' },
+  btnText:            { fontSize: 10, fontWeight: '900', fontFamily: Fonts.pixelBold, color: '#fff' },
   btnTextCancel:      { color: 'rgba(255,255,255,0.45)' },
   btnTextDestructive: { color: '#EF5350' },
 });

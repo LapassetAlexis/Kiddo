@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { useRef, useEffect, useState, useMemo } from 'react';
 import * as ImagePicker from 'expo-image-picker';
-import { Radii } from '@/constants/theme';
+import { Radii, Fonts, PixelShadow } from '@/constants/theme';
 import type { ThemeColors } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
 import { BASE_URL, getToken } from '@/lib/api-client';
@@ -232,14 +232,14 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     flexShrink: 0,
   },
   taskIconText: { fontSize: 28 },
-  taskName:     { fontSize: 18, fontWeight: '900', color: colors.textPrimary },
+  taskName:     { fontSize: 12, fontWeight: '900', fontFamily: Fonts.pixelBold, color: colors.textPrimary },
   ptsBadge: {
     alignSelf: 'flex-start',
     backgroundColor: 'rgba(255,184,0,0.1)',
     borderRadius: 99, paddingHorizontal: 10, paddingVertical: 3,
     borderWidth: 1, borderColor: 'rgba(255,184,0,0.2)',
   },
-  ptsBadgeText: { fontSize: 12, fontWeight: '800', color: colors.gold },
+  ptsBadgeText: { fontSize: 14, fontWeight: '800', fontFamily: Fonts.pixel, color: colors.gold },
 
   divider: {
     height: 1, backgroundColor: 'rgba(255,255,255,0.07)',
@@ -248,11 +248,11 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
 
   section: { marginBottom: 20, gap: 8 },
   sectionLabel: {
-    fontSize: 12, fontWeight: '900', color: colors.textPrimary,
+    fontSize: 14, fontWeight: '900', fontFamily: Fonts.pixel, color: colors.textPrimary,
     textTransform: 'uppercase', letterSpacing: 0.8,
   },
   sectionHint: {
-    fontSize: 12, fontWeight: '600', color: colors.textFaint,
+    fontSize: 12, fontWeight: '600', fontFamily: Fonts.pixel, color: colors.textFaint,
     marginTop: -4,
   },
 
@@ -301,13 +301,14 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     padding: 18, alignItems: 'center',
     shadowColor: colors.green,
     shadowOpacity: 0.3, shadowRadius: 10,
+    ...PixelShadow.green,
   },
-  confirmBtnText: { fontSize: 17, fontWeight: '900', color: '#fff' },
+  confirmBtnText: { fontSize: 11, fontWeight: '900', fontFamily: Fonts.pixelBold, color: '#fff' },
   cancelBtn: {
     alignItems: 'center', padding: 14,
     backgroundColor: 'rgba(255,255,255,0.04)',
     borderRadius: Radii.md,
     borderWidth: 1, borderColor: colors.border,
   },
-  cancelBtnText: { fontSize: 14, fontWeight: '700', color: colors.textFaint },
+  cancelBtnText: { fontSize: 14, fontWeight: '700', fontFamily: Fonts.pixel, color: colors.textFaint },
 });
