@@ -1,7 +1,8 @@
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet,
+  View, ScrollView, TouchableOpacity, StyleSheet,
   Animated, Image, useWindowDimensions,
 } from 'react-native';
+import PixelText from '@/components/ui/PixelText';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import SpotlightTour, { TourStep } from '@/components/ui/SpotlightTour';
@@ -226,7 +227,7 @@ export default function ChildHomeScreen() {
           {/* HUD top: Nom + Gold */}
           <View style={[styles.hudTop, { top: top + 8 }]}>
             <View style={styles.namePill}>
-              <Text style={styles.namePillText}>{user?.name ?? 'Aventurier'}</Text>
+              <PixelText style={styles.namePillText}>{user?.name ?? 'Aventurier'}</PixelText>
             </View>
             <View style={{ flex: 1 }} />
             <View ref={goldChipRef} collapsable={false} style={styles.goldChip}>
@@ -237,8 +238,8 @@ export default function ChildHomeScreen() {
           {/* XP bar flottante au-dessus du sprite */}
           <View style={styles.spriteHud}>
             <View style={styles.spriteHudRow}>
-              <Text style={styles.spriteLevel}>NIV. {level}</Text>
-              {streak > 0 && <Text style={styles.spriteStreak}>🔥 {streak}j</Text>}
+              <PixelText style={styles.spriteLevel}>NIV. {level}</PixelText>
+              {streak > 0 && <PixelText style={styles.spriteStreak}>🔥 {streak}j</PixelText>}
             </View>
             <View style={styles.spriteXpTrack}>
               <View style={[styles.spriteXpFill, { width: `${xpPct}%` }]} />
@@ -250,12 +251,12 @@ export default function ChildHomeScreen() {
         {goalLevel !== null && goalPct !== null && (
           <View style={styles.goalBanner}>
             <View style={styles.goalHeader}>
-              <Text style={styles.goalIcon}>🎯</Text>
+              <PixelText style={styles.goalIcon}>🎯</PixelText>
               <View style={{ flex: 1 }}>
-                <Text style={styles.goalTitle}>Objectif niveau {goalLevel}</Text>
-                {goalReward && <Text style={styles.goalReward}>{goalReward}</Text>}
+                <PixelText style={styles.goalTitle}>Objectif niveau {goalLevel}</PixelText>
+                {goalReward && <PixelText style={styles.goalReward}>{goalReward}</PixelText>}
               </View>
-              <Text style={styles.goalPct}>{goalPct}%</Text>
+              <PixelText style={styles.goalPct}>{goalPct}%</PixelText>
             </View>
             <View style={styles.goalTrack}>
               <View style={[styles.goalFill, { width: `${goalPct}%` }]} />
@@ -265,15 +266,15 @@ export default function ChildHomeScreen() {
 
         {/* ── Quêtes ── */}
         <View ref={questSectionRef} collapsable={false} style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>QUÊTES DU JOUR</Text>
-          <Text style={styles.sectionCount}>{doneCount}/{tasks.length}</Text>
+          <PixelText style={styles.sectionTitle}>QUÊTES DU JOUR</PixelText>
+          <PixelText style={styles.sectionCount}>{doneCount}/{tasks.length}</PixelText>
         </View>
 
         {tasks.length === 0 && (
           <View style={styles.emptyTasks}>
-            <Text style={styles.emptyTasksIcon}>🏕️</Text>
-            <Text style={styles.emptyTasksTitle}>Pas encore de mission !</Text>
-            <Text style={styles.emptyTasksSub}>Ton gardien va bientôt te confier une aventure.{'\n'}Reviens vite ! ⚔️</Text>
+            <PixelText style={styles.emptyTasksIcon}>🏕️</PixelText>
+            <PixelText style={styles.emptyTasksTitle}>Pas encore de mission !</PixelText>
+            <PixelText style={styles.emptyTasksSub}>Ton gardien va bientôt te confier une aventure.{'\n'}Reviens vite ! ⚔️</PixelText>
           </View>
         )}
 
@@ -286,25 +287,25 @@ export default function ChildHomeScreen() {
             disabled={task.state !== 'todo'}
           >
             <View style={[styles.checkbox, task.state === 'done' && styles.checkDone, task.state === 'pending' && styles.checkPending]}>
-              <Text style={{ fontSize: task.state === 'pending' ? 12 : 14 }}>
+              <PixelText style={{ fontSize: task.state === 'pending' ? 12 : 14 }}>
                 {task.state === 'done' ? '✓' : task.state === 'pending' ? '⏳' : ''}
-              </Text>
+              </PixelText>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.taskName, task.state === 'done' && styles.taskNameDone]}>{task.name}</Text>
-              {task.state === 'pending' && <Text style={styles.taskSub}>Ton gardien vérifie bientôt ! 🤞</Text>}
+              <PixelText style={[styles.taskName, task.state === 'done' && styles.taskNameDone]}>{task.name}</PixelText>
+              {task.state === 'pending' && <PixelText style={styles.taskSub}>Ton gardien vérifie bientôt ! 🤞</PixelText>}
               {task.state === 'todo' && task.rejectionReason != null && (
-                <Text style={styles.taskRejected}>↩ {task.rejectionReason || 'Réessaie, tu peux le faire !'}</Text>
+                <PixelText style={styles.taskRejected}>↩ {task.rejectionReason || 'Réessaie, tu peux le faire !'}</PixelText>
               )}
             </View>
             {task.timesPerDay > 1 && (
               <View style={styles.repBadge}>
-                <Text style={styles.repBadgeText}>{task.completedToday}/{task.timesPerDay}</Text>
+                <PixelText style={styles.repBadgeText}>{task.completedToday}/{task.timesPerDay}</PixelText>
               </View>
             )}
             <View style={[styles.rewardBadge, task.state === 'done' && styles.rewardBadgeDone]}>
-              <Text style={[styles.rewardText, task.state === 'done' && styles.rewardTextDone]}>+{task.gold} 🪙</Text>
-              <Text style={styles.rewardXp}>+{task.xp} ⭐</Text>
+              <PixelText style={[styles.rewardText, task.state === 'done' && styles.rewardTextDone]}>+{task.gold} 🪙</PixelText>
+              <PixelText style={styles.rewardXp}>+{task.xp} ⭐</PixelText>
             </View>
           </TouchableOpacity>
         ))}
@@ -313,26 +314,26 @@ export default function ChildHomeScreen() {
         {(unlocked.length > 0 || locked.length > 0) && (
           <>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>HISTOIRE</Text>
+              <PixelText style={styles.sectionTitle}>HISTOIRE</PixelText>
             </View>
             {unlocked.map((chapter, i) => (
               <View key={chapter.title} style={styles.chapterCard}>
                 <View style={styles.chapterHeaderRow}>
                   <View style={styles.chapterBadge}>
-                    <Text style={styles.chapterBadgeText}>Chapitre {i + 1}</Text>
+                    <PixelText style={styles.chapterBadgeText}>Chapitre {i + 1}</PixelText>
                   </View>
-                  <Text style={styles.chapterMinLevel}>Niv. {chapter.minLevel}</Text>
+                  <PixelText style={styles.chapterMinLevel}>Niv. {chapter.minLevel}</PixelText>
                 </View>
-                <Text style={styles.chapterTitle}>{chapter.title}</Text>
-                <Text style={styles.chapterText}>{chapter.text}</Text>
+                <PixelText style={styles.chapterTitle}>{chapter.title}</PixelText>
+                <PixelText style={styles.chapterText}>{chapter.text}</PixelText>
               </View>
             ))}
             {locked.slice(0, 2).map(chapter => (
               <View key={chapter.title} style={styles.chapterLocked}>
-                <Text style={styles.lockIcon}>🔒</Text>
+                <PixelText style={styles.lockIcon}>🔒</PixelText>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.chapterTitleLocked}>{chapter.title}</Text>
-                  <Text style={styles.lockHint}>Se débloque au niveau {chapter.minLevel}</Text>
+                  <PixelText style={styles.chapterTitleLocked}>{chapter.title}</PixelText>
+                  <PixelText style={styles.lockHint}>Se débloque au niveau {chapter.minLevel}</PixelText>
                 </View>
               </View>
             ))}
@@ -421,11 +422,11 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   checkDone:   { backgroundColor: colors.green, borderColor: colors.green },
   checkPending:{ backgroundColor: 'rgba(255,184,0,0.1)', borderColor: 'rgba(255,184,0,0.35)' },
   taskName:    { fontFamily: Fonts.pixel, fontSize: 17, color: colors.textPrimary },
-  taskNameDone:{ color: 'rgba(255,255,255,0.22)', textDecorationLine: 'line-through', fontWeight: '700' },
-  taskSub:     { fontSize: 11, fontWeight: '700', color: 'rgba(255,184,0,0.7)', marginTop: 2 },
-  taskRejected:{ fontSize: 11, fontWeight: '700', color: 'rgba(239,83,80,0.8)', marginTop: 2 },
+  taskNameDone:{ color: 'rgba(255,255,255,0.22)', textDecorationLine: 'line-through' },
+  taskSub:     { fontSize: 11, color: 'rgba(255,184,0,0.7)', marginTop: 2 },
+  taskRejected:{ fontSize: 11, color: 'rgba(239,83,80,0.8)', marginTop: 2 },
   repBadge:    { backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', borderRadius: Radii.pill, paddingHorizontal: 8, paddingVertical: 4, marginRight: 4 },
-  repBadgeText:{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.5)' },
+  repBadgeText:{ fontSize: 11, color: 'rgba(255,255,255,0.5)' },
   rewardBadge:    { alignItems: 'flex-end', gap: 2 },
   rewardBadgeDone:{ opacity: 0.45 },
   rewardText:     { fontFamily: Fonts.pixelBold, fontSize: 9, color: colors.gold },
@@ -442,6 +443,6 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   chapterText:      { fontFamily: Fonts.pixel, fontSize: 16, color: colors.textDim, lineHeight: 22 },
   chapterLocked:    { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: Spacing.screen, marginBottom: 10, backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: Radii.card, borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)', padding: 14 },
   lockIcon:         { fontSize: 20 },
-  chapterTitleLocked:{ fontSize: 14, fontWeight: '800', color: colors.textFaint },
-  lockHint:         { fontSize: 11, fontWeight: '600', color: colors.textFaint, marginTop: 2, opacity: 0.6 },
+  chapterTitleLocked:{ fontSize: 14, color: colors.textFaint },
+  lockHint:         { fontSize: 11, color: colors.textFaint, marginTop: 2, opacity: 0.6 },
 });

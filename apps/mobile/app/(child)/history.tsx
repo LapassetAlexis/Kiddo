@@ -1,4 +1,5 @@
-import { View, Text, SectionList, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, SectionList, TouchableOpacity, StyleSheet } from 'react-native';
+import PixelText from '@/components/ui/PixelText';
 import { useState, useMemo } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Radii, Spacing } from '@/constants/theme';
@@ -164,42 +165,42 @@ export default function HistoryScreen() {
         ListHeaderComponent={
           <>
             {/* Header */}
-            <Text style={styles.title}>Mes pièces 🪙</Text>
+            <PixelText style={styles.title}>Mes pièces 🪙</PixelText>
 
             {/* Balance hero */}
             <View style={styles.hero}>
               <View style={styles.heroGlow} pointerEvents="none" />
-              <Text style={styles.heroLabel}>🪙 Ton solde</Text>
+              <PixelText style={styles.heroLabel}>🪙 Ton solde</PixelText>
               <View style={styles.heroRow}>
-                <Text style={styles.heroValue}>{BALANCE}</Text>
-                <Text style={styles.heroUnit}>🪙</Text>
+                <PixelText style={styles.heroValue}>{BALANCE}</PixelText>
+                <PixelText style={styles.heroUnit}>🪙</PixelText>
               </View>
               {/* Progression */}
               <View style={styles.progressWrap}>
-                <Text style={{ fontSize: 18 }}>📺</Text>
+                <PixelText style={{ fontSize: 18 }}>📺</PixelText>
                 <View style={styles.progressInfo}>
-                  <Text style={styles.progressName}>{NEXT_REWARD}</Text>
+                  <PixelText style={styles.progressName}>{NEXT_REWARD}</PixelText>
                   <View style={styles.progressTrack}>
                     <View style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` }]} />
                   </View>
                 </View>
-                <Text style={styles.progressPct}>{Math.round(progress * 100)}%</Text>
+                <PixelText style={styles.progressPct}>{Math.round(progress * 100)}%</PixelText>
               </View>
             </View>
 
             {/* Stats + Streak */}
             <View style={styles.statsRow}>
               <View style={styles.stat}>
-                <Text style={[styles.statValue, { color: colors.green }]}>+{earnedW}</Text>
-                <Text style={styles.statLabel}>Gagnés</Text>
+                <PixelText style={[styles.statValue, { color: colors.green }]}>+{earnedW}</PixelText>
+                <PixelText style={styles.statLabel}>Gagnés</PixelText>
               </View>
               <View style={styles.stat}>
-                <Text style={[styles.statValue, { color: colors.orange }]}>{spentW > 0 ? `−${spentW}` : '0'}</Text>
-                <Text style={styles.statLabel}>Dépensés</Text>
+                <PixelText style={[styles.statValue, { color: colors.orange }]}>{spentW > 0 ? `−${spentW}` : '0'}</PixelText>
+                <PixelText style={styles.statLabel}>Dépensés</PixelText>
               </View>
               <View style={[styles.stat, styles.statStreak]}>
-                <Text style={styles.statValue}>🔥 {STREAK}</Text>
-                <Text style={styles.statLabel}>Jours série</Text>
+                <PixelText style={styles.statValue}>🔥 {STREAK}</PixelText>
+                <PixelText style={styles.statLabel}>Jours série</PixelText>
               </View>
             </View>
 
@@ -216,16 +217,16 @@ export default function HistoryScreen() {
                   onPress={() => setFilter(f.value)}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.filterText, filter === f.value && styles.filterTextActive]}>
+                  <PixelText style={[styles.filterText, filter === f.value && styles.filterTextActive]}>
                     {f.label}
-                  </Text>
+                  </PixelText>
                 </TouchableOpacity>
               ))}
             </View>
           </>
         }
         renderSectionHeader={({ section }) => (
-          <Text style={styles.sectionLabel}>{section.title}</Text>
+          <PixelText style={styles.sectionLabel}>{section.title}</PixelText>
         )}
         renderItem={({ item, index, section }) => {
           const isFirst = index === 0;
@@ -238,22 +239,22 @@ export default function HistoryScreen() {
               !isFirst && { borderTopWidth: 1, borderTopColor: colors.border },
             ]}>
               <View style={[styles.rowIcon, item.type === 'earn' ? styles.iconEarn : styles.iconSpend]}>
-                <Text style={{ fontSize: 18 }}>{item.icon}</Text>
+                <PixelText style={{ fontSize: 18 }}>{item.icon}</PixelText>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.rowName}>{item.name}</Text>
-                <Text style={styles.rowMeta}>{item.meta}</Text>
+                <PixelText style={styles.rowName}>{item.name}</PixelText>
+                <PixelText style={styles.rowMeta}>{item.meta}</PixelText>
               </View>
               <View style={{ alignItems: 'flex-end', gap: 2 }}>
                 {item.amount > 0 && (
-                  <Text style={[styles.rowAmount, { color: item.type === 'earn' ? colors.green : colors.orange }]}>
+                  <PixelText style={[styles.rowAmount, { color: item.type === 'earn' ? colors.green : colors.orange }]}>
                     {item.type === 'earn' ? '+' : '−'}{item.amount} 🪙
-                  </Text>
+                  </PixelText>
                 )}
                 {item.xpAmount ? (
-                  <Text style={[styles.rowAmount, { color: '#a78bfa', fontSize: 12 }]}>+{item.xpAmount} ⭐</Text>
+                  <PixelText style={[styles.rowAmount, { color: '#a78bfa', fontSize: 12 }]}>+{item.xpAmount} ⭐</PixelText>
                 ) : item.icon === '⭐' && item.amount > 0 ? (
-                  <Text style={[styles.rowAmount, { color: '#a78bfa' }]}>+{item.amount} ⭐</Text>
+                  <PixelText style={[styles.rowAmount, { color: '#a78bfa' }]}>+{item.amount} ⭐</PixelText>
                 ) : null}
               </View>
             </View>
@@ -261,8 +262,8 @@ export default function HistoryScreen() {
         }}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyEmoji}>🔍</Text>
-            <Text style={styles.emptyText}>Aucune transaction</Text>
+            <PixelText style={styles.emptyEmoji}>🔍</PixelText>
+            <PixelText style={styles.emptyText}>Aucune transaction</PixelText>
           </View>
         }
       />
@@ -275,7 +276,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   listContent: { padding: Spacing.screen, gap: 4, paddingTop: 0 },
 
   title: {
-    fontSize: 22, fontWeight: '900', color: colors.textPrimary,
+    fontSize: 22, color: colors.textPrimary,
     paddingTop: 12, marginBottom: 14,
   },
 
@@ -293,12 +294,12 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: 'rgba(255,184,0,0.06)',
   },
   heroLabel: {
-    fontSize: 11, fontWeight: '700', color: colors.textDim,
+    fontSize: 11, color: colors.textDim,
     letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 4,
   },
   heroRow:  { flexDirection: 'row', alignItems: 'flex-end', gap: 4, marginBottom: 14 },
-  heroValue:{ fontSize: 64, fontWeight: '900', color: colors.gold, lineHeight: 58, letterSpacing: -3 },
-  heroUnit: { fontSize: 20, fontWeight: '700', color: colors.goldDim, marginBottom: 8 },
+  heroValue:{ fontSize: 64, color: colors.gold, lineHeight: 58, letterSpacing: -3 },
+  heroUnit: { fontSize: 20, color: colors.goldDim, marginBottom: 8 },
 
   progressWrap: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
@@ -307,10 +308,10 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     borderWidth: 1, borderColor: colors.border,
   },
   progressInfo:  { flex: 1 },
-  progressName:  { fontSize: 13, fontWeight: '800', color: colors.textPrimary },
+  progressName:  { fontSize: 13, color: colors.textPrimary },
   progressTrack: { height: 6, borderRadius: 99, backgroundColor: colors.border, marginTop: 5, overflow: 'hidden' },
   progressFill:  { height: '100%', borderRadius: 99, backgroundColor: colors.gold },
-  progressPct:   { fontSize: 14, fontWeight: '900', color: colors.gold },
+  progressPct:   { fontSize: 14, color: colors.gold },
 
   // Stats
   statsRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
@@ -320,8 +321,8 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     padding: 14, alignItems: 'center', gap: 4,
   },
   statStreak: { borderColor: 'rgba(255,107,53,0.2)', backgroundColor: 'rgba(255,107,53,0.06)' },
-  statValue:  { fontSize: 18, fontWeight: '900', color: colors.textPrimary, lineHeight: 20 },
-  statLabel:  { fontSize: 10, fontWeight: '700', color: colors.textFaint, textTransform: 'uppercase', letterSpacing: 0.6 },
+  statValue:  { fontSize: 18, color: colors.textPrimary, lineHeight: 20 },
+  statLabel:  { fontSize: 10, color: colors.textFaint, textTransform: 'uppercase', letterSpacing: 0.6 },
 
   // Filtres
   filterRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
@@ -330,12 +331,12 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border,
   },
   filterChipActive: { backgroundColor: 'rgba(255,184,0,0.1)', borderColor: 'rgba(255,184,0,0.3)' },
-  filterText:       { fontSize: 12, fontWeight: '800', color: colors.textDim },
+  filterText:       { fontSize: 12, color: colors.textDim },
   filterTextActive: { color: colors.gold },
 
   // Section
   sectionLabel: {
-    fontSize: 11, fontWeight: '900', color: colors.textFaint,
+    fontSize: 11, color: colors.textFaint,
     textTransform: 'uppercase', letterSpacing: 1, marginTop: 12, marginBottom: 4,
   },
 
@@ -346,11 +347,11 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   rowIcon:  { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   iconEarn: { backgroundColor: 'rgba(76,175,80,0.12)' },
   iconSpend:{ backgroundColor: 'rgba(255,107,53,0.10)' },
-  rowName:  { fontSize: 14, fontWeight: '800', color: colors.textPrimary },
-  rowMeta:  { fontSize: 11, fontWeight: '600', color: colors.textFaint, marginTop: 2 },
-  rowAmount:{ fontSize: 14, fontWeight: '900' },
+  rowName:  { fontSize: 14, color: colors.textPrimary },
+  rowMeta:  { fontSize: 11, color: colors.textFaint, marginTop: 2 },
+  rowAmount:{ fontSize: 14 },
 
   empty:      { alignItems: 'center', paddingVertical: 40, gap: 10 },
   emptyEmoji: { fontSize: 40 },
-  emptyText:  { fontSize: 15, fontWeight: '800', color: colors.textDim },
+  emptyText:  { fontSize: 15, color: colors.textDim },
 });

@@ -1,7 +1,8 @@
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  View, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, KeyboardAvoidingView, Platform,
 } from 'react-native';
+import PixelText from '@/components/ui/PixelText';
 import { useState, useEffect, useMemo } from 'react';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
 import { router } from 'expo-router';
@@ -43,20 +44,20 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bgScreen },
 
   navbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.screen, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
-  backBtn:     { fontSize: 22, color: colors.textDim, fontWeight: '700', width: 40 },
-  navTitle:    { fontSize: 16, fontWeight: '900', color: colors.textPrimary },
+  backBtn:     { fontSize: 22, color: colors.textDim, width: 40 },
+  navTitle:    { fontSize: 16, color: colors.textPrimary },
   saveBtn:     { backgroundColor: colors.gold, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 8 },
-  saveBtnText: { fontSize: 14, fontWeight: '900', color: '#1a1000' },
+  saveBtnText: { fontSize: 14, color: '#1a1000' },
 
   content: { padding: Spacing.screen, gap: 16 },
-  sectionLabel: { fontSize: 11, fontWeight: '900', color: colors.textFaint, textTransform: 'uppercase', letterSpacing: 1.2 },
+  sectionLabel: { fontSize: 11, color: colors.textFaint, textTransform: 'uppercase', letterSpacing: 1.2 },
 
   quickScroll: { marginHorizontal: -Spacing.screen, paddingHorizontal: Spacing.screen },
   quickChip:       { backgroundColor: colors.bgCard, borderRadius: Radii.pill, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 14, paddingVertical: 10, marginRight: 8, alignItems: 'center' },
   quickChipActive: { backgroundColor: 'rgba(255,184,0,0.12)', borderColor: 'rgba(255,184,0,0.3)' },
-  quickChipText:       { fontSize: 13, fontWeight: '700', color: colors.textDim },
+  quickChipText:       { fontSize: 13, color: colors.textDim },
   quickChipTextActive: { color: colors.gold },
-  quickChipPts:    { fontSize: 11, fontWeight: '900', color: colors.textFaint, marginTop: 2 },
+  quickChipPts:    { fontSize: 11, color: colors.textFaint, marginTop: 2 },
 
   input: { backgroundColor: colors.bgCard, borderRadius: Radii.md, borderWidth: 1, borderColor: colors.border, padding: 16, fontSize: 16, fontWeight: '700', color: colors.textPrimary },
 
@@ -65,60 +66,60 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   diffOption: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: colors.border, padding: 14 },
   diffOptionActive: { borderColor: 'rgba(255,184,0,0.3)', backgroundColor: 'rgba(255,184,0,0.06)' },
   diffEmoji: { fontSize: 20, width: 26, textAlign: 'center' },
-  diffLabel:       { fontSize: 15, fontWeight: '800', color: colors.textDim },
+  diffLabel:       { fontSize: 15, color: colors.textDim },
   diffLabelActive: { color: colors.gold },
-  diffXp:          { fontSize: 13, fontWeight: '900', color: colors.textFaint },
+  diffXp:          { fontSize: 13, color: colors.textFaint },
   diffXpActive:    { color: colors.gold },
 
   // Or
   ptsRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
   ptsChip:       { width: 56, height: 56, borderRadius: Radii.card, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   ptsChipActive: { backgroundColor: 'rgba(255,184,0,0.12)', borderColor: 'rgba(255,184,0,0.3)' },
-  ptsChipText:       { fontSize: 16, fontWeight: '900', color: colors.textDim },
+  ptsChipText:       { fontSize: 16, color: colors.textDim },
   ptsChipTextActive: { color: colors.gold },
-  ptsInput:       { flex: 1, height: 56, backgroundColor: colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: colors.border, textAlign: 'center', fontSize: 16, fontWeight: '900', color: colors.textPrimary },
+  ptsInput:       { flex: 1, height: 56, backgroundColor: colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: colors.border, textAlign: 'center', fontSize: 16, color: colors.textPrimary },
   ptsInputActive: { borderColor: 'rgba(255,184,0,0.3)', backgroundColor: 'rgba(255,184,0,0.08)' },
 
   // Fréquence
   freqGroup: { gap: 8 },
   freqOption:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: colors.border, padding: 14 },
   freqOptionActive: { borderColor: 'rgba(255,184,0,0.3)', backgroundColor: 'rgba(255,184,0,0.06)' },
-  freqLabel:       { fontSize: 15, fontWeight: '800', color: colors.textDim },
+  freqLabel:       { fontSize: 15, color: colors.textDim },
   freqLabelActive: { color: colors.gold },
-  freqDesc:        { fontSize: 12, fontWeight: '600', color: colors.textFaint },
+  freqDesc:        { fontSize: 12, color: colors.textFaint },
 
   dayPicker: { flexDirection: 'row', gap: 6, justifyContent: 'space-between' },
   dayBtn:       { flex: 1, height: 44, borderRadius: 12, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   dayBtnActive: { backgroundColor: 'rgba(255,184,0,0.12)', borderColor: 'rgba(255,184,0,0.35)' },
-  dayText:       { fontSize: 12, fontWeight: '800', color: colors.textFaint },
+  dayText:       { fontSize: 12, color: colors.textFaint },
   dayTextActive: { color: colors.gold },
 
   stepperRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   stepperBtn:         { width: 48, height: 48, borderRadius: Radii.card, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   stepperBtnDisabled: { opacity: 0.35 },
-  stepperBtnText:     { fontSize: 22, fontWeight: '800', color: colors.textPrimary },
+  stepperBtnText:     { fontSize: 22, color: colors.textPrimary },
   stepperValue:       { flex: 1, alignItems: 'center' },
-  stepperValueText:   { fontSize: 22, fontWeight: '900', color: colors.gold },
-  stepperValueSub:    { fontSize: 11, fontWeight: '700', color: colors.textFaint, marginTop: 1 },
+  stepperValueText:   { fontSize: 22, color: colors.gold },
+  stepperValueSub:    { fontSize: 11, color: colors.textFaint, marginTop: 1 },
 
   // Enfants
   childrenGroup: { gap: 8 },
   childOption:       { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: colors.border, padding: 14 },
   childOptionActive: { borderColor: 'rgba(255,184,0,0.3)', backgroundColor: 'rgba(255,184,0,0.06)' },
   childEmoji: { fontSize: 26 },
-  childName:       { fontSize: 15, fontWeight: '800', color: colors.textDim },
+  childName:       { fontSize: 15, color: colors.textDim },
   childNameActive: { color: colors.textPrimary },
-  childLevel:      { fontSize: 11, fontWeight: '600', color: colors.textFaint, marginTop: 2 },
+  childLevel:      { fontSize: 11, color: colors.textFaint, marginTop: 2 },
   checkbox:       { width: 24, height: 24, borderRadius: 7, borderWidth: 2, borderColor: colors.textFaint, alignItems: 'center', justifyContent: 'center' },
   checkboxActive: { backgroundColor: colors.gold, borderColor: colors.gold },
-  checkmark:      { fontSize: 14, color: '#1a1000', fontWeight: '900' },
+  checkmark:      { fontSize: 14, color: '#1a1000' },
 
   summary: { backgroundColor: colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: colors.border, padding: 16, gap: 6 },
-  summaryTitle: { fontSize: 11, fontWeight: '900', color: colors.textFaint, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 },
-  summaryLine:  { fontSize: 14, fontWeight: '600', color: colors.textDim },
+  summaryTitle: { fontSize: 11, color: colors.textFaint, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 },
+  summaryLine:  { fontSize: 14, color: colors.textDim },
 
   createBtn:     { backgroundColor: colors.gold, borderRadius: Radii.md, padding: 18, alignItems: 'center' },
-  createBtnText: { fontSize: 16, fontWeight: '900', color: '#1a1000' },
+  createBtnText: { fontSize: 16, color: '#1a1000' },
 });
 
 export default function CreateTaskScreen() {
@@ -205,18 +206,18 @@ export default function CreateTaskScreen() {
 
         <View style={styles.navbar}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.backBtn}>←</Text>
+            <PixelText style={styles.backBtn}>←</PixelText>
           </TouchableOpacity>
-          <Text style={styles.navTitle}>Nouvelle quête</Text>
+          <PixelText style={styles.navTitle}>Nouvelle quête</PixelText>
           <TouchableOpacity onPress={submit} disabled={loading} style={[styles.saveBtn, loading && { opacity: 0.5 }]} activeOpacity={0.8}>
-            <Text style={styles.saveBtnText}>{loading ? '…' : 'Créer'}</Text>
+            <PixelText style={styles.saveBtnText}>{loading ? '…' : 'Créer'}</PixelText>
           </TouchableOpacity>
         </View>
 
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
 
           {/* Raccourcis */}
-          <Text style={styles.sectionLabel}>Raccourcis</Text>
+          <PixelText style={styles.sectionLabel}>Raccourcis</PixelText>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.quickScroll}>
             {QUICK_TASKS.map(q => (
               <TouchableOpacity
@@ -225,16 +226,16 @@ export default function CreateTaskScreen() {
                 onPress={() => applyQuick(q)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.quickChipText, title === q.label && styles.quickChipTextActive]}>{q.label}</Text>
-                <Text style={[styles.quickChipPts, title === q.label && styles.quickChipTextActive]}>
+                <PixelText style={[styles.quickChipText, title === q.label && styles.quickChipTextActive]}>{q.label}</PixelText>
+                <PixelText style={[styles.quickChipPts, title === q.label && styles.quickChipTextActive]}>
                   {DIFFICULTY_EMOJI[q.difficulty]} +{q.gold}🪙
-                </Text>
+                </PixelText>
               </TouchableOpacity>
             ))}
           </ScrollView>
 
           {/* Nom */}
-          <Text style={styles.sectionLabel}>Nom de la quête</Text>
+          <PixelText style={styles.sectionLabel}>Nom de la quête</PixelText>
           <TextInput
             style={styles.input}
             placeholder="Ex : Ranger sa chambre"
@@ -246,7 +247,7 @@ export default function CreateTaskScreen() {
           />
 
           {/* Difficulté */}
-          <Text style={styles.sectionLabel}>Difficulté (XP gagné)</Text>
+          <PixelText style={styles.sectionLabel}>Difficulté (XP gagné)</PixelText>
           <View style={styles.diffGroup}>
             {DIFFICULTIES.map(d => {
               const selected = difficulty === d;
@@ -257,18 +258,18 @@ export default function CreateTaskScreen() {
                   onPress={() => setDifficulty(d)}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.diffEmoji}>{DIFFICULTY_EMOJI[d]}</Text>
+                  <PixelText style={styles.diffEmoji}>{DIFFICULTY_EMOJI[d]}</PixelText>
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.diffLabel, selected && styles.diffLabelActive]}>{DIFFICULTY_LABELS[d]}</Text>
+                    <PixelText style={[styles.diffLabel, selected && styles.diffLabelActive]}>{DIFFICULTY_LABELS[d]}</PixelText>
                   </View>
-                  <Text style={[styles.diffXp, selected && styles.diffXpActive]}>+{XP_BY_DIFFICULTY[d]} ⭐</Text>
+                  <PixelText style={[styles.diffXp, selected && styles.diffXpActive]}>+{XP_BY_DIFFICULTY[d]} ⭐</PixelText>
                 </TouchableOpacity>
               );
             })}
           </View>
 
           {/* Récompense en or */}
-          <Text style={styles.sectionLabel}>Pièces d'or 🪙</Text>
+          <PixelText style={styles.sectionLabel}>Pièces d'or 🪙</PixelText>
           <View style={styles.ptsRow}>
             {[10, 20, 30, 50].map(p => (
               <TouchableOpacity
@@ -277,7 +278,7 @@ export default function CreateTaskScreen() {
                 onPress={() => setGold(String(p))}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.ptsChipText, gold === String(p) && styles.ptsChipTextActive]}>{p}</Text>
+                <PixelText style={[styles.ptsChipText, gold === String(p) && styles.ptsChipTextActive]}>{p}</PixelText>
               </TouchableOpacity>
             ))}
             <TextInput
@@ -293,7 +294,7 @@ export default function CreateTaskScreen() {
           </View>
 
           {/* Fréquence */}
-          <Text style={styles.sectionLabel}>Fréquence</Text>
+          <PixelText style={styles.sectionLabel}>Fréquence</PixelText>
           <View style={styles.freqGroup}>
             {FREQ_OPTIONS.map(f => (
               <TouchableOpacity
@@ -302,10 +303,10 @@ export default function CreateTaskScreen() {
                 onPress={() => setFrequency(f.value)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.freqLabel, frequency === f.value && styles.freqLabelActive]}>{f.label}</Text>
-                <Text style={styles.freqDesc}>
+                <PixelText style={[styles.freqLabel, frequency === f.value && styles.freqLabelActive]}>{f.label}</PixelText>
+                <PixelText style={styles.freqDesc}>
                   {f.value === 'weekly' && frequency === 'weekly' ? `Chaque ${DAYS[weekDay]}` : f.desc}
-                </Text>
+                </PixelText>
               </TouchableOpacity>
             ))}
           </View>
@@ -314,7 +315,7 @@ export default function CreateTaskScreen() {
             <View style={styles.dayPicker}>
               {DAYS.map((day, idx) => (
                 <TouchableOpacity key={day} style={[styles.dayBtn, weekDay === idx && styles.dayBtnActive]} onPress={() => setWeekDay(idx)} activeOpacity={0.7}>
-                  <Text style={[styles.dayText, weekDay === idx && styles.dayTextActive]}>{day}</Text>
+                  <PixelText style={[styles.dayText, weekDay === idx && styles.dayTextActive]}>{day}</PixelText>
                 </TouchableOpacity>
               ))}
             </View>
@@ -322,17 +323,17 @@ export default function CreateTaskScreen() {
 
           {frequency === 'daily' && (
             <>
-              <Text style={styles.sectionLabel}>Fois par jour</Text>
+              <PixelText style={styles.sectionLabel}>Fois par jour</PixelText>
               <View style={styles.stepperRow}>
                 <TouchableOpacity style={[styles.stepperBtn, timesPerDay <= 1 && styles.stepperBtnDisabled]} onPress={() => setTimesPerDay(v => Math.max(1, v - 1))} disabled={timesPerDay <= 1} activeOpacity={0.7}>
-                  <Text style={styles.stepperBtnText}>−</Text>
+                  <PixelText style={styles.stepperBtnText}>−</PixelText>
                 </TouchableOpacity>
                 <View style={styles.stepperValue}>
-                  <Text style={styles.stepperValueText}>{timesPerDay}×</Text>
-                  <Text style={styles.stepperValueSub}>par jour</Text>
+                  <PixelText style={styles.stepperValueText}>{timesPerDay}×</PixelText>
+                  <PixelText style={styles.stepperValueSub}>par jour</PixelText>
                 </View>
                 <TouchableOpacity style={[styles.stepperBtn, timesPerDay >= 10 && styles.stepperBtnDisabled]} onPress={() => setTimesPerDay(v => Math.min(10, v + 1))} disabled={timesPerDay >= 10} activeOpacity={0.7}>
-                  <Text style={styles.stepperBtnText}>+</Text>
+                  <PixelText style={styles.stepperBtnText}>+</PixelText>
                 </TouchableOpacity>
               </View>
             </>
@@ -340,11 +341,11 @@ export default function CreateTaskScreen() {
 
           {frequency === 'daily' && timesPerDay > 1 && (
             <>
-              <Text style={styles.sectionLabel}>Bonus or si tout complété 🪙</Text>
+              <PixelText style={styles.sectionLabel}>Bonus or si tout complété 🪙</PixelText>
               <View style={styles.ptsRow}>
                 {[5, 10, 15, 20].map(p => (
                   <TouchableOpacity key={p} style={[styles.ptsChip, bonusGold === String(p) && styles.ptsChipActive]} onPress={() => setBonusGold(String(p))} activeOpacity={0.7}>
-                    <Text style={[styles.ptsChipText, bonusGold === String(p) && styles.ptsChipTextActive]}>+{p}</Text>
+                    <PixelText style={[styles.ptsChipText, bonusGold === String(p) && styles.ptsChipTextActive]}>+{p}</PixelText>
                   </TouchableOpacity>
                 ))}
                 <TextInput
@@ -362,19 +363,19 @@ export default function CreateTaskScreen() {
           )}
 
           {/* Assigner */}
-          <Text style={styles.sectionLabel}>Assigner à</Text>
+          <PixelText style={styles.sectionLabel}>Assigner à</PixelText>
           <View style={styles.childrenGroup}>
             {children.map(child => {
               const selected = assignedIds.includes(child.id);
               return (
                 <TouchableOpacity key={child.id} style={[styles.childOption, selected && styles.childOptionActive]} onPress={() => toggleChild(child.id)} activeOpacity={0.7}>
-                  <Text style={styles.childEmoji}>{child.avatar}</Text>
+                  <PixelText style={styles.childEmoji}>{child.avatar}</PixelText>
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.childName, selected && styles.childNameActive]}>{child.name}</Text>
-                    <Text style={styles.childLevel}>{child.levelEmoji} Niv. {child.level}</Text>
+                    <PixelText style={[styles.childName, selected && styles.childNameActive]}>{child.name}</PixelText>
+                    <PixelText style={styles.childLevel}>{child.levelEmoji} Niv. {child.level}</PixelText>
                   </View>
                   <View style={[styles.checkbox, selected && styles.checkboxActive]}>
-                    {selected && <Text style={styles.checkmark}>✓</Text>}
+                    {selected && <PixelText style={styles.checkmark}>✓</PixelText>}
                   </View>
                 </TouchableOpacity>
               );
@@ -384,23 +385,23 @@ export default function CreateTaskScreen() {
           {/* Résumé */}
           {title.trim() && gold ? (
             <View style={styles.summary}>
-              <Text style={styles.summaryTitle}>Récapitulatif</Text>
-              <Text style={styles.summaryLine}>📋 <Text style={{ color: colors.textPrimary, fontWeight: '800' }}>{title}</Text></Text>
-              <Text style={styles.summaryLine}>
-                {DIFFICULTY_EMOJI[difficulty]} <Text style={{ color: colors.textDim }}>{DIFFICULTY_LABELS[difficulty]}</Text>
+              <PixelText style={styles.summaryTitle}>Récapitulatif</PixelText>
+              <PixelText style={styles.summaryLine}>📋 <PixelText style={{ color: colors.textPrimary }}>{title}</PixelText></PixelText>
+              <PixelText style={styles.summaryLine}>
+                {DIFFICULTY_EMOJI[difficulty]} <PixelText style={{ color: colors.textDim }}>{DIFFICULTY_LABELS[difficulty]}</PixelText>
                 {'  ·  '}
-                <Text style={{ color: colors.gold, fontWeight: '900' }}>+{gold}🪙</Text>
+                <PixelText style={{ color: colors.gold }}>+{gold}🪙</PixelText>
                 {'  ·  '}
-                <Text style={{ color: colors.textDim }}>+{XP_BY_DIFFICULTY[difficulty]}⭐</Text>
-              </Text>
-              <Text style={styles.summaryLine}>
+                <PixelText style={{ color: colors.textDim }}>+{XP_BY_DIFFICULTY[difficulty]}⭐</PixelText>
+              </PixelText>
+              <PixelText style={styles.summaryLine}>
                 👶 {children.filter(c => assignedIds.includes(c.id)).map(c => `${c.avatar} ${c.name}`).join('  ') || '—'}
-              </Text>
+              </PixelText>
             </View>
           ) : null}
 
           <TouchableOpacity style={[styles.createBtn, loading && { opacity: 0.6 }]} onPress={submit} disabled={loading} activeOpacity={0.85}>
-            <Text style={styles.createBtnText}>{loading ? 'Création en cours…' : 'Créer la quête ✓'}</Text>
+            <PixelText style={styles.createBtnText}>{loading ? 'Création en cours…' : 'Créer la quête ✓'}</PixelText>
           </TouchableOpacity>
 
           <View style={{ height: 32 }} />

@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Modal } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, ActivityIndicator, Modal } from 'react-native';
+import PixelText from '@/components/ui/PixelText';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Radii } from '@/constants/theme';
@@ -105,8 +106,8 @@ export default function ChildPinScreen() {
 
   return (
     <View style={styles.root}>
-      <Text style={styles.greeting}>Bonjour, {name} ! 👋</Text>
-      <Text style={styles.sub}>Tape ton code secret</Text>
+      <PixelText style={styles.greeting}>Bonjour, {name} ! 👋</PixelText>
+      <PixelText style={styles.sub}>Tape ton code secret</PixelText>
 
       {/* Dots */}
       <View style={styles.dots}>
@@ -117,7 +118,7 @@ export default function ChildPinScreen() {
       {isValidating
         ? <ActivityIndicator size="small" color={colors.gold} style={styles.spinner} />
         : error
-          ? <Text style={styles.errorText}>Code incorrect — réessaie</Text>
+          ? <PixelText style={styles.errorText}>Code incorrect — réessaie</PixelText>
           : <View style={styles.errorPlaceholder} />
       }
 
@@ -133,18 +134,18 @@ export default function ChildPinScreen() {
             activeOpacity={0.7}
             disabled={isValidating}
           >
-            <Text style={[styles.keyText, k === '⌫' && styles.keyDeleteText]}>{k}</Text>
+            <PixelText style={[styles.keyText, k === '⌫' && styles.keyDeleteText]}>{k}</PixelText>
           </TouchableOpacity>
         ))}
       </View>
 
       <TouchableOpacity style={styles.back} onPress={() => router.back()}>
-        <Text style={styles.backText}>← Changer d'enfant</Text>
+        <PixelText style={styles.backText}>← Changer d'enfant</PixelText>
       </TouchableOpacity>
 
       {fromParent === 'true' && (
         <TouchableOpacity style={styles.qrBtn} onPress={openQrModal}>
-          <Text style={styles.qrBtnText}>📱 Connecter le téléphone de {name}</Text>
+          <PixelText style={styles.qrBtnText}>📱 Connecter le téléphone de {name}</PixelText>
         </TouchableOpacity>
       )}
 
@@ -152,8 +153,8 @@ export default function ChildPinScreen() {
       <Modal visible={showQrModal} transparent animationType="fade" onRequestClose={closeQrModal}>
         <TouchableOpacity style={styles.qrOverlay} activeOpacity={1} onPress={closeQrModal}>
           <TouchableOpacity activeOpacity={1} style={styles.qrSheet} onPress={() => {}}>
-            <Text style={styles.qrTitle}>QR code de {name}</Text>
-            <Text style={styles.qrSub}>Demande à {name} de le scanner depuis son téléphone</Text>
+            <PixelText style={styles.qrTitle}>QR code de {name}</PixelText>
+            <PixelText style={styles.qrSub}>Demande à {name} de le scanner depuis son téléphone</PixelText>
             {qrToken && (
               <View style={styles.qrBox}>
                 <QRCode value={qrToken} size={200} backgroundColor="#fff" color="#000" />
@@ -161,15 +162,15 @@ export default function ChildPinScreen() {
             )}
             {!qrToken && qrLoading && <ActivityIndicator size="large" color={colors.gold} />}
             <View style={styles.qrTimer}>
-              <Text style={[styles.qrTimerText, qrSeconds <= 5 && { color: '#EF5350' }]}>
+              <PixelText style={[styles.qrTimerText, qrSeconds <= 5 && { color: '#EF5350' }]}>
                 Expire dans {qrSeconds}s
-              </Text>
+              </PixelText>
             </View>
             <TouchableOpacity style={styles.qrRefreshBtn} onPress={refreshQr} disabled={qrLoading}>
-              <Text style={styles.qrRefreshText}>{qrLoading ? 'Génération…' : '🔄 Nouveau QR'}</Text>
+              <PixelText style={styles.qrRefreshText}>{qrLoading ? 'Génération…' : '🔄 Nouveau QR'}</PixelText>
             </TouchableOpacity>
             <TouchableOpacity style={styles.qrCloseBtn} onPress={closeQrModal}>
-              <Text style={styles.qrCloseBtnText}>Fermer</Text>
+              <PixelText style={styles.qrCloseBtnText}>Fermer</PixelText>
             </TouchableOpacity>
           </TouchableOpacity>
         </TouchableOpacity>
@@ -189,12 +190,10 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   greeting: {
     fontSize: 26,
-    fontWeight: '900',
     color: colors.textPrimary,
   },
   sub: {
     fontSize: 15,
-    fontWeight: '600',
     color: colors.textDim,
     marginTop: -16,
   },
@@ -226,7 +225,6 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   errorText: {
     color: '#EF5350',
     fontSize: 13,
-    fontWeight: '700',
     marginTop: -12,
   },
   errorPlaceholder: {
@@ -264,7 +262,6 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   keyText: {
     fontSize: 26,
-    fontWeight: '800',
     color: colors.textPrimary,
   },
   keyDeleteText: {
@@ -276,7 +273,6 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   backText: {
     fontSize: 14,
-    fontWeight: '700',
     color: colors.textDim,
   },
   qrBtn: {
@@ -291,18 +287,17 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   qrBtnText: {
     fontSize: 13,
-    fontWeight: '700',
     color: colors.gold,
   },
   qrOverlay:     { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', alignItems: 'center', justifyContent: 'center' },
   qrSheet:       { backgroundColor: colors.bgCard, borderRadius: 28, padding: 28, alignItems: 'center', gap: 16, marginHorizontal: 24, width: 320 },
-  qrTitle:       { fontSize: 20, fontWeight: '900', color: colors.textPrimary, textAlign: 'center' },
-  qrSub:         { fontSize: 13, fontWeight: '600', color: colors.textDim, textAlign: 'center', marginTop: -8 },
+  qrTitle:       { fontSize: 20, color: colors.textPrimary, textAlign: 'center' },
+  qrSub:         { fontSize: 13, color: colors.textDim, textAlign: 'center', marginTop: -8 },
   qrBox:         { backgroundColor: '#fff', padding: 16, borderRadius: 16 },
   qrTimer:       { alignItems: 'center' },
-  qrTimerText:   { fontSize: 14, fontWeight: '800', color: colors.textDim },
+  qrTimerText:   { fontSize: 14, color: colors.textDim },
   qrRefreshBtn:  { backgroundColor: 'rgba(255,184,0,0.12)', borderRadius: 12, paddingHorizontal: 20, paddingVertical: 10, borderWidth: 1, borderColor: 'rgba(255,184,0,0.3)' },
-  qrRefreshText: { fontSize: 14, fontWeight: '800', color: colors.gold },
+  qrRefreshText: { fontSize: 14, color: colors.gold },
   qrCloseBtn:    { paddingVertical: 8 },
-  qrCloseBtnText:{ fontSize: 14, fontWeight: '700', color: colors.textFaint },
+  qrCloseBtnText:{ fontSize: 14, color: colors.textFaint },
 });

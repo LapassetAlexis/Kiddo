@@ -1,7 +1,8 @@
 import {
-  View, Text, ScrollView, StyleSheet, Animated,
+  View, ScrollView, StyleSheet, Animated,
   Easing, Image, useWindowDimensions,
 } from 'react-native';
+import PixelText from '@/components/ui/PixelText';
 import { useEffect, useRef, useMemo } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -100,8 +101,8 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   infoContent: { padding: Spacing.screen, gap: 12 },
 
   nameBlock:   { gap: 2, paddingTop: 4 },
-  heroName:    { fontSize: 26, fontWeight: '900', color: colors.textPrimary },
-  heroTagline: { fontSize: 14, fontWeight: '700', color: colors.textDim },
+  heroName:    { fontSize: 26, color: colors.textPrimary },
+  heroTagline: { fontSize: 14, color: colors.textDim },
 
   xpCard: {
     backgroundColor: colors.bgCard,
@@ -114,13 +115,13 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingHorizontal: 10, paddingVertical: 3,
     borderWidth: 1, borderColor: 'rgba(139,92,246,0.3)',
   },
-  levelPillText: { fontSize: 12, fontWeight: '900', color: '#a78bfa' },
-  xpLabel:       { fontSize: 11, fontWeight: '700', color: colors.textFaint },
+  levelPillText: { fontSize: 12, color: '#a78bfa' },
+  xpLabel:       { fontSize: 11, color: colors.textFaint },
   xpBarTrack:    { height: 6, borderRadius: 99, backgroundColor: 'rgba(139,92,246,0.15)', overflow: 'hidden' },
   xpBarFill:     { height: '100%', borderRadius: 99, backgroundColor: '#8b5cf6' },
 
   sectionLabel: {
-    fontSize: 11, fontWeight: '900', color: colors.textFaint,
+    fontSize: 11, color: colors.textFaint,
     textTransform: 'uppercase', letterSpacing: 1.2, marginTop: 4,
   },
 
@@ -135,10 +136,10 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingHorizontal: 10, paddingVertical: 3,
     borderWidth: 1, borderColor: 'rgba(255,184,0,0.25)',
   },
-  chapterBadgeText: { fontSize: 11, fontWeight: '900', color: colors.gold },
-  chapterMinLevel:  { fontSize: 11, fontWeight: '700', color: colors.textFaint },
-  chapterTitle:     { fontSize: 16, fontWeight: '900', color: colors.textPrimary },
-  chapterText:      { fontSize: 14, fontWeight: '500', color: colors.textDim, lineHeight: 22 },
+  chapterBadgeText: { fontSize: 11, color: colors.gold },
+  chapterMinLevel:  { fontSize: 11, color: colors.textFaint },
+  chapterTitle:     { fontSize: 16, color: colors.textPrimary },
+  chapterText:      { fontSize: 14, color: colors.textDim, lineHeight: 22 },
 
   chapterCardLocked: {
     backgroundColor: 'rgba(255,255,255,0.02)',
@@ -147,8 +148,8 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   lockRow:            { flexDirection: 'row', alignItems: 'center', gap: 12 },
   lockIcon:           { fontSize: 20 },
-  chapterTitleLocked: { fontSize: 15, fontWeight: '800', color: colors.textFaint },
-  lockHint:           { fontSize: 12, fontWeight: '600', color: colors.textFaint, marginTop: 2, opacity: 0.6 },
+  chapterTitleLocked: { fontSize: 15, color: colors.textFaint },
+  lockHint:           { fontSize: 12, color: colors.textFaint, marginTop: 2, opacity: 0.6 },
 });
 
 export default function AvatarScreen() {
@@ -191,17 +192,17 @@ export default function AvatarScreen() {
       >
         {/* Nom + tagline */}
         <View style={styles.nameBlock}>
-          <Text style={styles.heroName}>{preset.name}</Text>
-          <Text style={styles.heroTagline}>{preset.tagline}</Text>
+          <PixelText style={styles.heroName}>{preset.name}</PixelText>
+          <PixelText style={styles.heroTagline}>{preset.tagline}</PixelText>
         </View>
 
         {/* Niveau + XP */}
         <View style={styles.xpCard}>
           <View style={styles.xpRow}>
             <View style={styles.levelPill}>
-              <Text style={styles.levelPillText}>Niveau {childLevel}</Text>
+              <PixelText style={styles.levelPillText}>Niveau {childLevel}</PixelText>
             </View>
-            <Text style={styles.xpLabel}>{xpProgress.current} / {xpProgress.total} XP</Text>
+            <PixelText style={styles.xpLabel}>{xpProgress.current} / {xpProgress.total} XP</PixelText>
           </View>
           <View style={styles.xpBarTrack}>
             <View style={[styles.xpBarFill, { width: `${xpPercent}%` }]} />
@@ -209,28 +210,28 @@ export default function AvatarScreen() {
         </View>
 
         {/* Chapitres */}
-        <Text style={styles.sectionLabel}>Histoire</Text>
+        <PixelText style={styles.sectionLabel}>Histoire</PixelText>
 
         {unlocked.map((chapter, i) => (
           <View key={chapter.title} style={styles.chapterCard}>
             <View style={styles.chapterHeaderRow}>
               <View style={styles.chapterBadge}>
-                <Text style={styles.chapterBadgeText}>Chapitre {i + 1}</Text>
+                <PixelText style={styles.chapterBadgeText}>Chapitre {i + 1}</PixelText>
               </View>
-              <Text style={styles.chapterMinLevel}>Niv. {chapter.minLevel}</Text>
+              <PixelText style={styles.chapterMinLevel}>Niv. {chapter.minLevel}</PixelText>
             </View>
-            <Text style={styles.chapterTitle}>{chapter.title}</Text>
-            <Text style={styles.chapterText}>{chapter.text}</Text>
+            <PixelText style={styles.chapterTitle}>{chapter.title}</PixelText>
+            <PixelText style={styles.chapterText}>{chapter.text}</PixelText>
           </View>
         ))}
 
         {locked.map((chapter) => (
           <View key={chapter.title} style={styles.chapterCardLocked}>
             <View style={styles.lockRow}>
-              <Text style={styles.lockIcon}>🔒</Text>
+              <PixelText style={styles.lockIcon}>🔒</PixelText>
               <View style={{ flex: 1 }}>
-                <Text style={styles.chapterTitleLocked}>{chapter.title}</Text>
-                <Text style={styles.lockHint}>Se débloque au niveau {chapter.minLevel}</Text>
+                <PixelText style={styles.chapterTitleLocked}>{chapter.title}</PixelText>
+                <PixelText style={styles.lockHint}>Se débloque au niveau {chapter.minLevel}</PixelText>
               </View>
             </View>
           </View>

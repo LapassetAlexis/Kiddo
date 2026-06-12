@@ -1,7 +1,8 @@
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  View, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, KeyboardAvoidingView, Platform, FlatList,
 } from 'react-native';
+import PixelText from '@/components/ui/PixelText';
 import { useState, useMemo } from 'react';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
 import { router } from 'expo-router';
@@ -24,8 +25,8 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingHorizontal: Spacing.screen, paddingVertical: 12,
     borderBottomWidth: 1, borderBottomColor: colors.border,
   },
-  backBtn:  { fontSize: 22, color: colors.textDim, fontWeight: '700', width: 40 },
-  navTitle: { fontSize: 16, fontWeight: '900', color: colors.textPrimary },
+  backBtn:  { fontSize: 22, color: colors.textDim, width: 40 },
+  navTitle: { fontSize: 16, color: colors.textPrimary },
 
   steps: { flexDirection: 'row', justifyContent: 'center', gap: 8, paddingVertical: 14 },
   stepDot:      { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border },
@@ -34,12 +35,12 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
 
   // Étape 1 : nom
   content:   { padding: Spacing.screen, gap: 20 },
-  stepTitle: { fontSize: 26, fontWeight: '900', color: colors.textPrimary, lineHeight: 32 },
-  stepSub:   { fontSize: 14, fontWeight: '600', color: colors.textDim, marginTop: -12 },
+  stepTitle: { fontSize: 26, color: colors.textPrimary, lineHeight: 32 },
+  stepSub:   { fontSize: 14, color: colors.textDim, marginTop: -12 },
   nameInput: {
     backgroundColor: colors.bgCard, borderRadius: Radii.md,
     borderWidth: 1, borderColor: colors.border,
-    padding: 18, fontSize: 22, fontWeight: '800', color: colors.textPrimary,
+    padding: 18, fontSize: 22, color: colors.textPrimary,
   },
 
   // Étape 2 : personnage
@@ -57,26 +58,26 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   spriteWrapSelected: { backgroundColor: 'rgba(255,184,0,0.1)' },
   characterInfo:     { flex: 1, gap: 4 },
   characterNameRow:  { gap: 2 },
-  characterName:     { fontSize: 17, fontWeight: '900', color: colors.textDim },
+  characterName:     { fontSize: 17, color: colors.textDim },
   characterNameSelected: { color: colors.textPrimary },
-  characterTagline:  { fontSize: 12, fontWeight: '700', color: colors.textFaint },
+  characterTagline:  { fontSize: 12, color: colors.textFaint },
   classBadge:        { alignSelf: 'flex-start', borderRadius: 99, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 2, marginTop: 6 },
-  classBadgeText:    { fontSize: 11, fontWeight: '800' },
-  characterStory:    { fontSize: 13, fontWeight: '500', color: colors.textDim, lineHeight: 18, marginTop: 4 },
+  classBadgeText:    { fontSize: 11 },
+  characterStory:    { fontSize: 13, color: colors.textDim, lineHeight: 18, marginTop: 4 },
   radioOuter:        { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: colors.textFaint, alignItems: 'center', justifyContent: 'center' },
   radioOuterActive:  { borderColor: colors.gold },
   radioInner:        { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.gold },
 
   nextBtn:     { backgroundColor: colors.gold, borderRadius: Radii.md, padding: 16, alignItems: 'center' },
-  nextBtnText: { fontSize: 16, fontWeight: '900', color: '#1a1000' },
+  nextBtnText: { fontSize: 16, color: '#1a1000' },
 
   // PIN
   pinContent:     { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 18, paddingHorizontal: 32, paddingBottom: 24 },
-  pinTitle:       { fontSize: 20, fontWeight: '900', color: colors.textPrimary, textAlign: 'center' },
-  pinSub:         { fontSize: 13, fontWeight: '600', color: colors.textDim, textAlign: 'center', lineHeight: 18, marginTop: -10 },
+  pinTitle:       { fontSize: 20, color: colors.textPrimary, textAlign: 'center' },
+  pinSub:         { fontSize: 13, color: colors.textDim, textAlign: 'center', lineHeight: 18, marginTop: -10 },
   spriteContainer: { width: 100, height: 100, borderRadius: 16, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   pinCharPreview: { alignItems: 'center', gap: 6 },
-  pinCharName:    { fontSize: 14, fontWeight: '800', color: colors.textDim },
+  pinCharName:    { fontSize: 14, color: colors.textDim },
   dots: { flexDirection: 'row', gap: 16 },
   dot:       { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: colors.textFaint, backgroundColor: 'transparent' },
   dotFilled: { backgroundColor: colors.gold, borderColor: colors.gold },
@@ -84,7 +85,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   key:       { width: 84, height: 84, borderRadius: Radii.hero, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   keyEmpty:  { width: 84, height: 84 },
   keyDelete: { backgroundColor: 'transparent', borderColor: 'transparent' },
-  keyText:       { fontSize: 26, fontWeight: '800', color: colors.textPrimary },
+  keyText:       { fontSize: 26, color: colors.textPrimary },
   keyDeleteText: { fontSize: 22, color: colors.textDim },
 });
 
@@ -186,9 +187,9 @@ export default function CreateChildScreen() {
         {/* Navbar */}
         <View style={styles.navbar}>
           <TouchableOpacity onPress={goBack}>
-            <Text style={styles.backBtn}>←</Text>
+            <PixelText style={styles.backBtn}>←</PixelText>
           </TouchableOpacity>
-          <Text style={styles.navTitle}>{navTitle}</Text>
+          <PixelText style={styles.navTitle}>{navTitle}</PixelText>
           <View style={{ width: 40 }} />
         </View>
 
@@ -207,8 +208,8 @@ export default function CreateChildScreen() {
         {step === 'name' && (
           <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-              <Text style={styles.stepTitle}>Comment s'appelle{'\n'}ton héros ?</Text>
-              <Text style={styles.stepSub}>Entre le prénom ou pseudo de l'enfant</Text>
+              <PixelText style={styles.stepTitle}>Comment s'appelle{'\n'}ton héros ?</PixelText>
+              <PixelText style={styles.stepSub}>Entre le prénom ou pseudo de l'enfant</PixelText>
 
               <TextInput
                 style={styles.nameInput}
@@ -223,7 +224,7 @@ export default function CreateChildScreen() {
               />
 
               <TouchableOpacity style={styles.nextBtn} onPress={submitName} activeOpacity={0.85}>
-                <Text style={styles.nextBtnText}>Choisir son personnage →</Text>
+                <PixelText style={styles.nextBtnText}>Choisir son personnage →</PixelText>
               </TouchableOpacity>
             </ScrollView>
           </KeyboardAvoidingView>
@@ -238,8 +239,8 @@ export default function CreateChildScreen() {
             showsVerticalScrollIndicator={false}
             ListHeaderComponent={
               <View style={styles.characterHeader}>
-                <Text style={styles.stepTitle}>Qui sera{'\n'}{name} ?</Text>
-                <Text style={styles.stepSub}>Chaque héros a sa propre histoire</Text>
+                <PixelText style={styles.stepTitle}>Qui sera{'\n'}{name} ?</PixelText>
+                <PixelText style={styles.stepSub}>Chaque héros a sa propre histoire</PixelText>
               </View>
             }
             ListFooterComponent={
@@ -248,7 +249,7 @@ export default function CreateChildScreen() {
                 onPress={submitCharacter}
                 activeOpacity={0.85}
               >
-                <Text style={styles.nextBtnText}>Choisir un code secret →</Text>
+                <PixelText style={styles.nextBtnText}>Choisir un code secret →</PixelText>
               </TouchableOpacity>
             }
             renderItem={({ item }) => {
@@ -264,18 +265,18 @@ export default function CreateChildScreen() {
                   </View>
                   <View style={styles.characterInfo}>
                     <View style={styles.characterNameRow}>
-                      <Text style={[styles.characterName, selected && styles.characterNameSelected]}>
+                      <PixelText style={[styles.characterName, selected && styles.characterNameSelected]}>
                         {item.name}
-                      </Text>
-                      <Text style={styles.characterTagline}>{item.tagline}</Text>
+                      </PixelText>
+                      <PixelText style={styles.characterTagline}>{item.tagline}</PixelText>
                     </View>
                     <View style={[styles.classBadge, { backgroundColor: CLASS_META[item.class].color + '22', borderColor: CLASS_META[item.class].color + '55' }]}>
-                      <Text style={[styles.classBadgeText, { color: CLASS_META[item.class].color }]}>
+                      <PixelText style={[styles.classBadgeText, { color: CLASS_META[item.class].color }]}>
                         {CLASS_META[item.class].icon} {CLASS_META[item.class].label}
-                      </Text>
+                      </PixelText>
                     </View>
                     {selected && (
-                      <Text style={styles.characterStory}>{item.chapters[0]?.text}</Text>
+                      <PixelText style={styles.characterStory}>{item.chapters[0]?.text}</PixelText>
                     )}
                   </View>
                   <View style={[styles.radioOuter, selected && styles.radioOuterActive]}>
@@ -290,20 +291,20 @@ export default function CreateChildScreen() {
         {/* ── Étapes 3 & 4 : PIN ── */}
         {(step === 'pin' || step === 'confirm') && (
           <View style={styles.pinContent}>
-            <Text style={styles.pinTitle}>
+            <PixelText style={styles.pinTitle}>
               {step === 'pin' ? `Code secret de ${name}` : 'Répète le code'}
-            </Text>
-            <Text style={styles.pinSub}>
+            </PixelText>
+            <PixelText style={styles.pinSub}>
               {step === 'pin'
                 ? '4 chiffres que l\'enfant devra entrer pour se connecter'
                 : 'Entre à nouveau le même code pour confirmer'}
-            </Text>
+            </PixelText>
 
             <View style={styles.pinCharPreview}>
               <View style={styles.spriteContainer}>
                 <HeroSprite source={selectedChar.baseStrip} size={80} direction="south" />
               </View>
-              <Text style={styles.pinCharName}>{selectedChar.name}</Text>
+              <PixelText style={styles.pinCharName}>{selectedChar.name}</PixelText>
             </View>
 
             <View style={styles.dots}>
@@ -322,7 +323,7 @@ export default function CreateChildScreen() {
                   onPress={() => k === '⌫' ? pressDelete(currentSetter as any) : pressDigit(k, currentSetter as any)}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.keyText, k === '⌫' && styles.keyDeleteText]}>{k}</Text>
+                  <PixelText style={[styles.keyText, k === '⌫' && styles.keyDeleteText]}>{k}</PixelText>
                 </TouchableOpacity>
               ))}
             </View>
@@ -334,9 +335,9 @@ export default function CreateChildScreen() {
                 disabled={loading}
                 activeOpacity={0.85}
               >
-                <Text style={styles.nextBtnText}>
+                <PixelText style={styles.nextBtnText}>
                   {loading ? 'Création…' : `Créer le profil de ${name} ✓`}
-                </Text>
+                </PixelText>
               </TouchableOpacity>
             )}
           </View>

@@ -1,4 +1,5 @@
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, TextInput, Animated, Pressable, Image } from 'react-native';
+import { View, ScrollView, TouchableOpacity, StyleSheet, Modal, TextInput, Animated, Pressable, Image } from 'react-native';
+import PixelText from '@/components/ui/PixelText';
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -38,31 +39,31 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   exceptBtn:     { width: 44, height: 44, backgroundColor: 'rgba(255,184,0,0.12)', borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,184,0,0.3)' },
   exceptBtnText: { fontSize: 22 },
 
-  fieldLabel:    { fontSize: 11, fontWeight: '900', color: colors.textFaint, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 },
-  exceptInput:   { backgroundColor: colors.bgScreen, borderRadius: 12, borderWidth: 1, borderColor: colors.border, padding: 13, fontSize: 14, fontWeight: '600', color: colors.textPrimary, marginBottom: 14 },
+  fieldLabel:    { fontSize: 11, color: colors.textFaint, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 },
+  exceptInput:   { backgroundColor: colors.bgScreen, borderRadius: 12, borderWidth: 1, borderColor: colors.border, padding: 13, fontSize: 14, color: colors.textPrimary, marginBottom: 14 },
   childChip:     { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.bgScreen, borderRadius: 12, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12, paddingVertical: 8 },
   childChipActive: { borderColor: 'rgba(255,184,0,0.5)', backgroundColor: 'rgba(255,184,0,0.08)' },
-  childChipText: { fontSize: 13, fontWeight: '800', color: colors.textDim },
+  childChipText: { fontSize: 13, color: colors.textDim },
   goldChip:      { flex: 1, alignItems: 'center', paddingVertical: 10, backgroundColor: colors.bgScreen, borderRadius: 10, borderWidth: 1, borderColor: colors.border },
   goldChipActive:{ borderColor: 'rgba(255,184,0,0.5)', backgroundColor: 'rgba(255,184,0,0.08)' },
-  goldChipText:  { fontSize: 14, fontWeight: '900', color: colors.textDim },
+  goldChipText:  { fontSize: 14, color: colors.textDim },
   diffRow:       { paddingHorizontal: 14, paddingVertical: 10, backgroundColor: colors.bgScreen, borderRadius: 10, borderWidth: 1, borderColor: colors.border },
   diffRowActive: { borderColor: 'rgba(255,184,0,0.5)', backgroundColor: 'rgba(255,184,0,0.08)' },
-  diffText:      { fontSize: 13, fontWeight: '700', color: colors.textDim },
+  diffText:      { fontSize: 13, color: colors.textDim },
   confirmBtn:    { backgroundColor: colors.gold, borderRadius: 14, padding: 16, alignItems: 'center' },
   confirmBtnText:{ fontFamily: Fonts.pixelBold, fontSize: 11, color: '#1a1000' },
 
   urgentBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: Spacing.screen, marginBottom: 14, backgroundColor: 'rgba(255,107,53,0.1)', borderWidth: 1, borderColor: 'rgba(255,107,53,0.22)', borderRadius: 16, padding: 12 },
   urgentCount:  { fontFamily: Fonts.pixelBold, fontSize: 11, color: colors.orange },
-  urgentSub:    { fontSize: 11, fontWeight: '600', color: 'rgba(255,107,53,0.6)', marginTop: 1 },
+  urgentSub:    { fontSize: 11, color: 'rgba(255,107,53,0.6)', marginTop: 1 },
 
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginHorizontal: Spacing.screen, marginBottom: 10 },
   sectionTitle:  { fontFamily: Fonts.pixel, fontSize: 13, color: colors.textFaint, textTransform: 'uppercase', letterSpacing: 1.2 },
-  pendingCount:  { fontSize: 12, fontWeight: '900', color: colors.orange },
-  todoCount:     { fontSize: 12, fontWeight: '900', color: colors.textDim },
+  pendingCount:  { fontSize: 12, color: colors.orange },
+  todoCount:     { fontSize: 12, color: colors.textDim },
   todoCard:         { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.bgCard, borderRadius: Radii.card, padding: 14, borderWidth: 1, borderColor: colors.border },
   todoCardRejected: { borderColor: 'rgba(239,83,80,0.25)', backgroundColor: 'rgba(239,83,80,0.05)' },
-  todoRejectedLabel:{ fontSize: 11, fontWeight: '700', color: 'rgba(239,83,80,0.8)', marginTop: 2 },
+  todoRejectedLabel:{ fontSize: 11, color: 'rgba(239,83,80,0.8)', marginTop: 2 },
 
   childScroll: { paddingHorizontal: Spacing.screen, gap: 12, paddingBottom: 4 },
   childCard:   { backgroundColor: colors.bgCard, borderRadius: 20, borderWidth: 1, borderColor: colors.border, padding: 16, width: 150, minHeight: 160, gap: 8, marginBottom: 16, position: 'relative' },
@@ -72,29 +73,29 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   childLevelRow:       { flexDirection: 'row', alignItems: 'center', gap: 5 },
   childLevelEmoji:     { fontSize: 14 },
   childLevelBadge:     { backgroundColor: 'rgba(139,92,246,0.15)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: 'rgba(139,92,246,0.3)' },
-  childLevelBadgeText: { fontSize: 10, fontWeight: '900', color: '#a78bfa' },
+  childLevelBadgeText: { fontSize: 10, color: '#a78bfa' },
   childPts:   { fontFamily: Fonts.pixel, fontSize: 15, color: colors.gold },
   addChildCard: { backgroundColor: colors.bgCard, borderRadius: 20, borderWidth: 1.5, borderColor: colors.border, borderStyle: 'dashed', width: 150, minHeight: 160, alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 16, opacity: 0.5 },
-  addChildText: { fontSize: 13, fontWeight: '800', color: colors.textDim },
+  addChildText: { fontSize: 13, color: colors.textDim },
 
   list:       { paddingHorizontal: Spacing.screen, gap: 10 },
   pendingCard:{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.bgCard, borderRadius: Radii.card, padding: 14, borderWidth: 1, borderColor: colors.border },
   childAvatarSm: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   pendingTask:{ fontFamily: Fonts.pixel, fontSize: 16, color: colors.textPrimary },
-  pendingMeta:{ fontSize: 11, fontWeight: '600', color: colors.textDim, marginTop: 2 },
+  pendingMeta:{ fontSize: 11, color: colors.textDim, marginTop: 2 },
   repBadge:     { backgroundColor: 'rgba(255,255,255,0.07)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', borderRadius: Radii.pill, paddingHorizontal: 8, paddingVertical: 3, marginRight: 2 },
-  repBadgeText: { fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.45)' },
+  repBadgeText: { fontSize: 11, color: 'rgba(255,255,255,0.45)' },
   ptsBadge:   { backgroundColor: 'rgba(255,184,0,0.1)', borderWidth: 1, borderColor: 'rgba(255,184,0,0.18)', borderRadius: Radii.pill, paddingHorizontal: 10, paddingVertical: 4 },
-  ptsBadgeText: { fontSize: 12, fontWeight: '900', color: colors.gold },
+  ptsBadgeText: { fontSize: 12, color: colors.gold },
   btnApprove: { width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(76,175,80,0.15)', borderWidth: 1, borderColor: 'rgba(76,175,80,0.25)', alignItems: 'center', justifyContent: 'center' },
   btnReject:  { width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(239,83,80,0.1)',  borderWidth: 1, borderColor: 'rgba(239,83,80,0.2)',  alignItems: 'center', justifyContent: 'center' },
   grantBtn:   { backgroundColor: colors.gold, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 9 },
-  grantBtnText: { fontSize: 13, fontWeight: '900', color: '#1a1000' },
+  grantBtnText: { fontSize: 13, color: '#1a1000' },
   emptyPending:  { alignItems: 'center', padding: 32, gap: 8 },
-  emptyText:     { fontSize: 15, fontWeight: '800', color: colors.textDim },
-  emptySubText:  { fontSize: 13, fontWeight: '600', color: colors.textFaint, textAlign: 'center', lineHeight: 18 },
+  emptyText:     { fontSize: 15, color: colors.textDim },
+  emptySubText:  { fontSize: 13, color: colors.textFaint, textAlign: 'center', lineHeight: 18 },
   emptyCTA:      { marginTop: 8, backgroundColor: colors.gold, borderRadius: Radii.md, paddingHorizontal: 24, paddingVertical: 12 },
-  emptyCTAText:  { fontSize: 14, fontWeight: '900', color: '#1a1000' },
+  emptyCTAText:  { fontSize: 14, color: '#1a1000' },
   // Review modal
   reviewSheet: {
     backgroundColor: '#1e1e26', borderTopLeftRadius: 28, borderTopRightRadius: 28,
@@ -102,23 +103,23 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: 16,
   },
   reviewHeader:   { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  reviewTaskName: { fontSize: 16, fontWeight: '900', color: colors.textPrimary },
-  reviewMeta:     { fontSize: 12, fontWeight: '600', color: colors.textDim, marginTop: 2 },
+  reviewTaskName: { fontSize: 16, color: colors.textPrimary },
+  reviewMeta:     { fontSize: 12, color: colors.textDim, marginTop: 2 },
   reviewNote: {
     backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 14,
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 14,
   },
-  reviewNoteLabel: { fontSize: 11, fontWeight: '700', color: colors.textFaint, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 },
-  reviewNoteText:  { fontSize: 15, fontWeight: '600', color: colors.textPrimary, fontStyle: 'italic' },
+  reviewNoteLabel: { fontSize: 11, color: colors.textFaint, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 },
+  reviewNoteText:  { fontSize: 15, color: colors.textPrimary, fontStyle: 'italic' },
   reviewPhoto:     { width: '100%', height: 200, borderRadius: 16 },
   reviewActions:   { flexDirection: 'row', gap: 12 },
   btnRejectLg:     { flex: 1, backgroundColor: 'rgba(239,83,80,0.1)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(239,83,80,0.25)', padding: 16, alignItems: 'center' },
-  btnRejectLgText: { fontSize: 15, fontWeight: '900', color: '#EF5350' },
+  btnRejectLgText: { fontSize: 15, color: '#EF5350' },
   btnApproveLg:    { flex: 1, backgroundColor: colors.green, borderRadius: 16, padding: 16, alignItems: 'center' },
-  btnApproveLgText:{ fontSize: 15, fontWeight: '900', color: '#fff' },
+  btnApproveLgText:{ fontSize: 15, color: '#fff' },
 
   sheetHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.15)', alignSelf: 'center', marginBottom: 8 },
-  sheetTitle:  { fontSize: 18, fontWeight: '900', color: colors.textPrimary },
+  sheetTitle:  { fontSize: 18, color: colors.textPrimary },
 
   // Modal
   modalOverlay: {
@@ -136,8 +137,8 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.15)',
     alignSelf: 'center', marginBottom: 20,
   },
-  modalTitle: { fontSize: 20, fontWeight: '900', color: colors.textPrimary, marginBottom: 4 },
-  modalSub:   { fontSize: 13, fontWeight: '600', color: colors.textDim, marginBottom: 20 },
+  modalTitle: { fontSize: 20, color: colors.textPrimary, marginBottom: 4 },
+  modalSub:   { fontSize: 13, color: colors.textDim, marginBottom: 20 },
 
   modalBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 14,
@@ -146,16 +147,16 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   modalBtnIcon:  { fontSize: 26 },
   modalBtnText:  { flex: 1 },
-  modalBtnLabel: { fontSize: 16, fontWeight: '900', color: '#fff' },
-  modalBtnDesc:  { fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.7)', marginTop: 2 },
-  modalBtnArrow: { fontSize: 22, color: 'rgba(255,255,255,0.5)', fontWeight: '300' },
+  modalBtnLabel: { fontSize: 16, color: '#fff' },
+  modalBtnDesc:  { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 2 },
+  modalBtnArrow: { fontSize: 22, color: 'rgba(255,255,255,0.5)' },
 
   modalCancel: {
     alignItems: 'center', padding: 16,
     backgroundColor: colors.bgCard, borderRadius: 18,
     borderWidth: 1, borderColor: colors.border, marginTop: 4,
   },
-  modalCancelText: { fontSize: 15, fontWeight: '800', color: colors.textDim },
+  modalCancelText: { fontSize: 15, color: colors.textDim },
 });
 
 export default function ParentDashboardScreen() {
@@ -472,8 +473,8 @@ export default function ParentDashboardScreen() {
               resizeMode="contain"
             />
             <View>
-              <Text style={styles.sub}>Bonjour,</Text>
-              <Text style={styles.title}>{parentName} 👋</Text>
+              <PixelText style={styles.sub}>Bonjour,</PixelText>
+              <PixelText style={styles.title}>{parentName} 👋</PixelText>
             </View>
           </View>
           <View style={styles.headerActions}>
@@ -483,7 +484,7 @@ export default function ParentDashboardScreen() {
                 onPress={() => { setExceptChildId((childrenData ?? [])[0]?.id ?? ''); setExceptModal(true); }}
                 activeOpacity={0.8}
               >
-                <Text style={styles.exceptBtnText}>⚡</Text>
+                <PixelText style={styles.exceptBtnText}>⚡</PixelText>
               </TouchableOpacity>
             </View>
             <View ref={addBtnRef} collapsable={false}>
@@ -492,7 +493,7 @@ export default function ParentDashboardScreen() {
                 onPress={openAddModal}
                 activeOpacity={0.8}
               >
-                <Text style={styles.addBtnText}>+</Text>
+                <PixelText style={styles.addBtnText}>+</PixelText>
               </TouchableOpacity>
             </View>
           </View>
@@ -501,10 +502,10 @@ export default function ParentDashboardScreen() {
         {/* Urgent banner */}
         {pending.length > 0 && (
           <View style={styles.urgentBanner}>
-            <Text style={{ fontSize: 20 }}>⚡</Text>
+            <PixelText style={{ fontSize: 20 }}>⚡</PixelText>
             <View style={{ flex: 1 }}>
-              <Text style={styles.urgentCount}>{pending.length} quête{pending.length > 1 ? 's' : ''} à valider</Text>
-              <Text style={styles.urgentSub}>{pending.map(p => p.childName).join(' et ')} attendent</Text>
+              <PixelText style={styles.urgentCount}>{pending.length} quête{pending.length > 1 ? 's' : ''} à valider</PixelText>
+              <PixelText style={styles.urgentSub}>{pending.map(p => p.childName).join(' et ')} attendent</PixelText>
             </View>
           </View>
         )}
@@ -514,7 +515,7 @@ export default function ParentDashboardScreen() {
 
         {/* Children */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>MES ENFANTS</Text>
+          <PixelText style={styles.sectionTitle}>MES ENFANTS</PixelText>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.childScroll}>
           {(childrenData ?? []).map((child, i) => (
@@ -525,16 +526,16 @@ export default function ParentDashboardScreen() {
               activeOpacity={0.8}
             >
               <View style={[styles.childAvatar, { backgroundColor: child.color ?? '#FFB300', shadowColor: child.color ?? '#FFB300' }]}>
-                <Text style={{ fontSize: 26 }}>{child.avatar}</Text>
+                <PixelText style={{ fontSize: 26 }}>{child.avatar}</PixelText>
               </View>
-              <Text style={styles.childName}>{child.name}</Text>
+              <PixelText style={styles.childName}>{child.name}</PixelText>
               <View style={styles.childLevelRow}>
-                <Text style={styles.childLevelEmoji}>{child.levelEmoji}</Text>
+                <PixelText style={styles.childLevelEmoji}>{child.levelEmoji}</PixelText>
                 <View style={styles.childLevelBadge}>
-                  <Text style={styles.childLevelBadgeText}>Niv. {child.level}</Text>
+                  <PixelText style={styles.childLevelBadgeText}>Niv. {child.level}</PixelText>
                 </View>
               </View>
-              <Text style={styles.childPts}>🪙 {balances[child.id] ?? 0}</Text>
+              <PixelText style={styles.childPts}>🪙 {balances[child.id] ?? 0}</PixelText>
             </TouchableOpacity>
             </View>
           ))}
@@ -543,28 +544,28 @@ export default function ParentDashboardScreen() {
             onPress={() => router.push('/(parent)/create-child')}
             activeOpacity={0.7}
           >
-            <Text style={{ fontSize: 28, color: colors.textFaint }}>＋</Text>
-            <Text style={styles.addChildText}>Ajouter</Text>
+            <PixelText style={{ fontSize: 28, color: colors.textFaint }}>＋</PixelText>
+            <PixelText style={styles.addChildText}>Ajouter</PixelText>
           </TouchableOpacity>
         </ScrollView>
 
         {/* Quêtes en cours */}
         <View style={[styles.sectionHeader, { marginTop: 20 }]}>
-          <Text style={styles.sectionTitle}>TÂCHES EN COURS</Text>
-          {(todoData ?? []).length > 0 && <Text style={styles.todoCount}>{(todoData ?? []).length}</Text>}
+          <PixelText style={styles.sectionTitle}>TÂCHES EN COURS</PixelText>
+          {(todoData ?? []).length > 0 && <PixelText style={styles.todoCount}>{(todoData ?? []).length}</PixelText>}
         </View>
 
         {todoLoading && !todoData ? (
           <View style={styles.emptyPending}>
-            <Text style={styles.emptyText}>Chargement…</Text>
+            <PixelText style={styles.emptyText}>Chargement…</PixelText>
           </View>
         ) : (todoData ?? []).length === 0 ? (
           <View style={styles.emptyPending}>
-            <Text style={{ fontSize: 28, marginBottom: 6 }}>📋</Text>
-            <Text style={styles.emptyText}>Aucune quête active</Text>
-            <Text style={styles.emptySubText}>Crée des tâches pour que tes héros puissent gagner de l'XP !</Text>
+            <PixelText style={{ fontSize: 28, marginBottom: 6 }}>📋</PixelText>
+            <PixelText style={styles.emptyText}>Aucune quête active</PixelText>
+            <PixelText style={styles.emptySubText}>Crée des tâches pour que tes héros puissent gagner de l'XP !</PixelText>
             <TouchableOpacity style={styles.emptyCTA} onPress={() => goTo('/(parent)/create-task')} activeOpacity={0.8}>
-              <Text style={styles.emptyCTAText}>+ Créer une quête</Text>
+              <PixelText style={styles.emptyCTAText}>+ Créer une quête</PixelText>
             </TouchableOpacity>
           </View>
         ) : (
@@ -574,21 +575,21 @@ export default function ParentDashboardScreen() {
               return (
                 <View key={task.id} style={[styles.todoCard, wasRejected && styles.todoCardRejected]}>
                   <View style={[styles.childAvatarSm, { backgroundColor: task.child.color ?? '#FFB300' }]}>
-                    <Text style={{ fontSize: 18 }}>{task.child.avatar}</Text>
+                    <PixelText style={{ fontSize: 18 }}>{task.child.avatar}</PixelText>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.pendingTask}>{task.title}</Text>
-                    <Text style={styles.pendingMeta}>
+                    <PixelText style={styles.pendingTask}>{task.title}</PixelText>
+                    <PixelText style={styles.pendingMeta}>
                       {task.child.name}{task.frequency !== 'once' ? ` · ${task.frequency === 'daily' ? 'quotidien' : 'hebdo'}` : ''}
-                    </Text>
+                    </PixelText>
                     {wasRejected && (
-                      <Text style={styles.todoRejectedLabel}>
+                      <PixelText style={styles.todoRejectedLabel}>
                         ↩ Rejeté{task.rejectionReason ? ` — ${task.rejectionReason}` : ''}
-                      </Text>
+                      </PixelText>
                     )}
                   </View>
                   <View style={styles.ptsBadge}>
-                    <Text style={styles.ptsBadgeText}>+{task.goldReward} 🪙</Text>
+                    <PixelText style={styles.ptsBadgeText}>+{task.goldReward} 🪙</PixelText>
                   </View>
                 </View>
               );
@@ -598,40 +599,40 @@ export default function ParentDashboardScreen() {
 
         {/* Pending validations */}
         <View ref={pendingSecRef} style={[styles.sectionHeader, { marginTop: 28 }]}>
-          <Text style={styles.sectionTitle}>À VALIDER</Text>
-          {pending.length > 0 && <Text style={styles.pendingCount}>{pending.length}</Text>}
+          <PixelText style={styles.sectionTitle}>À VALIDER</PixelText>
+          {pending.length > 0 && <PixelText style={styles.pendingCount}>{pending.length}</PixelText>}
         </View>
 
         {pendingLoading && !pendingData ? (
           <View style={styles.emptyPending}>
-            <Text style={styles.emptyText}>Chargement…</Text>
+            <PixelText style={styles.emptyText}>Chargement…</PixelText>
           </View>
         ) : pendingError && !pendingData ? (
           <View style={styles.emptyPending}>
-            <Text style={styles.emptyText}>{pendingError}</Text>
+            <PixelText style={styles.emptyText}>{pendingError}</PixelText>
           </View>
         ) : pending.length === 0 ? (
           <View style={styles.emptyPending}>
-            <Text style={{ fontSize: 32, marginBottom: 8 }}>✅</Text>
-            <Text style={styles.emptyText}>Tout est validé !</Text>
+            <PixelText style={{ fontSize: 32, marginBottom: 8 }}>✅</PixelText>
+            <PixelText style={styles.emptyText}>Tout est validé !</PixelText>
           </View>
         ) : (
           <View style={styles.list}>
             {pending.map((task, i) => (
               <View key={task.id} ref={i === 0 ? firstPendingRef : undefined} collapsable={false}>
               <TouchableOpacity style={styles.pendingCard} onPress={() => setReviewTask(task)} activeOpacity={0.8}>
-                <View style={[styles.childAvatarSm, { backgroundColor: task.childColor }]}><Text style={{ fontSize: 18 }}>{task.childEmoji}</Text></View>
+                <View style={[styles.childAvatarSm, { backgroundColor: task.childColor }]}><PixelText style={{ fontSize: 18 }}>{task.childEmoji}</PixelText></View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.pendingTask}>{task.taskName}</Text>
-                  <Text style={styles.pendingMeta}>{task.childName} · {task.ago}{task.note ? ' · 💬' : ''}{task.photoUrl ? ' · 📷' : ''}</Text>
+                  <PixelText style={styles.pendingTask}>{task.taskName}</PixelText>
+                  <PixelText style={styles.pendingMeta}>{task.childName} · {task.ago}{task.note ? ' · 💬' : ''}{task.photoUrl ? ' · 📷' : ''}</PixelText>
                 </View>
                 {task.timesPerDay > 1 && (
                   <View style={styles.repBadge}>
-                    <Text style={styles.repBadgeText}>{task.completedToday + 1}/{task.timesPerDay}</Text>
+                    <PixelText style={styles.repBadgeText}>{task.completedToday + 1}/{task.timesPerDay}</PixelText>
                   </View>
                 )}
-                <View style={styles.ptsBadge}><Text style={styles.ptsBadgeText}>+{task.goldReward} 🪙</Text></View>
-                <Text style={{ fontSize: 16, color: colors.textFaint }}>›</Text>
+                <View style={styles.ptsBadge}><PixelText style={styles.ptsBadgeText}>+{task.goldReward} 🪙</PixelText></View>
+                <PixelText style={{ fontSize: 16, color: colors.textFaint }}>›</PixelText>
               </TouchableOpacity>
               </View>
             ))}
@@ -640,41 +641,41 @@ export default function ParentDashboardScreen() {
 
         {/* Reward requests */}
         <View style={[styles.sectionHeader, { marginTop: 28 }]}>
-          <Text style={styles.sectionTitle}>RÉCOMPENSES RÉCLAMÉES</Text>
+          <PixelText style={styles.sectionTitle}>RÉCOMPENSES RÉCLAMÉES</PixelText>
           {rewards.length > 0 && (
-            <Text style={styles.pendingCount}>{rewards.length}</Text>
+            <PixelText style={styles.pendingCount}>{rewards.length}</PixelText>
           )}
         </View>
 
         {rewardsLoading && !rewardsData ? (
           <View style={styles.emptyPending}>
-            <Text style={styles.emptyText}>Chargement…</Text>
+            <PixelText style={styles.emptyText}>Chargement…</PixelText>
           </View>
         ) : rewardsError && !rewardsData ? (
           <View style={styles.emptyPending}>
-            <Text style={styles.emptyText}>{rewardsError}</Text>
+            <PixelText style={styles.emptyText}>{rewardsError}</PixelText>
           </View>
         ) : rewards.length === 0 ? (
           <View style={styles.emptyPending}>
-            <Text style={{ fontSize: 28, marginBottom: 6 }}>🎁</Text>
-            <Text style={styles.emptyText}>Aucune récompense en attente</Text>
+            <PixelText style={{ fontSize: 28, marginBottom: 6 }}>🎁</PixelText>
+            <PixelText style={styles.emptyText}>Aucune récompense en attente</PixelText>
           </View>
         ) : (
           <View style={styles.list}>
             {rewards.map(r => (
               <View key={r.id} style={[styles.pendingCard, { borderColor: 'rgba(255,184,0,0.18)' }]}>
-                <Text style={{ fontSize: 28 }}>{r.emoji}</Text>
+                <PixelText style={{ fontSize: 28 }}>{r.emoji}</PixelText>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.pendingTask}>{r.rewardName}</Text>
-                  <Text style={styles.pendingMeta}>
+                  <PixelText style={styles.pendingTask}>{r.rewardName}</PixelText>
+                  <PixelText style={styles.pendingMeta}>
                     {r.childEmoji} {r.childName} · {r.pts} 🪙 débités
-                  </Text>
+                  </PixelText>
                 </View>
                 <TouchableOpacity style={styles.btnApprove} onPress={() => grantReward(r.id)} aria-label="Accorder">
-                  <Text style={{ color: colors.green, fontSize: 17 }}>✓</Text>
+                  <PixelText style={{ color: colors.green, fontSize: 17 }}>✓</PixelText>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.btnReject} onPress={() => refuseReward(r.id)} aria-label="Refuser">
-                  <Text style={{ color: '#EF5350', fontSize: 17 }}>✕</Text>
+                  <PixelText style={{ color: '#EF5350', fontSize: 17 }}>✕</PixelText>
                 </TouchableOpacity>
               </View>
             ))}
@@ -691,10 +692,10 @@ export default function ParentDashboardScreen() {
         <Pressable style={styles.modalOverlay} onPress={() => setExceptModal(false)}>
           <Pressable style={[styles.reviewSheet, { paddingBottom: 36 + bottom }]} onPress={() => {}}>
             <View style={styles.sheetHandle} />
-            <Text style={styles.sheetTitle}>⚡ Quête exceptionnelle</Text>
+            <PixelText style={styles.sheetTitle}>⚡ Quête exceptionnelle</PixelText>
 
             {/* Sélecteur enfant */}
-            <Text style={styles.fieldLabel}>Enfant</Text>
+            <PixelText style={styles.fieldLabel}>Enfant</PixelText>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 {(childrenData ?? []).map(child => (
@@ -704,15 +705,15 @@ export default function ParentDashboardScreen() {
                     onPress={() => setExceptChildId(child.id)}
                     activeOpacity={0.7}
                   >
-                    <Text style={{ fontSize: 18 }}>{child.avatar}</Text>
-                    <Text style={[styles.childChipText, exceptChildId === child.id && { color: colors.gold }]}>{child.name}</Text>
+                    <PixelText style={{ fontSize: 18 }}>{child.avatar}</PixelText>
+                    <PixelText style={[styles.childChipText, exceptChildId === child.id && { color: colors.gold }]}>{child.name}</PixelText>
                   </TouchableOpacity>
                 ))}
               </View>
             </ScrollView>
 
             {/* Titre */}
-            <Text style={styles.fieldLabel}>Ce qu'il/elle a fait</Text>
+            <PixelText style={styles.fieldLabel}>Ce qu'il/elle a fait</PixelText>
             <TextInput
               style={styles.exceptInput}
               placeholder="Ex : A aidé à ranger sans qu'on le demande"
@@ -723,21 +724,21 @@ export default function ParentDashboardScreen() {
             />
 
             {/* Pièces */}
-            <Text style={styles.fieldLabel}>Pièces d'or 🪙</Text>
+            <PixelText style={styles.fieldLabel}>Pièces d'or 🪙</PixelText>
             <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
               {['10','20','30','50','100'].map(v => (
                 <TouchableOpacity key={v} style={[styles.goldChip, exceptGold === v && styles.goldChipActive]} onPress={() => setExceptGold(v)} activeOpacity={0.7}>
-                  <Text style={[styles.goldChipText, exceptGold === v && { color: colors.gold }]}>{v}</Text>
+                  <PixelText style={[styles.goldChipText, exceptGold === v && { color: colors.gold }]}>{v}</PixelText>
                 </TouchableOpacity>
               ))}
             </View>
 
             {/* Difficulté */}
-            <Text style={styles.fieldLabel}>Difficulté (XP)</Text>
+            <PixelText style={styles.fieldLabel}>Difficulté (XP)</PixelText>
             <View style={{ gap: 6, marginBottom: 20 }}>
               {DIFFS.map(d => (
                 <TouchableOpacity key={d} style={[styles.diffRow, exceptDiff === d && styles.diffRowActive]} onPress={() => setExceptDiff(d)} activeOpacity={0.7}>
-                  <Text style={[styles.diffText, exceptDiff === d && { color: colors.gold }]}>{XP_LABELS[d]}</Text>
+                  <PixelText style={[styles.diffText, exceptDiff === d && { color: colors.gold }]}>{XP_LABELS[d]}</PixelText>
                 </TouchableOpacity>
               ))}
             </View>
@@ -748,7 +749,7 @@ export default function ParentDashboardScreen() {
               disabled={!exceptChildId || !exceptTitle.trim() || exceptLoading}
               activeOpacity={0.8}
             >
-              <Text style={styles.confirmBtnText}>{exceptLoading ? 'Envoi…' : '⚡ Valider la quête'}</Text>
+              <PixelText style={styles.confirmBtnText}>{exceptLoading ? 'Envoi…' : '⚡ Valider la quête'}</PixelText>
             </TouchableOpacity>
           </Pressable>
         </Pressable>
@@ -762,18 +763,18 @@ export default function ParentDashboardScreen() {
             {reviewTask && (
               <>
                 <View style={styles.reviewHeader}>
-                  <View style={[styles.childAvatarSm, { backgroundColor: reviewTask.childColor }]}><Text style={{ fontSize: 22 }}>{reviewTask.childEmoji}</Text></View>
+                  <View style={[styles.childAvatarSm, { backgroundColor: reviewTask.childColor }]}><PixelText style={{ fontSize: 22 }}>{reviewTask.childEmoji}</PixelText></View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.reviewTaskName}>{reviewTask.taskName}</Text>
-                    <Text style={styles.reviewMeta}>{reviewTask.childName} · {reviewTask.ago}</Text>
+                    <PixelText style={styles.reviewTaskName}>{reviewTask.taskName}</PixelText>
+                    <PixelText style={styles.reviewMeta}>{reviewTask.childName} · {reviewTask.ago}</PixelText>
                   </View>
-                  <View style={styles.ptsBadge}><Text style={styles.ptsBadgeText}>+{reviewTask.goldReward} 🪙</Text></View>
+                  <View style={styles.ptsBadge}><PixelText style={styles.ptsBadgeText}>+{reviewTask.goldReward} 🪙</PixelText></View>
                 </View>
 
                 {reviewTask.note ? (
                   <View style={styles.reviewNote}>
-                    <Text style={styles.reviewNoteLabel}>Message de {reviewTask.childName}</Text>
-                    <Text style={styles.reviewNoteText}>"{reviewTask.note}"</Text>
+                    <PixelText style={styles.reviewNoteLabel}>Message de {reviewTask.childName}</PixelText>
+                    <PixelText style={styles.reviewNoteText}>"{reviewTask.note}"</PixelText>
                   </View>
                 ) : null}
 
@@ -783,10 +784,10 @@ export default function ParentDashboardScreen() {
 
                 <View style={styles.reviewActions}>
                   <TouchableOpacity style={styles.btnRejectLg} onPress={() => confirmReject(reviewTask)} activeOpacity={0.8}>
-                    <Text style={styles.btnRejectLgText}>✕  Rejeter</Text>
+                    <PixelText style={styles.btnRejectLgText}>✕  Rejeter</PixelText>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.btnApproveLg} onPress={() => confirmApprove(reviewTask)} activeOpacity={0.8}>
-                    <Text style={styles.btnApproveLgText}>✓  Valider</Text>
+                    <PixelText style={styles.btnApproveLgText}>✓  Valider</PixelText>
                   </TouchableOpacity>
                 </View>
               </>
@@ -805,20 +806,20 @@ export default function ParentDashboardScreen() {
               {/* Handle */}
               <View style={styles.modalHandle} />
 
-              <Text style={styles.modalTitle}>Ajouter</Text>
-              <Text style={styles.modalSub}>Que veux-tu créer ?</Text>
+              <PixelText style={styles.modalTitle}>Ajouter</PixelText>
+              <PixelText style={styles.modalSub}>Que veux-tu créer ?</PixelText>
 
               <TouchableOpacity
                 style={styles.modalBtn}
                 onPress={() => goTo('/(parent)/create-task')}
                 activeOpacity={0.85}
               >
-                <Text style={styles.modalBtnIcon}>📋</Text>
+                <PixelText style={styles.modalBtnIcon}>📋</PixelText>
                 <View style={styles.modalBtnText}>
-                  <Text style={styles.modalBtnLabel}>Une quête</Text>
-                  <Text style={styles.modalBtnDesc}>Assigne une mission à tes enfants</Text>
+                  <PixelText style={styles.modalBtnLabel}>Une quête</PixelText>
+                  <PixelText style={styles.modalBtnDesc}>Assigne une mission à tes enfants</PixelText>
                 </View>
-                <Text style={styles.modalBtnArrow}>›</Text>
+                <PixelText style={styles.modalBtnArrow}>›</PixelText>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -826,16 +827,16 @@ export default function ParentDashboardScreen() {
                 onPress={() => goTo('/(parent)/create-reward')}
                 activeOpacity={0.85}
               >
-                <Text style={styles.modalBtnIcon}>🎁</Text>
+                <PixelText style={styles.modalBtnIcon}>🎁</PixelText>
                 <View style={styles.modalBtnText}>
-                  <Text style={styles.modalBtnLabel}>Une récompense</Text>
-                  <Text style={styles.modalBtnDesc}>Crée un cadeau à échanger contre des points</Text>
+                  <PixelText style={styles.modalBtnLabel}>Une récompense</PixelText>
+                  <PixelText style={styles.modalBtnDesc}>Crée un cadeau à échanger contre des points</PixelText>
                 </View>
-                <Text style={styles.modalBtnArrow}>›</Text>
+                <PixelText style={styles.modalBtnArrow}>›</PixelText>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.modalCancel} onPress={closeAddModal} activeOpacity={0.7}>
-                <Text style={styles.modalCancelText}>Annuler</Text>
+                <PixelText style={styles.modalCancelText}>Annuler</PixelText>
               </TouchableOpacity>
             </Pressable>
           </Animated.View>

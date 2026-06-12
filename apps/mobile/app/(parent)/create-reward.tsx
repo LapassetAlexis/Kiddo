@@ -1,7 +1,8 @@
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  View, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, KeyboardAvoidingView, Platform, Modal, Pressable,
 } from 'react-native';
+import PixelText from '@/components/ui/PixelText';
 import { useState, useMemo } from 'react';
 import { router } from 'expo-router';
 import AppModal, { useAppModal } from '@/components/ui/AppModal';
@@ -44,14 +45,14 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingHorizontal: Spacing.screen, paddingVertical: 12,
     borderBottomWidth: 1, borderBottomColor: colors.border,
   },
-  backBtn:     { fontSize: 22, color: colors.textDim, fontWeight: '700', width: 40 },
-  navTitle:    { fontSize: 16, fontWeight: '900', color: colors.textPrimary },
+  backBtn:     { fontSize: 22, color: colors.textDim, width: 40 },
+  navTitle:    { fontSize: 16, color: colors.textPrimary },
   saveBtn:     { backgroundColor: colors.gold, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 8 },
-  saveBtnText: { fontSize: 14, fontWeight: '900', color: '#1a1000' },
+  saveBtnText: { fontSize: 14, color: '#1a1000' },
 
   content: { padding: Spacing.screen, gap: 16 },
   sectionLabel: {
-    fontSize: 11, fontWeight: '900', color: colors.textFaint,
+    fontSize: 11, color: colors.textFaint,
     textTransform: 'uppercase', letterSpacing: 1.2,
   },
 
@@ -64,9 +65,9 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   quickChipActive:    { backgroundColor: 'rgba(255,184,0,0.12)', borderColor: 'rgba(255,184,0,0.3)' },
   quickEmoji:         { fontSize: 22 },
-  quickChipText:      { fontSize: 12, fontWeight: '700', color: colors.textDim },
+  quickChipText:      { fontSize: 12, color: colors.textDim },
   quickChipTextActive:{ color: colors.gold },
-  quickChipPts:       { fontSize: 11, fontWeight: '900', color: colors.textFaint },
+  quickChipPts:       { fontSize: 11, color: colors.textFaint },
 
   titleRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
   emojiBtn: {
@@ -78,7 +79,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   emojiBtnText: { fontSize: 28 },
   emojiBtnHint: {
     position: 'absolute', bottom: 2, right: 4,
-    fontSize: 9, color: colors.textFaint, fontWeight: '900',
+    fontSize: 9, color: colors.textFaint,
   },
 
   // Emoji picker
@@ -93,7 +94,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.15)',
     alignSelf: 'center', marginBottom: 16,
   },
-  pickerTitle: { fontSize: 16, fontWeight: '900', color: colors.textPrimary, marginBottom: 16 },
+  pickerTitle: { fontSize: 16, color: colors.textPrimary, marginBottom: 16 },
   pickerGrid:  { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   pickerItem: {
     width: 52, height: 52, borderRadius: 14,
@@ -117,12 +118,12 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   ptsChipActive:     { backgroundColor: 'rgba(255,184,0,0.12)', borderColor: 'rgba(255,184,0,0.3)' },
-  ptsChipText:       { fontSize: 15, fontWeight: '900', color: colors.textDim },
+  ptsChipText:       { fontSize: 15, color: colors.textDim },
   ptsChipTextActive: { color: colors.gold },
   ptsInput: {
     flex: 1, height: 56, backgroundColor: colors.bgCard,
     borderRadius: Radii.card, borderWidth: 1, borderColor: colors.border,
-    textAlign: 'center', fontSize: 16, fontWeight: '900', color: colors.textPrimary,
+    textAlign: 'center', fontSize: 16, color: colors.textPrimary,
   },
   ptsInputActive: { borderColor: 'rgba(255,184,0,0.3)', backgroundColor: 'rgba(255,184,0,0.08)' },
 
@@ -134,9 +135,9 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   availOptionActive: { borderColor: 'rgba(255,184,0,0.3)', backgroundColor: 'rgba(255,184,0,0.06)' },
   availIcon:         { fontSize: 24 },
-  availLabel:        { fontSize: 15, fontWeight: '800', color: colors.textDim },
+  availLabel:        { fontSize: 15, color: colors.textDim },
   availLabelActive:  { color: colors.textPrimary },
-  availDesc:         { fontSize: 12, fontWeight: '600', color: colors.textFaint, marginTop: 2 },
+  availDesc:         { fontSize: 12, color: colors.textFaint, marginTop: 2 },
   radio: {
     width: 22, height: 22, borderRadius: 11,
     borderWidth: 2, borderColor: colors.textFaint,
@@ -152,17 +153,17 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(255,184,0,0.2)', padding: 16,
   },
   previewEmoji: { fontSize: 32 },
-  previewTitle: { fontSize: 16, fontWeight: '900', color: colors.textPrimary },
-  previewAvail: { fontSize: 12, fontWeight: '600', color: colors.textFaint, marginTop: 2 },
+  previewTitle: { fontSize: 16, color: colors.textPrimary },
+  previewAvail: { fontSize: 12, color: colors.textFaint, marginTop: 2 },
   previewCost:  { alignItems: 'center' },
-  previewCostText: { fontSize: 22, fontWeight: '900', color: colors.gold },
-  previewCostPts:  { fontSize: 11, fontWeight: '700', color: colors.textFaint },
+  previewCostText: { fontSize: 22, color: colors.gold },
+  previewCostPts:  { fontSize: 11, color: colors.textFaint },
 
   createBtn: {
     backgroundColor: colors.gold, borderRadius: Radii.md,
     padding: 18, alignItems: 'center',
   },
-  createBtnText: { fontSize: 16, fontWeight: '900', color: '#1a1000' },
+  createBtnText: { fontSize: 16, color: '#1a1000' },
 });
 
 export default function CreateRewardScreen() {
@@ -220,16 +221,16 @@ export default function CreateRewardScreen() {
         {/* Navbar */}
         <View style={styles.navbar}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.backBtn}>←</Text>
+            <PixelText style={styles.backBtn}>←</PixelText>
           </TouchableOpacity>
-          <Text style={styles.navTitle}>Nouvelle récompense</Text>
+          <PixelText style={styles.navTitle}>Nouvelle récompense</PixelText>
           <TouchableOpacity
             style={[styles.saveBtn, loading && { opacity: 0.5 }]}
             onPress={submit}
             disabled={loading}
             activeOpacity={0.8}
           >
-            <Text style={styles.saveBtnText}>{loading ? '…' : 'Créer'}</Text>
+            <PixelText style={styles.saveBtnText}>{loading ? '…' : 'Créer'}</PixelText>
           </TouchableOpacity>
         </View>
 
@@ -239,7 +240,7 @@ export default function CreateRewardScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* Raccourcis */}
-          <Text style={styles.sectionLabel}>Raccourcis</Text>
+          <PixelText style={styles.sectionLabel}>Raccourcis</PixelText>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.quickScroll}>
             {QUICK_REWARDS.map(q => (
               <TouchableOpacity
@@ -248,23 +249,23 @@ export default function CreateRewardScreen() {
                 onPress={() => applyQuick(q)}
                 activeOpacity={0.7}
               >
-                <Text style={styles.quickEmoji}>{q.emoji}</Text>
-                <Text style={[styles.quickChipText, title === q.label && styles.quickChipTextActive]}>
+                <PixelText style={styles.quickEmoji}>{q.emoji}</PixelText>
+                <PixelText style={[styles.quickChipText, title === q.label && styles.quickChipTextActive]}>
                   {q.label}
-                </Text>
-                <Text style={[styles.quickChipPts, title === q.label && styles.quickChipTextActive]}>
+                </PixelText>
+                <PixelText style={[styles.quickChipPts, title === q.label && styles.quickChipTextActive]}>
                   {q.cost} 🪙
-                </Text>
+                </PixelText>
               </TouchableOpacity>
             ))}
           </ScrollView>
 
           {/* Nom + emoji */}
-          <Text style={styles.sectionLabel}>Nom de la récompense</Text>
+          <PixelText style={styles.sectionLabel}>Nom de la récompense</PixelText>
           <View style={styles.titleRow}>
             <TouchableOpacity style={styles.emojiBtn} onPress={() => setEmojiPicker(true)} activeOpacity={0.75}>
-              <Text style={styles.emojiBtnText}>{emoji}</Text>
-              <Text style={styles.emojiBtnHint}>✎</Text>
+              <PixelText style={styles.emojiBtnText}>{emoji}</PixelText>
+              <PixelText style={styles.emojiBtnHint}>✎</PixelText>
             </TouchableOpacity>
             <TextInput
               style={[styles.input, { flex: 1 }]}
@@ -278,7 +279,7 @@ export default function CreateRewardScreen() {
           </View>
 
           {/* Coût en pièces */}
-          <Text style={styles.sectionLabel}>Coût en pièces 🪙</Text>
+          <PixelText style={styles.sectionLabel}>Coût en pièces 🪙</PixelText>
           <View style={styles.ptsRow}>
             {[30, 50, 80, 100].map(p => (
               <TouchableOpacity
@@ -287,9 +288,9 @@ export default function CreateRewardScreen() {
                 onPress={() => setCost(String(p))}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.ptsChipText, cost === String(p) && styles.ptsChipTextActive]}>
+                <PixelText style={[styles.ptsChipText, cost === String(p) && styles.ptsChipTextActive]}>
                   {p}
-                </Text>
+                </PixelText>
               </TouchableOpacity>
             ))}
             <TextInput
@@ -308,7 +309,7 @@ export default function CreateRewardScreen() {
           </View>
 
           {/* Disponibilité */}
-          <Text style={styles.sectionLabel}>Disponibilité</Text>
+          <PixelText style={styles.sectionLabel}>Disponibilité</PixelText>
           <View style={styles.availGroup}>
             {AVAIL_OPTIONS.map(a => (
               <TouchableOpacity
@@ -317,12 +318,12 @@ export default function CreateRewardScreen() {
                 onPress={() => setAvail(a.value)}
                 activeOpacity={0.7}
               >
-                <Text style={styles.availIcon}>{a.icon}</Text>
+                <PixelText style={styles.availIcon}>{a.icon}</PixelText>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.availLabel, availability === a.value && styles.availLabelActive]}>
+                  <PixelText style={[styles.availLabel, availability === a.value && styles.availLabelActive]}>
                     {a.label}
-                  </Text>
-                  <Text style={styles.availDesc}>{a.desc}</Text>
+                  </PixelText>
+                  <PixelText style={styles.availDesc}>{a.desc}</PixelText>
                 </View>
                 <View style={[styles.radio, availability === a.value && styles.radioActive]}>
                   {availability === a.value && <View style={styles.radioDot} />}
@@ -334,17 +335,17 @@ export default function CreateRewardScreen() {
           {/* Aperçu */}
           {title.trim() && cost ? (
             <View style={styles.preview}>
-              <Text style={styles.sectionLabel}>Aperçu</Text>
+              <PixelText style={styles.sectionLabel}>Aperçu</PixelText>
               <View style={styles.previewCard}>
-                <Text style={styles.previewEmoji}>{emoji}</Text>
+                <PixelText style={styles.previewEmoji}>{emoji}</PixelText>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.previewTitle}>{title}</Text>
-                  <Text style={styles.previewAvail}>
+                  <PixelText style={styles.previewTitle}>{title}</PixelText>
+                  <PixelText style={styles.previewAvail}>
                     {availability === 'once' ? '1️⃣ Une seule fois' : '♾️ Illimitée'}
-                  </Text>
+                  </PixelText>
                 </View>
                 <View style={styles.previewCost}>
-                  <Text style={styles.previewCostText}>{cost} 🪙</Text>
+                  <PixelText style={styles.previewCostText}>{cost} 🪙</PixelText>
                 </View>
               </View>
             </View>
@@ -357,9 +358,9 @@ export default function CreateRewardScreen() {
             disabled={loading}
             activeOpacity={0.85}
           >
-            <Text style={styles.createBtnText}>
+            <PixelText style={styles.createBtnText}>
               {loading ? 'Création en cours…' : 'Créer la récompense ✓'}
-            </Text>
+            </PixelText>
           </TouchableOpacity>
 
           <View style={{ height: 32 }} />
@@ -373,7 +374,7 @@ export default function CreateRewardScreen() {
         <Pressable style={styles.pickerOverlay} onPress={() => setEmojiPicker(false)}>
           <Pressable style={[styles.pickerSheet, { paddingBottom: 40 + bottom }]}>
             <View style={styles.pickerHandle} />
-            <Text style={styles.pickerTitle}>Choisir un icône</Text>
+            <PixelText style={styles.pickerTitle}>Choisir un icône</PixelText>
             <ScrollView contentContainerStyle={styles.pickerGrid} showsVerticalScrollIndicator={false}>
               {REWARD_EMOJIS.map(e => (
                 <TouchableOpacity
@@ -382,7 +383,7 @@ export default function CreateRewardScreen() {
                   onPress={() => { setEmoji(e); setEmojiPicker(false); }}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.pickerEmoji}>{e}</Text>
+                  <PixelText style={styles.pickerEmoji}>{e}</PixelText>
                 </TouchableOpacity>
               ))}
             </ScrollView>

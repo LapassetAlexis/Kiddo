@@ -13,6 +13,8 @@
     "test:e2e": "~/.maestro/bin/maestro test .maestro/"
   },
   "dependencies": {
+    "@expo-google-fonts/press-start-2p": "^0.4.1",
+    "@expo-google-fonts/vt323": "^0.4.1",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-google-signin/google-signin": "^16.1.2",
     "@react-navigation/native": "^7.1.8",
@@ -25,6 +27,7 @@
     "expo-dev-client": "~56.0.19",
     "expo-device": "~56.0.4",
     "expo-file-system": "~56.0.7",
+    "expo-font": "~56.0.6",
     "expo-image-picker": "~56.0.16",
     "expo-linking": "~56.0.13",
     "expo-notifications": "~56.0.16",

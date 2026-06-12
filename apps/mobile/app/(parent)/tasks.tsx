@@ -1,4 +1,5 @@
-import { View, Text, SectionList, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, SectionList, TouchableOpacity, StyleSheet } from 'react-native';
+import PixelText from '@/components/ui/PixelText';
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -93,9 +94,9 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingHorizontal: Spacing.screen, paddingVertical: 12,
     borderBottomWidth: 1, borderBottomColor: colors.border,
   },
-  title:      { fontSize: 20, fontWeight: '900', color: colors.textPrimary },
+  title:      { fontSize: 20, color: colors.textPrimary },
   addBtn:     { width: 44, height: 44, backgroundColor: colors.gold, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  addBtnText: { fontSize: 24, fontWeight: '900', color: '#1a1000', lineHeight: 28 },
+  addBtnText: { fontSize: 24, color: '#1a1000', lineHeight: 28 },
 
   statsRow: { flexDirection: 'row', gap: 10, padding: Spacing.screen, paddingBottom: 0 },
   statCard: {
@@ -103,8 +104,8 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     borderWidth: 1, borderColor: colors.border,
     padding: 14, alignItems: 'center', gap: 4,
   },
-  statValue: { fontSize: 22, fontWeight: '900', lineHeight: 24 },
-  statLabel: { fontSize: 10, fontWeight: '700', color: colors.textFaint, textTransform: 'uppercase', letterSpacing: 0.6 },
+  statValue: { fontSize: 22, lineHeight: 24 },
+  statLabel: { fontSize: 10, color: colors.textFaint, textTransform: 'uppercase', letterSpacing: 0.6 },
 
   childFilters: {
     flexDirection: 'row', gap: 8,
@@ -118,7 +119,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   childChipActive:    { borderColor: 'rgba(255,184,0,0.35)', backgroundColor: 'rgba(255,184,0,0.08)' },
   childChipEmoji:     { fontSize: 14 },
-  childChipText:      { fontSize: 13, fontWeight: '700', color: colors.textDim },
+  childChipText:      { fontSize: 13, color: colors.textDim },
   childChipTextActive:{ color: colors.gold },
 
   filterRow: {
@@ -130,13 +131,13 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border,
   },
   filterChipActive: { backgroundColor: 'rgba(255,184,0,0.1)', borderColor: 'rgba(255,184,0,0.3)' },
-  filterText:       { fontSize: 12, fontWeight: '800', color: colors.textDim },
+  filterText:       { fontSize: 12, color: colors.textDim },
   filterTextActive: { color: colors.gold },
 
   list: { padding: Spacing.screen, gap: 4 },
 
   sectionTitle: {
-    fontSize: 11, fontWeight: '900', color: colors.textFaint,
+    fontSize: 11, color: colors.textFaint,
     textTransform: 'uppercase', letterSpacing: 1.1,
     marginTop: 12, marginBottom: 6,
   },
@@ -152,24 +153,24 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     flexShrink: 0,
   },
   rowInfo:   { flex: 1, gap: 2 },
-  rowTask:   { fontSize: 14, fontWeight: '800', color: colors.textPrimary },
-  rowMeta:   { fontSize: 11, fontWeight: '600', color: colors.textFaint },
+  rowTask:   { fontSize: 14, color: colors.textPrimary },
+  rowMeta:   { fontSize: 11, color: colors.textFaint },
 
   rowRight:  { alignItems: 'flex-end', gap: 4, flexShrink: 0 },
-  rowPts:    { fontSize: 13, fontWeight: '900', color: colors.gold },
-  stepBadge: { fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.45)' },
+  rowPts:    { fontSize: 13, color: colors.gold },
+  stepBadge: { fontSize: 11, color: 'rgba(255,255,255,0.45)' },
   statusBadge: {
     borderRadius: Radii.pill, paddingHorizontal: 8, paddingVertical: 3,
     borderWidth: 1,
   },
-  statusText: { fontSize: 10, fontWeight: '900' },
+  statusText: { fontSize: 10 },
 
   empty:      { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, padding: 32 },
   emptyEmoji: { fontSize: 48 },
-  emptyTitle: { fontSize: 17, fontWeight: '900', color: colors.textPrimary, textAlign: 'center' },
-  emptySub:   { fontSize: 13, fontWeight: '600', color: colors.textDim, textAlign: 'center', lineHeight: 20, maxWidth: 260 },
+  emptyTitle: { fontSize: 17, color: colors.textPrimary, textAlign: 'center' },
+  emptySub:   { fontSize: 13, color: colors.textDim, textAlign: 'center', lineHeight: 20, maxWidth: 260 },
   emptyBtn:   { backgroundColor: colors.gold, borderRadius: Radii.md, paddingHorizontal: 22, paddingVertical: 12, marginTop: 4 },
-  emptyBtnText:{ fontSize: 14, fontWeight: '900', color: '#1a1000' },
+  emptyBtnText:{ fontSize: 14, color: '#1a1000' },
 });
 
 export default function TasksScreen() {
@@ -238,14 +239,14 @@ export default function TasksScreen() {
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Quêtes ⚔️</Text>
+        <PixelText style={styles.title}>Quêtes ⚔️</PixelText>
         <View ref={addBtnRef} collapsable={false}>
           <TouchableOpacity
             style={styles.addBtn}
             onPress={() => router.push('/(parent)/create-task')}
             activeOpacity={0.8}
           >
-            <Text style={styles.addBtnText}>+</Text>
+            <PixelText style={styles.addBtnText}>+</PixelText>
           </TouchableOpacity>
         </View>
       </View>
@@ -253,16 +254,16 @@ export default function TasksScreen() {
       {/* Stats */}
       <View ref={statsRef} style={styles.statsRow}>
         <View style={styles.statCard}>
-          <Text style={[styles.statValue, { color: colors.green }]}>{totalValidated}</Text>
-          <Text style={styles.statLabel}>Validées</Text>
+          <PixelText style={[styles.statValue, { color: colors.green }]}>{totalValidated}</PixelText>
+          <PixelText style={styles.statLabel}>Validées</PixelText>
         </View>
         <View style={styles.statCard}>
-          <Text style={[styles.statValue, { color: colors.gold }]}>{totalPending}</Text>
-          <Text style={styles.statLabel}>En attente</Text>
+          <PixelText style={[styles.statValue, { color: colors.gold }]}>{totalPending}</PixelText>
+          <PixelText style={styles.statLabel}>En attente</PixelText>
         </View>
         <View style={styles.statCard}>
-          <Text style={[styles.statValue, { color: colors.gold }]}>+{totalGold}🪙</Text>
-          <Text style={styles.statLabel}>Or accordé</Text>
+          <PixelText style={[styles.statValue, { color: colors.gold }]}>+{totalGold}🪙</PixelText>
+          <PixelText style={styles.statLabel}>Or accordé</PixelText>
         </View>
       </View>
 
@@ -275,10 +276,10 @@ export default function TasksScreen() {
             onPress={() => setChildFilter(c.id)}
             activeOpacity={0.7}
           >
-            <Text style={styles.childChipEmoji}>{c.emoji}</Text>
-            <Text style={[styles.childChipText, childFilter === c.id && styles.childChipTextActive]}>
+            <PixelText style={styles.childChipEmoji}>{c.emoji}</PixelText>
+            <PixelText style={[styles.childChipText, childFilter === c.id && styles.childChipTextActive]}>
               {c.name}
-            </Text>
+            </PixelText>
           </TouchableOpacity>
         ))}
       </View>
@@ -292,9 +293,9 @@ export default function TasksScreen() {
             onPress={() => setFilter(f.value)}
             activeOpacity={0.7}
           >
-            <Text style={[styles.filterText, filter === f.value && styles.filterTextActive]}>
+            <PixelText style={[styles.filterText, filter === f.value && styles.filterTextActive]}>
               {f.label}
-            </Text>
+            </PixelText>
           </TouchableOpacity>
         ))}
       </View>
@@ -303,18 +304,18 @@ export default function TasksScreen() {
       {filteredSections.length === 0 ? (
         allTasks.length === 0 ? (
           <View style={styles.empty}>
-            <Text style={styles.emptyEmoji}>⚔️</Text>
-            <Text style={styles.emptyTitle}>Pas encore de quêtes</Text>
-            <Text style={styles.emptySub}>Crée des quêtes pour tes enfants depuis le dashboard et suis leur progression ici.</Text>
+            <PixelText style={styles.emptyEmoji}>⚔️</PixelText>
+            <PixelText style={styles.emptyTitle}>Pas encore de quêtes</PixelText>
+            <PixelText style={styles.emptySub}>Crée des quêtes pour tes enfants depuis le dashboard et suis leur progression ici.</PixelText>
             <TouchableOpacity style={styles.emptyBtn} onPress={() => router.push('/(parent)/create-task')} activeOpacity={0.85}>
-              <Text style={styles.emptyBtnText}>Créer une quête</Text>
+              <PixelText style={styles.emptyBtnText}>Créer une quête</PixelText>
             </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.empty}>
-            <Text style={styles.emptyEmoji}>🔍</Text>
-            <Text style={styles.emptyTitle}>Aucun résultat</Text>
-            <Text style={styles.emptySub}>Aucune quête ne correspond à ce filtre.</Text>
+            <PixelText style={styles.emptyEmoji}>🔍</PixelText>
+            <PixelText style={styles.emptyTitle}>Aucun résultat</PixelText>
+            <PixelText style={styles.emptySub}>Aucune quête ne correspond à ce filtre.</PixelText>
           </View>
         )
       ) : (
@@ -325,7 +326,7 @@ export default function TasksScreen() {
           contentContainerStyle={styles.list}
           stickySectionHeadersEnabled={false}
           renderSectionHeader={({ section }) => (
-            <Text style={styles.sectionTitle}>{section.title}</Text>
+            <PixelText style={styles.sectionTitle}>{section.title}</PixelText>
           )}
           renderItem={({ item, index, section }) => {
             const cfg    = STATUS_CONFIG[item.status];
@@ -340,28 +341,28 @@ export default function TasksScreen() {
               ]}>
                 {/* Avatar enfant */}
                 <View style={styles.childAvatar}>
-                  <Text style={{ fontSize: 18 }}>{item.childEmoji}</Text>
+                  <PixelText style={{ fontSize: 18 }}>{item.childEmoji}</PixelText>
                 </View>
 
                 {/* Infos */}
                 <View style={styles.rowInfo}>
-                  <Text style={styles.rowTask}>{item.taskName}</Text>
-                  <Text style={styles.rowMeta}>
+                  <PixelText style={styles.rowTask}>{item.taskName}</PixelText>
+                  <PixelText style={styles.rowMeta}>
                     {item.childName} · {item.time}
                     {item.approvedByName ? ` · par ${item.approvedByName}` : ''}
-                  </Text>
+                  </PixelText>
                 </View>
 
                 {/* Points */}
                 <View style={styles.rowRight}>
                   {item.timesPerDay > 1 && (
-                    <Text style={styles.stepBadge}>{item.completedToday}/{item.timesPerDay}</Text>
+                    <PixelText style={styles.stepBadge}>{item.completedToday}/{item.timesPerDay}</PixelText>
                   )}
-                  <Text style={[styles.rowPts, item.status !== 'validated' && { color: colors.textFaint }]}>
+                  <PixelText style={[styles.rowPts, item.status !== 'validated' && { color: colors.textFaint }]}>
                     {item.status === 'validated' ? `+${item.goldReward}` : `${item.goldReward}`} 🪙
-                  </Text>
+                  </PixelText>
                   <View style={[styles.statusBadge, { backgroundColor: cfg.bg, borderColor: cfg.border }]}>
-                    <Text style={[styles.statusText, { color: cfg.color }]}>{cfg.icon} {cfg.label}</Text>
+                    <PixelText style={[styles.statusText, { color: cfg.color }]}>{cfg.icon} {cfg.label}</PixelText>
                   </View>
                 </View>
               </View>
