@@ -38,11 +38,12 @@ export class ChildrenService {
   async create(dto: CreateChildDto, familyId: string): Promise<Child> {
     const pinHash = await bcrypt.hash(dto.pin, 12);
     const child = this.children.create({
-      name:   dto.name,
-      avatar: dto.avatar,
-      color:  dto.color ?? '#FFB300',
-      class:  dto.class ?? 'warrior',
-      sprite: dto.sprite ?? undefined,
+      name:         dto.name,
+      avatar:       dto.avatar,
+      color:        dto.color ?? '#FFB300',
+      class:        dto.class ?? 'warrior',
+      sprite:       dto.sprite ?? undefined,
+      avatarConfig: dto.avatarConfig ?? null,
       pinHash,
       family: { id: familyId } as any,
     });
@@ -83,8 +84,10 @@ export class ChildrenService {
     await this.assertOwnership(id, familyId);
     // N'autoriser que la mise à jour du nom et du sprite (pas d'emoji/couleur modifiable)
     const allowed: Record<string, any> = {};
-    if (dto.name !== undefined) allowed.name = dto.name;
-    if (dto.sprite !== undefined) allowed.sprite = dto.sprite;
+    if (dto.name         !== undefined) allowed.name         = dto.name;
+    if (dto.sprite       !== undefined) allowed.sprite       = dto.sprite;
+    if (dto.class        !== undefined) allowed.class        = dto.class;
+    if (dto.avatarConfig !== undefined) allowed.avatarConfig = dto.avatarConfig;
     if (Object.keys(allowed).length === 0) return this.children.findOneOrFail({ where: { id } });
     await this.children.update(id, allowed);
     return this.children.findOneOrFail({ where: { id } });
