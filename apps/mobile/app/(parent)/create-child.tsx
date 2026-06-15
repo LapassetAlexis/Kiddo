@@ -24,7 +24,19 @@ const CUSTOMIZE_CATEGORIES: CustomizeCategory[] = [
   { key: 'hair',  label: 'Cheveux' },
 ];
 
-type SkinTone = '' | 'tone1' | 'tone2' | 'tone3' | 'green' | 'blue' | 'purple' | 'grey';
+type SkinTone  = '' | 'tone1' | 'tone2' | 'tone3' | 'green' | 'blue' | 'purple' | 'grey';
+type HairColor = '' | 'c1' | 'c2' | 'c3' | 'c4' | 'c5' | 'c6' | 'c7';
+
+const HAIR_COLOR_OPTIONS: { color: HairColor; hex: string }[] = [
+  { color: '',   hex: '#f9a31b' },
+  { color: 'c1', hex: '#5b5f8a' },
+  { color: 'c2', hex: '#995c33' },
+  { color: 'c3', hex: '#b25110' },
+  { color: 'c4', hex: '#cc301e' },
+  { color: 'c5', hex: '#ab58c2' },
+  { color: 'c6', hex: '#33ac2f' },
+  { color: 'c7', hex: '#249fde' },
+];
 
 const SKIN_OPTIONS: { tone: SkinTone; color: string }[] = [
   { tone: '',       color: '#f4d29c' },
@@ -91,14 +103,19 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   previewName:   { fontSize: 20, fontFamily: Fonts.pixelBold, color: colors.textPrimary },
   categoryTabs:  { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8, gap: 8 },
   categoryTab:   {
-    flex: 1, paddingVertical: 10, alignItems: 'center',
+    flex: 1, paddingVertical: 14, alignItems: 'center',
     borderRadius: Radii.pill, borderWidth: 1, borderColor: colors.border,
     backgroundColor: colors.bgCard,
   },
   categoryTabActive: { borderColor: colors.gold, backgroundColor: 'rgba(255,184,0,0.1)' },
-  categoryTabText:   { fontSize: 13, fontFamily: Fonts.pixel, color: colors.textDim },
+  categoryTabText:   { fontSize: 20, fontFamily: Fonts.pixel, color: colors.textDim },
   categoryTabTextActive: { color: colors.gold },
   itemGrid: { paddingHorizontal: 12, paddingTop: 10, paddingBottom: 16, gap: 10, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' },
+  hairColorBar: {
+    flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap',
+    gap: 8, paddingHorizontal: 12, paddingVertical: 10,
+    borderTopWidth: 1, borderTopColor: colors.border,
+  },
   skinGrid: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 16, gap: 12, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' },
   skinCard: {
     width: 64, height: 64, borderRadius: 32,
@@ -172,6 +189,10 @@ export default function CreateChildScreen() {
 
   function changeSkinTone(tone: SkinTone) {
     setAvatarConfig(cfg => ({ ...cfg, skinTone: tone || undefined }));
+  }
+
+  function changeHairColor(color: HairColor) {
+    setAvatarConfig(cfg => ({ ...cfg, hairColor: color || undefined }));
   }
 
   function submitCustomize() {
@@ -387,25 +408,41 @@ export default function CreateChildScreen() {
                 ))}
               </ScrollView>
             ) : (
-            <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.itemGrid}>
-              {categoryOptions.map(key => (
-                <TouchableOpacity
-                  key={key}
-                  style={[styles.itemBtn, effectiveConfig[activeCategory as LayerKey] === key && styles.itemBtnActive]}
-                  onPress={() => setAvatarConfig(cfg => ({ ...cfg, [activeCategory]: key }))}
-                  activeOpacity={0.75}
-                >
-                  <SpriteCharacter
-                    path={path}
-                    avatarConfig={{ ...effectiveConfig, hat: null, [activeCategory]: key }}
-                    animation="idle"
-                    direction="south"
-                    size={72}
-                    fps={1}
-                  />
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            <View style={{ flex: 1 }}>
+              <ScrollView contentContainerStyle={styles.itemGrid}>
+                {categoryOptions.map(key => (
+                  <TouchableOpacity
+                    key={key}
+                    style={[styles.itemBtn, effectiveConfig[activeCategory as LayerKey] === key && styles.itemBtnActive]}
+                    onPress={() => setAvatarConfig(cfg => ({ ...cfg, [activeCategory]: key }))}
+                    activeOpacity={0.75}
+                  >
+                    <SpriteCharacter
+                      path={path}
+                      avatarConfig={{ ...effectiveConfig, hat: null, [activeCategory]: key }}
+                      animation="idle"
+                      direction="south"
+                      size={72}
+                      fps={1}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+              {activeCategory === 'hair' && (
+                <View style={styles.hairColorBar}>
+                  {HAIR_COLOR_OPTIONS.map(({ color, hex }) => (
+                    <TouchableOpacity
+                      key={color || 'default'}
+                      style={[styles.skinCard, (avatarConfig.hairColor ?? '') === color && styles.skinCardActive]}
+                      onPress={() => changeHairColor(color)}
+                      activeOpacity={0.8}
+                    >
+                      <View style={[styles.skinCircle, { backgroundColor: hex }]} />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
             )}
 
             <View style={styles.nextBtnWrap}>

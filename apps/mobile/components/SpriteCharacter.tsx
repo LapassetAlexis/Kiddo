@@ -15,7 +15,8 @@ export type AvatarConfig = {
   bottom?: string;
   weapon?: string | null;
   shadow?: string;
-  skinTone?: string; // e.g. 'tone1', 'green', 'blue' — applied to all skin-bearing layers
+  skinTone?: string;  // e.g. 'tone1', 'green', 'blue' — applied to all skin-bearing layers
+  hairColor?: string; // e.g. 'c1'..'c7' — applied to hair + backhair layers only
 };
 
 type Props = {
@@ -81,15 +82,18 @@ export default function SpriteCharacter({
   const offsetX = -col * Math.round(FRAME_W * scale);
   const offsetY = -rowIndex * Math.round(FRAME_H * scale);
 
-  const skinTone = cfg.skinTone;
+  const skinTone  = cfg.skinTone;
+  const hairColor = cfg.hairColor;
 
   return (
     <View style={[styles.clip, { width: frameW, height: frameH }]}>
       {LAYER_ORDER.map((layer, i) => {
         const key = layerKeys[i];
         if (!key) return null;
-        const tonedKey = skinTone ? `${key}_${skinTone}` : key;
-        const src = getSpriteAsset(layer, tonedKey) ?? getSpriteAsset(layer, key);
+        const isHairLayer = layer === 'hair' || layer === 'backhair';
+        const suffix = isHairLayer && hairColor ? hairColor : skinTone;
+        const resolvedKey = suffix ? `${key}_${suffix}` : key;
+        const src = getSpriteAsset(layer, resolvedKey) ?? getSpriteAsset(layer, key);
         if (src === undefined) return null;
         return (
           <Image
