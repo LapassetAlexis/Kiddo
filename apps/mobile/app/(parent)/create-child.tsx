@@ -25,17 +25,20 @@ const CUSTOMIZE_CATEGORIES: CustomizeCategory[] = [
 ];
 
 type SkinTone  = '' | 'tone1' | 'tone2' | 'tone3' | 'green' | 'blue' | 'purple' | 'grey';
-type HairColor = '' | 'c1' | 'c2' | 'c3' | 'c4' | 'c5' | 'c6' | 'c7';
+type HairColor = '' | 'c1' | 'c2' | 'c3' | 'c4' | 'c5' | 'c6' | 'c7' | 'c8' | 'c9' | 'c10';
 
 const HAIR_COLOR_OPTIONS: { color: HairColor; hex: string }[] = [
-  { color: '',   hex: '#f9a31b' },
-  { color: 'c1', hex: '#5b5f8a' },
-  { color: 'c2', hex: '#995c33' },
-  { color: 'c3', hex: '#b25110' },
-  { color: 'c4', hex: '#cc301e' },
-  { color: 'c5', hex: '#ab58c2' },
-  { color: 'c6', hex: '#33ac2f' },
-  { color: 'c7', hex: '#249fde' },
+  { color: '',    hex: '#f9a31b' },
+  { color: 'c1',  hex: '#5b5f8a' },
+  { color: 'c2',  hex: '#995c33' },
+  { color: 'c3',  hex: '#b25110' },
+  { color: 'c4',  hex: '#cc301e' },
+  { color: 'c5',  hex: '#ab58c2' },
+  { color: 'c6',  hex: '#33ac2f' },
+  { color: 'c7',  hex: '#249fde' },
+  { color: 'c8',  hex: '#252525' },
+  { color: 'c9',  hex: '#888888' },
+  { color: 'c10', hex: '#e8e8e8' },
 ];
 
 const SKIN_OPTIONS: { tone: SkinTone; color: string }[] = [
@@ -91,7 +94,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   // Customize
   customizeRoot: { flex: 1 },
   previewArea: {
-    alignItems: 'center', paddingTop: 20, paddingBottom: 16, gap: 8,
+    alignItems: 'center', paddingTop: 8, paddingBottom: 8, gap: 2,
     borderBottomWidth: 1, borderBottomColor: colors.border,
   },
   previewMeta:   { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -113,9 +116,16 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   itemGrid: { paddingHorizontal: 12, paddingTop: 10, paddingBottom: 16, gap: 10, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' },
   hairColorBar: {
     flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap',
-    gap: 8, paddingHorizontal: 12, paddingVertical: 10,
+    gap: 6, paddingHorizontal: 12, paddingVertical: 8,
     borderTopWidth: 1, borderTopColor: colors.border,
   },
+  hairDot: {
+    width: 40, height: 40, borderRadius: 20,
+    borderWidth: 2, borderColor: 'transparent',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  hairDotActive: { borderColor: colors.gold },
+  hairDotInner: { width: 34, height: 34, borderRadius: 17 },
   skinGrid: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 16, gap: 12, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' },
   skinCard: {
     width: 64, height: 64, borderRadius: 32,
@@ -269,7 +279,7 @@ export default function CreateChildScreen() {
 
   // Items available for active category
   const categoryAssets = activeCategory !== 'skin' ? (SPRITE_ASSETS[activeCategory] ?? {}) : {};
-  const categoryOptions = Object.keys(categoryAssets).filter(k => !/_(?:tone\d|green|blue|purple|grey)$/.test(k));
+  const categoryOptions = Object.keys(categoryAssets).filter(k => !/_(?:c\d+|tone\d|green|blue|purple|grey)$/.test(k));
   const activeCat = CUSTOMIZE_CATEGORIES.find(c => c.key === activeCategory);
 
   return (
@@ -370,7 +380,7 @@ export default function CreateChildScreen() {
                 avatarConfig={{ ...effectiveConfig, hat: null }}
                 animation="walk"
                 direction="south"
-                size={160}
+                size={120}
                 fps={6}
               />
               <PixelText style={styles.previewName}>{name}</PixelText>
@@ -433,11 +443,11 @@ export default function CreateChildScreen() {
                   {HAIR_COLOR_OPTIONS.map(({ color, hex }) => (
                     <TouchableOpacity
                       key={color || 'default'}
-                      style={[styles.skinCard, (avatarConfig.hairColor ?? '') === color && styles.skinCardActive]}
+                      style={[styles.hairDot, (avatarConfig.hairColor ?? '') === color && styles.hairDotActive]}
                       onPress={() => changeHairColor(color)}
                       activeOpacity={0.8}
                     >
-                      <View style={[styles.skinCircle, { backgroundColor: hex }]} />
+                      <View style={[styles.hairDotInner, { backgroundColor: hex }]} />
                     </TouchableOpacity>
                   ))}
                 </View>
