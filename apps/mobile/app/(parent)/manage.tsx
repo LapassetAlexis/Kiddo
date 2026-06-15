@@ -1,4 +1,5 @@
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SectionList } from 'react-native';
+import { View, ScrollView, TouchableOpacity, StyleSheet, SectionList } from 'react-native';
+import PixelText from '@/components/ui/PixelText';
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -64,9 +65,9 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingHorizontal: Spacing.screen, paddingVertical: 12,
     borderBottomWidth: 1, borderBottomColor: colors.border,
   },
-  title:      { fontSize: 20, fontWeight: '900', color: colors.textPrimary },
+  title:      { fontSize: 20, color: colors.textPrimary },
   addBtn:     { width: 44, height: 44, backgroundColor: colors.gold, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  addBtnText: { fontSize: 24, fontWeight: '900', color: '#1a1000', lineHeight: 28 },
+  addBtnText: { fontSize: 24, color: '#1a1000', lineHeight: 28 },
 
   list: { padding: Spacing.screen, gap: 10 },
 
@@ -77,30 +78,30 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   cardEmoji: { fontSize: 30 },
   cardInfo:  { flex: 1, gap: 6 },
-  cardTitle: { fontSize: 15, fontWeight: '800', color: colors.textPrimary },
+  cardTitle: { fontSize: 15, color: colors.textPrimary },
   badgeRow:  { flexDirection: 'row' },
   availBadge: {
     backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: Radii.pill, paddingHorizontal: 8, paddingVertical: 3,
     borderWidth: 1, borderColor: colors.border,
   },
-  availBadgeText: { fontSize: 11, fontWeight: '700', color: colors.textFaint },
+  availBadgeText: { fontSize: 11, color: colors.textFaint },
   costWrap:   { alignItems: 'center' },
-  costValue:  { fontSize: 22, fontWeight: '900', color: colors.gold, lineHeight: 24 },
-  costPts:    { fontSize: 10, fontWeight: '700', color: colors.textFaint },
+  costValue:  { fontSize: 22, color: colors.gold, lineHeight: 24 },
+  costPts:    { fontSize: 10, color: colors.textFaint },
 
   addCard: {
     borderRadius: Radii.card, borderWidth: 1.5, borderColor: colors.border,
     borderStyle: 'dashed', padding: 18, alignItems: 'center',
   },
-  addCardText: { fontSize: 14, fontWeight: '800', color: colors.textDim },
+  addCardText: { fontSize: 14, color: colors.textDim },
 
   empty:      { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 40 },
   emptyEmoji: { fontSize: 56, marginBottom: 4 },
-  emptyTitle: { fontSize: 18, fontWeight: '900', color: colors.textPrimary },
-  emptySub:   { fontSize: 14, fontWeight: '600', color: colors.textDim, textAlign: 'center', lineHeight: 20 },
+  emptyTitle: { fontSize: 18, color: colors.textPrimary },
+  emptySub:   { fontSize: 14, color: colors.textDim, textAlign: 'center', lineHeight: 20 },
   emptyBtn:   { backgroundColor: colors.gold, borderRadius: Radii.md, paddingHorizontal: 24, paddingVertical: 14, marginTop: 8 },
-  emptyBtnText: { fontSize: 15, fontWeight: '900', color: '#1a1000' },
+  emptyBtnText: { fontSize: 15, color: '#1a1000' },
 
   // Onglets
   tabs: {
@@ -112,7 +113,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     borderBottomWidth: 2, borderBottomColor: 'transparent',
   },
   tabActive: { borderBottomColor: colors.gold },
-  tabText:       { fontSize: 14, fontWeight: '800', color: colors.textDim },
+  tabText:       { fontSize: 14, color: colors.textDim },
   tabTextActive: { color: colors.gold },
 
   // Stats historique
@@ -122,8 +123,8 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     borderWidth: 1, borderColor: colors.border,
     padding: 14, alignItems: 'center', gap: 4,
   },
-  statValue: { fontSize: 22, fontWeight: '900', lineHeight: 24 },
-  statLabel: { fontSize: 10, fontWeight: '700', color: colors.textFaint, textTransform: 'uppercase', letterSpacing: 0.6 },
+  statValue: { fontSize: 22, lineHeight: 24 },
+  statLabel: { fontSize: 10, color: colors.textFaint, textTransform: 'uppercase', letterSpacing: 0.6 },
 
   // Filtres
   filterRow: {
@@ -138,7 +139,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   filterChipActive:    { borderColor: 'rgba(255,184,0,0.35)', backgroundColor: 'rgba(255,184,0,0.08)' },
   filterEmoji:         { fontSize: 13 },
-  filterText:          { fontSize: 12, fontWeight: '700', color: colors.textDim },
+  filterText:          { fontSize: 12, color: colors.textDim },
   filterTextActive:    { color: colors.gold },
 
   statusChip: {
@@ -147,12 +148,12 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingHorizontal: 10, paddingVertical: 6,
   },
   statusChipActive:    { borderColor: 'rgba(255,184,0,0.35)', backgroundColor: 'rgba(255,184,0,0.08)' },
-  statusChipText:      { fontSize: 12, fontWeight: '800', color: colors.textDim },
+  statusChipText:      { fontSize: 12, color: colors.textDim },
   statusChipTextActive:{ color: colors.gold },
 
   // Historique rows
   sectionTitle: {
-    fontSize: 11, fontWeight: '900', color: colors.textFaint,
+    fontSize: 11, color: colors.textFaint,
     textTransform: 'uppercase', letterSpacing: 1.1,
     marginTop: 12, marginBottom: 4,
   },
@@ -161,12 +162,12 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   rowLast:     { borderBottomLeftRadius: Radii.card, borderBottomRightRadius: Radii.card },
   historyEmoji:{ fontSize: 26, width: 34, textAlign: 'center' },
   historyInfo: { flex: 1, gap: 2 },
-  historyName: { fontSize: 14, fontWeight: '800', color: colors.textPrimary },
-  historyMeta: { fontSize: 11, fontWeight: '600', color: colors.textFaint },
+  historyName: { fontSize: 14, color: colors.textPrimary },
+  historyMeta: { fontSize: 11, color: colors.textFaint },
   historyRight:{ alignItems: 'flex-end', gap: 4, flexShrink: 0 },
-  historyPts:  { fontSize: 13, fontWeight: '900', color: colors.orange },
+  historyPts:  { fontSize: 13, color: colors.orange },
   statusBadge: { borderRadius: Radii.pill, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1 },
-  statusText:  { fontSize: 10, fontWeight: '900' },
+  statusText:  { fontSize: 10 },
 });
 
 export default function ManageScreen() {
@@ -246,14 +247,14 @@ export default function ManageScreen() {
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>Magasin 🛒</Text>
+        <PixelText style={styles.title}>Magasin 🛒</PixelText>
         <View ref={addBtnRef} collapsable={false}>
           <TouchableOpacity
             style={styles.addBtn}
             onPress={() => router.push('/(parent)/create-reward')}
             activeOpacity={0.8}
           >
-            <Text style={styles.addBtnText}>+</Text>
+            <PixelText style={styles.addBtnText}>+</PixelText>
           </TouchableOpacity>
         </View>
       </View>
@@ -267,9 +268,9 @@ export default function ManageScreen() {
             onPress={() => setTab(t)}
             activeOpacity={0.7}
           >
-            <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
+            <PixelText style={[styles.tabText, tab === t && styles.tabTextActive]}>
               {t === 'catalogue' ? '🎁 Catalogue' : '📜 Historique'}
-            </Text>
+            </PixelText>
           </TouchableOpacity>
         ))}
       </View>
@@ -278,35 +279,35 @@ export default function ManageScreen() {
       {tab === 'catalogue' && (
         rewards.length === 0 ? (
           <View style={styles.empty}>
-            <Text style={styles.emptyEmoji}>🎁</Text>
-            <Text style={styles.emptyTitle}>Aucune récompense</Text>
-            <Text style={styles.emptySub}>Crée des récompenses que tes enfants{'\n'}pourront réclamer avec leurs points.</Text>
+            <PixelText style={styles.emptyEmoji}>🎁</PixelText>
+            <PixelText style={styles.emptyTitle}>Aucune récompense</PixelText>
+            <PixelText style={styles.emptySub}>Crée des récompenses que tes enfants{'\n'}pourront réclamer avec leurs points.</PixelText>
             <TouchableOpacity style={styles.emptyBtn} onPress={() => router.push('/(parent)/create-reward')} activeOpacity={0.8}>
-              <Text style={styles.emptyBtnText}>Créer une récompense</Text>
+              <PixelText style={styles.emptyBtnText}>Créer une récompense</PixelText>
             </TouchableOpacity>
           </View>
         ) : (
           <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
             {rewards.map(r => (
               <View key={r.id} style={styles.card}>
-                <Text style={styles.cardEmoji}>{r.emoji}</Text>
+                <PixelText style={styles.cardEmoji}>{r.emoji}</PixelText>
                 <View style={styles.cardInfo}>
-                  <Text style={styles.cardTitle}>{r.title}</Text>
+                  <PixelText style={styles.cardTitle}>{r.title}</PixelText>
                   <View style={styles.badgeRow}>
                     <View style={styles.availBadge}>
-                      <Text style={styles.availBadgeText}>
+                      <PixelText style={styles.availBadgeText}>
                         {r.availability === 'once' ? '1️⃣ Une fois' : '♾️ Illimitée'}
-                      </Text>
+                      </PixelText>
                     </View>
                   </View>
                 </View>
                 <View style={styles.costWrap}>
-                  <Text style={styles.costValue}>{r.cost} 🪙</Text>
+                  <PixelText style={styles.costValue}>{r.cost} 🪙</PixelText>
                 </View>
               </View>
             ))}
             <TouchableOpacity style={styles.addCard} onPress={() => router.push('/(parent)/create-reward')} activeOpacity={0.7}>
-              <Text style={styles.addCardText}>＋  Ajouter une récompense</Text>
+              <PixelText style={styles.addCardText}>＋  Ajouter une récompense</PixelText>
             </TouchableOpacity>
             <View style={{ height: 20 }} />
           </ScrollView>
@@ -319,12 +320,12 @@ export default function ManageScreen() {
           {/* Stats */}
           <View style={styles.statsRow}>
             <View style={styles.statCard}>
-              <Text style={[styles.statValue, { color: colors.green }]}>{totalGranted}</Text>
-              <Text style={styles.statLabel}>Accordées</Text>
+              <PixelText style={[styles.statValue, { color: colors.green }]}>{totalGranted}</PixelText>
+              <PixelText style={styles.statLabel}>Accordées</PixelText>
             </View>
             <View style={styles.statCard}>
-              <Text style={[styles.statValue, { color: colors.gold }]}>{totalPts} 🪙</Text>
-              <Text style={styles.statLabel}>Or dépensé</Text>
+              <PixelText style={[styles.statValue, { color: colors.gold }]}>{totalPts} 🪙</PixelText>
+              <PixelText style={styles.statLabel}>Or dépensé</PixelText>
             </View>
           </View>
 
@@ -337,8 +338,8 @@ export default function ManageScreen() {
                 onPress={() => setChildFilter(c.id)}
                 activeOpacity={0.7}
               >
-                <Text style={styles.filterEmoji}>{c.emoji}</Text>
-                <Text style={[styles.filterText, childFilter === c.id && styles.filterTextActive]}>{c.name}</Text>
+                <PixelText style={styles.filterEmoji}>{c.emoji}</PixelText>
+                <PixelText style={[styles.filterText, childFilter === c.id && styles.filterTextActive]}>{c.name}</PixelText>
               </TouchableOpacity>
             ))}
             <View style={{ flex: 1 }} />
@@ -349,9 +350,9 @@ export default function ManageScreen() {
                 onPress={() => setStatusFilter(s)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.statusChipText, statusFilter === s && styles.statusChipTextActive]}>
+                <PixelText style={[styles.statusChipText, statusFilter === s && styles.statusChipTextActive]}>
                   {s === 'all' ? 'Toutes' : s === 'granted' ? '✓' : '✕'}
-                </Text>
+                </PixelText>
               </TouchableOpacity>
             ))}
           </View>
@@ -359,8 +360,8 @@ export default function ManageScreen() {
           {/* Liste */}
           {filteredHistory.length === 0 ? (
             <View style={styles.empty}>
-              <Text style={styles.emptyEmoji}>🔍</Text>
-              <Text style={styles.emptyTitle}>Aucun résultat</Text>
+              <PixelText style={styles.emptyEmoji}>🔍</PixelText>
+              <PixelText style={styles.emptyTitle}>Aucun résultat</PixelText>
             </View>
           ) : (
             <SectionList
@@ -370,7 +371,7 @@ export default function ManageScreen() {
               contentContainerStyle={styles.list}
               stickySectionHeadersEnabled={false}
               renderSectionHeader={({ section }) => (
-                <Text style={styles.sectionTitle}>{section.title}</Text>
+                <PixelText style={styles.sectionTitle}>{section.title}</PixelText>
               )}
               renderItem={({ item, index, section }) => {
                 const cfg     = STATUS_CONFIG[item.status];
@@ -383,20 +384,20 @@ export default function ManageScreen() {
                     isLast  && styles.rowLast,
                     !isFirst && { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.04)' },
                   ]}>
-                    <Text style={styles.historyEmoji}>{item.emoji}</Text>
+                    <PixelText style={styles.historyEmoji}>{item.emoji}</PixelText>
                     <View style={styles.historyInfo}>
-                      <Text style={styles.historyName}>{item.rewardName}</Text>
-                      <Text style={styles.historyMeta}>
+                      <PixelText style={styles.historyName}>{item.rewardName}</PixelText>
+                      <PixelText style={styles.historyMeta}>
                         {item.childEmoji} {item.childName} · {item.time}
                         {item.grantedByName ? ` · par ${item.grantedByName}` : ''}
-                      </Text>
+                      </PixelText>
                     </View>
                     <View style={styles.historyRight}>
-                      <Text style={[styles.historyPts, item.status === 'refused' && { color: colors.textFaint }]}>
+                      <PixelText style={[styles.historyPts, item.status === 'refused' && { color: colors.textFaint }]}>
                         {item.status === 'granted' ? '−' : '↩'}{item.pts} 🪙
-                      </Text>
+                      </PixelText>
                       <View style={[styles.statusBadge, { backgroundColor: cfg.bg, borderColor: cfg.border }]}>
-                        <Text style={[styles.statusText, { color: cfg.color }]}>{cfg.icon} {cfg.label}</Text>
+                        <PixelText style={[styles.statusText, { color: cfg.color }]}>{cfg.icon} {cfg.label}</PixelText>
                       </View>
                     </View>
                   </View>

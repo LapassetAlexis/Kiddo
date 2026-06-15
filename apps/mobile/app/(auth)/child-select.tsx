@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import PixelText from '@/components/ui/PixelText';
 import { useMemo } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Radii, Spacing } from '@/constants/theme';
@@ -30,8 +31,8 @@ export default function ChildSelectScreen() {
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <Text style={styles.title}>C'est qui ? 👋</Text>
-        <Text style={styles.sub}>Choisis ton avatar</Text>
+        <PixelText style={styles.title}>C'est qui ? 👋</PixelText>
+        <PixelText style={styles.sub}>Choisis ton avatar</PixelText>
       </View>
 
       <ScrollView contentContainerStyle={styles.grid}>
@@ -46,9 +47,9 @@ export default function ChildSelectScreen() {
             activeOpacity={0.8}
           >
             <View style={[styles.avatarCircle, { backgroundColor: (child.color ?? '#FFB300') + '33', borderColor: (child.color ?? '#FFB300') + '88' }]}>
-              <Text style={styles.emoji}>{child.avatar}</Text>
+              <PixelText style={styles.emoji}>{child.avatar}</PixelText>
             </View>
-            <Text style={styles.name}>{child.name}</Text>
+            <PixelText style={styles.name}>{child.name}</PixelText>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -57,9 +58,9 @@ export default function ChildSelectScreen() {
         style={styles.parentLink}
         onPress={() => fromParent === 'true' ? router.replace('/(parent)/dashboard') : router.back()}
       >
-        <Text style={styles.parentLinkText}>
+        <PixelText style={styles.parentLinkText}>
           {fromParent === 'true' ? '← Retour tableau de bord' : '← Connexion parent'}
-        </Text>
+        </PixelText>
       </TouchableOpacity>
     </View>
   );
@@ -79,12 +80,10 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: '900',
     color: colors.textPrimary,
   },
   sub: {
     fontSize: 15,
-    fontWeight: '600',
     color: colors.textDim,
   },
   grid: {
@@ -113,7 +112,6 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   name: {
     fontSize: 18,
-    fontWeight: '900',
     color: colors.textPrimary,
   },
   parentLink: {
@@ -123,7 +121,6 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   parentLinkText: {
     fontSize: 14,
-    fontWeight: '700',
     color: colors.textDim,
   },
 });

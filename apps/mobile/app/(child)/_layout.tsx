@@ -1,8 +1,10 @@
 import { Tabs } from 'expo-router';
-import { Text } from 'react-native';
+import { View } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/contexts/ThemeContext';
+import { Fonts } from '@/constants/theme';
+import PixelText from '@/components/ui/PixelText';
 
 export default function ChildLayout() {
   const { user } = useAuth();
@@ -17,14 +19,14 @@ export default function ChildLayout() {
         tabBarStyle: {
           backgroundColor: colors.bgNav,
           borderTopColor: colors.border,
-          borderTopWidth: 1,
+          borderTopWidth: 2,
           height: 64 + bottom,
           paddingBottom: bottom + 8,
           paddingTop: 8,
         },
         tabBarActiveTintColor: colors.gold,
         tabBarInactiveTintColor: colors.textFaint,
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '800' },
+        tabBarLabelStyle: { fontSize: 11, fontFamily: Fonts.pixel },
       }}
     >
       <Tabs.Screen name="home"    options={{ title: 'Accueil',    tabBarIcon: ({ color }) => <TabIcon emoji="⚔️" color={color} gold={colors.gold} /> }} />
@@ -37,5 +39,11 @@ export default function ChildLayout() {
 }
 
 function TabIcon({ emoji, color, gold }: { emoji: string; color: string; gold: string }) {
-  return <Text style={{ fontSize: 22, opacity: color === gold ? 1 : 0.4 }}>{emoji}</Text>;
+  const isActive = color === gold;
+  return (
+    <View style={{ alignItems: 'center', gap: 3 }}>
+      <PixelText style={{ fontSize: 22, opacity: isActive ? 1 : 0.4 }}>{emoji}</PixelText>
+      <View style={{ width: 4, height: 4, backgroundColor: isActive ? gold : 'transparent', borderRadius: 0 }} />
+    </View>
+  );
 }

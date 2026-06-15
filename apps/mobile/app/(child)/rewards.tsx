@@ -1,4 +1,5 @@
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import PixelText from '@/components/ui/PixelText';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import SpotlightTour, { TourStep } from '@/components/ui/SpotlightTour';
 import { useTour } from '@/lib/useTour';
@@ -130,10 +131,10 @@ export default function RewardsScreen() {
     <SafeAreaView style={styles.root} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Magasin 🛒</Text>
+        <PixelText style={styles.title}>Magasin 🛒</PixelText>
         <View ref={ptsPillRef} collapsable={false} style={styles.ptsPill}>
-          <Text style={{ fontSize: 14 }}>🪙</Text>
-          <Text style={styles.ptsPillText}>{myGold} pièces</Text>
+          <PixelText style={{ fontSize: 14 }}>🪙</PixelText>
+          <PixelText style={styles.ptsPillText}>{myGold} pièces</PixelText>
         </View>
       </View>
 
@@ -142,12 +143,12 @@ export default function RewardsScreen() {
         {/* Récompenses en attente */}
         {pending.length > 0 && (
           <View style={styles.pendingBanner}>
-            <Text style={styles.pendingIcon}>⏳</Text>
+            <PixelText style={styles.pendingIcon}>⏳</PixelText>
             <View style={{ flex: 1 }}>
-              <Text style={styles.pendingTitle}>
+              <PixelText style={styles.pendingTitle}>
                 {pending.length} récompense{pending.length > 1 ? 's' : ''} en attente
-              </Text>
-              <Text style={styles.pendingDesc}>Ton gardien doit valider</Text>
+              </PixelText>
+              <PixelText style={styles.pendingDesc}>Ton gardien doit valider</PixelText>
             </View>
           </View>
         )}
@@ -165,13 +166,13 @@ export default function RewardsScreen() {
               onPress={() => setFilter(f.value)}
               activeOpacity={0.7}
             >
-              <Text style={[styles.filterText, filter === f.value && styles.filterTextActive]}>
+              <PixelText style={[styles.filterText, filter === f.value && styles.filterTextActive]}>
                 {f.label}
-              </Text>
+              </PixelText>
               <View style={[styles.filterBadge, filter === f.value && styles.filterBadgeActive]}>
-                <Text style={[styles.filterBadgeText, filter === f.value && styles.filterBadgeTextActive]}>
+                <PixelText style={[styles.filterBadgeText, filter === f.value && styles.filterBadgeTextActive]}>
                   {f.count}
-                </Text>
+                </PixelText>
               </View>
             </TouchableOpacity>
           ))}
@@ -201,28 +202,28 @@ export default function RewardsScreen() {
                 {/* Status badge */}
                 {isPending && (
                   <View style={styles.pendingPill}>
-                    <Text style={styles.pendingPillText}>⏳ En attente</Text>
+                    <PixelText style={styles.pendingPillText}>⏳ En attente</PixelText>
                   </View>
                 )}
                 {isLocked && (
                   <View style={styles.lockPill}>
-                    <Text style={styles.lockPillText}>🔒</Text>
+                    <PixelText style={styles.lockPillText}>🔒</PixelText>
                   </View>
                 )}
 
                 {/* Emoji */}
-                <Text style={[styles.cardEmoji, isLocked && { opacity: 0.45 }]}>{r.emoji}</Text>
+                <PixelText style={[styles.cardEmoji, isLocked && { opacity: 0.45 }]}>{r.emoji}</PixelText>
 
                 {/* Nom */}
-                <Text style={[styles.cardName, isLocked && { color: colors.textDim }]}>
+                <PixelText style={[styles.cardName, isLocked && { color: colors.textDim }]}>
                   {r.title}
-                </Text>
+                </PixelText>
 
                 {/* Coût */}
                 <View style={[styles.costBadge, isLocked && styles.costBadgeLocked, isPending && styles.costBadgePending]}>
-                  <Text style={[styles.costText, isLocked && styles.costTextLocked, isPending && styles.costTextPending]}>
+                  <PixelText style={[styles.costText, isLocked && styles.costTextLocked, isPending && styles.costTextPending]}>
                     {r.cost} 🪙
-                  </Text>
+                  </PixelText>
                 </View>
 
                 {/* Barre de progression (locked seulement) */}
@@ -231,14 +232,14 @@ export default function RewardsScreen() {
                     <View style={styles.progressTrack}>
                       <View style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` }]} />
                     </View>
-                    <Text style={styles.missingText}>encore {missing} 🪙</Text>
+                    <PixelText style={styles.missingText}>encore {missing} 🪙</PixelText>
                   </>
                 )}
 
                 {/* Bouton réclamer */}
                 {isAvail && (
                   <View style={styles.claimBtn}>
-                    <Text style={styles.claimBtnText}>Réclamer</Text>
+                    <PixelText style={styles.claimBtnText}>Réclamer</PixelText>
                   </View>
                 )}
               </TouchableOpacity>
@@ -267,9 +268,9 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   content: { padding: Spacing.screen, gap: 14 },
 
   header:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: Spacing.screen, paddingBottom: 0 },
-  title:       { fontSize: 22, fontWeight: '900', color: colors.textPrimary },
+  title:       { fontSize: 22, color: colors.textPrimary },
   ptsPill:     { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,184,0,0.1)', borderWidth: 1, borderColor: 'rgba(255,184,0,0.2)', borderRadius: Radii.pill, paddingHorizontal: 14, paddingVertical: 7 },
-  ptsPillText: { fontSize: 15, fontWeight: '900', color: colors.gold },
+  ptsPillText: { fontSize: 15, color: colors.gold },
 
   // Pending banner
   pendingBanner: {
@@ -279,8 +280,8 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     padding: 14,
   },
   pendingIcon:  { fontSize: 24 },
-  pendingTitle: { fontSize: 14, fontWeight: '900', color: colors.gold },
-  pendingDesc:  { fontSize: 12, fontWeight: '600', color: colors.textFaint, marginTop: 2 },
+  pendingTitle: { fontSize: 14, color: colors.gold },
+  pendingDesc:  { fontSize: 12, color: colors.textFaint, marginTop: 2 },
 
   // Filtres
   filterRow: { flexDirection: 'row', gap: 8 },
@@ -290,11 +291,11 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     borderWidth: 1, borderColor: colors.border, paddingVertical: 9,
   },
   filterChipActive:    { backgroundColor: 'rgba(255,184,0,0.1)', borderColor: 'rgba(255,184,0,0.3)' },
-  filterText:          { fontSize: 12, fontWeight: '800', color: colors.textDim },
+  filterText:          { fontSize: 12, color: colors.textDim },
   filterTextActive:    { color: colors.gold },
   filterBadge:         { backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 99, minWidth: 20, alignItems: 'center', paddingHorizontal: 6, paddingVertical: 1 },
   filterBadgeActive:   { backgroundColor: 'rgba(255,184,0,0.2)' },
-  filterBadgeText:     { fontSize: 10, fontWeight: '900', color: colors.textFaint },
+  filterBadgeText:     { fontSize: 10, color: colors.textFaint },
   filterBadgeTextActive:{ color: colors.gold },
 
   // Grille
@@ -311,24 +312,24 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   cardPending: { borderColor: 'rgba(255,184,0,0.2)', opacity: 0.8 },
 
   pendingPill: { position: 'absolute', top: 8, left: 8, backgroundColor: 'rgba(255,184,0,0.15)', borderRadius: 99, paddingHorizontal: 7, paddingVertical: 2 },
-  pendingPillText: { fontSize: 9, fontWeight: '900', color: colors.gold },
+  pendingPillText: { fontSize: 9, color: colors.gold },
   lockPill:    { position: 'absolute', top: 8, right: 8 },
   lockPillText:{ fontSize: 13 },
 
   cardEmoji: { fontSize: 38, marginTop: 4 },
-  cardName:  { fontSize: 13, fontWeight: '800', color: colors.textPrimary, textAlign: 'center', lineHeight: 17 },
+  cardName:  { fontSize: 13, color: colors.textPrimary, textAlign: 'center', lineHeight: 17 },
 
   costBadge:      { backgroundColor: 'rgba(255,184,0,0.1)', borderWidth: 1, borderColor: 'rgba(255,184,0,0.2)', borderRadius: Radii.pill, paddingHorizontal: 12, paddingVertical: 4 },
   costBadgeLocked:{ backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.08)' },
   costBadgePending:{ backgroundColor: 'rgba(255,184,0,0.08)', borderColor: 'rgba(255,184,0,0.15)' },
-  costText:       { fontSize: 13, fontWeight: '900', color: colors.gold },
+  costText:       { fontSize: 13, color: colors.gold },
   costTextLocked: { color: colors.textDim },
   costTextPending:{ color: 'rgba(255,184,0,0.6)' },
 
   progressTrack: { width: '100%', height: 5, borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.07)', overflow: 'hidden' },
   progressFill:  { height: '100%', borderRadius: 99, backgroundColor: 'rgba(255,184,0,0.4)' },
-  missingText:   { fontSize: 10, fontWeight: '700', color: colors.textFaint },
+  missingText:   { fontSize: 10, color: colors.textFaint },
 
   claimBtn:     { backgroundColor: colors.gold, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 8, marginTop: 2 },
-  claimBtnText: { fontSize: 12, fontWeight: '900', color: '#1a1000' },
+  claimBtnText: { fontSize: 12, color: '#1a1000' },
 });

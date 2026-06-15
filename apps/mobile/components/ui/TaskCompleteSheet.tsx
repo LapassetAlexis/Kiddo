@@ -1,10 +1,11 @@
 import {
-  View, Text, TouchableOpacity, StyleSheet, Modal,
+  View, TouchableOpacity, StyleSheet, Modal,
   Pressable, Animated, TextInput, Keyboard, Image,
 } from 'react-native';
+import PixelText from '@/components/ui/PixelText';
 import { useRef, useEffect, useState, useMemo } from 'react';
 import * as ImagePicker from 'expo-image-picker';
-import { Radii } from '@/constants/theme';
+import { Radii, Fonts, PixelShadow } from '@/constants/theme';
 import type { ThemeColors } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
 import { BASE_URL, getToken } from '@/lib/api-client';
@@ -128,12 +129,12 @@ export default function TaskCompleteSheet({ task, onConfirm, onClose }: Props) {
             {/* Titre + points */}
             <View style={styles.taskHeader}>
               <View style={styles.taskIcon}>
-                <Text style={styles.taskIconText}>📋</Text>
+                <PixelText style={styles.taskIconText}>📋</PixelText>
               </View>
               <View style={{ flex: 1, gap: 4 }}>
-                <Text style={styles.taskName}>{task.name}</Text>
+                <PixelText style={styles.taskName}>{task.name}</PixelText>
                 <View style={styles.ptsBadge}>
-                  <Text style={styles.ptsBadgeText}>+{task.gold}🪙  +{task.xp}⭐</Text>
+                  <PixelText style={styles.ptsBadgeText}>+{task.gold}🪙  +{task.xp}⭐</PixelText>
                 </View>
               </View>
             </View>
@@ -142,8 +143,8 @@ export default function TaskCompleteSheet({ task, onConfirm, onClose }: Props) {
 
             {/* Note */}
             <View style={styles.section}>
-              <Text style={styles.sectionLabel}>Message pour ton gardien</Text>
-              <Text style={styles.sectionHint}>Facultatif — explique ce que tu as fait</Text>
+              <PixelText style={styles.sectionLabel}>Message pour ton gardien</PixelText>
+              <PixelText style={styles.sectionHint}>Facultatif — explique ce que tu as fait</PixelText>
               <TextInput
                 style={styles.noteInput}
                 placeholder="Ex : J'ai tout rangé, même sous le bureau !"
@@ -159,25 +160,25 @@ export default function TaskCompleteSheet({ task, onConfirm, onClose }: Props) {
 
             {/* Photo */}
             <View style={styles.section}>
-              <Text style={styles.sectionLabel}>Preuve en photo</Text>
-              <Text style={styles.sectionHint}>Facultatif — montre que c'est vraiment fait !</Text>
+              <PixelText style={styles.sectionLabel}>Preuve en photo</PixelText>
+              <PixelText style={styles.sectionHint}>Facultatif — montre que c'est vraiment fait !</PixelText>
 
               {photoUri ? (
                 <View style={styles.photoPreviewWrap}>
                   <Image source={{ uri: photoUri }} style={styles.photoPreview} />
                   <TouchableOpacity style={styles.photoRemove} onPress={() => setPhotoUri(null)}>
-                    <Text style={styles.photoRemoveText}>✕</Text>
+                    <PixelText style={styles.photoRemoveText}>✕</PixelText>
                   </TouchableOpacity>
                 </View>
               ) : (
                 <View style={styles.photoBtnsRow}>
                   <TouchableOpacity style={styles.photoBtn} onPress={takePhoto} activeOpacity={0.7}>
-                    <Text style={styles.photoBtnIcon}>📷</Text>
-                    <Text style={styles.photoBtnText}>Appareil photo</Text>
+                    <PixelText style={styles.photoBtnIcon}>📷</PixelText>
+                    <PixelText style={styles.photoBtnText}>Appareil photo</PixelText>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.photoBtn} onPress={pickPhoto} activeOpacity={0.7}>
-                    <Text style={styles.photoBtnIcon}>🖼️</Text>
-                    <Text style={styles.photoBtnText}>Galerie</Text>
+                    <PixelText style={styles.photoBtnIcon}>🖼️</PixelText>
+                    <PixelText style={styles.photoBtnText}>Galerie</PixelText>
                   </TouchableOpacity>
                 </View>
               )}
@@ -186,10 +187,10 @@ export default function TaskCompleteSheet({ task, onConfirm, onClose }: Props) {
             {/* Boutons */}
             <View style={styles.actions}>
               <TouchableOpacity style={[styles.confirmBtn, uploading && { opacity: 0.6 }]} onPress={confirm} activeOpacity={0.85} disabled={uploading}>
-                <Text style={styles.confirmBtnText}>{uploading ? 'Envoi en cours…' : "C'est fait ! ✓"}</Text>
+                <PixelText style={styles.confirmBtnText}>{uploading ? 'Envoi en cours…' : "C'est fait ! ✓"}</PixelText>
               </TouchableOpacity>
               <TouchableOpacity style={styles.cancelBtn} onPress={close} activeOpacity={0.7}>
-                <Text style={styles.cancelBtnText}>Pas encore…</Text>
+                <PixelText style={styles.cancelBtnText}>Pas encore…</PixelText>
               </TouchableOpacity>
             </View>
 
@@ -232,14 +233,14 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     flexShrink: 0,
   },
   taskIconText: { fontSize: 28 },
-  taskName:     { fontSize: 18, fontWeight: '900', color: colors.textPrimary },
+  taskName:     { fontSize: 12, fontFamily: Fonts.pixelBold, color: colors.textPrimary },
   ptsBadge: {
     alignSelf: 'flex-start',
     backgroundColor: 'rgba(255,184,0,0.1)',
     borderRadius: 99, paddingHorizontal: 10, paddingVertical: 3,
     borderWidth: 1, borderColor: 'rgba(255,184,0,0.2)',
   },
-  ptsBadgeText: { fontSize: 12, fontWeight: '800', color: colors.gold },
+  ptsBadgeText: { fontSize: 14, fontFamily: Fonts.pixel, color: colors.gold },
 
   divider: {
     height: 1, backgroundColor: 'rgba(255,255,255,0.07)',
@@ -248,11 +249,11 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
 
   section: { marginBottom: 20, gap: 8 },
   sectionLabel: {
-    fontSize: 12, fontWeight: '900', color: colors.textPrimary,
+    fontSize: 14, fontFamily: Fonts.pixel, color: colors.textPrimary,
     textTransform: 'uppercase', letterSpacing: 0.8,
   },
   sectionHint: {
-    fontSize: 12, fontWeight: '600', color: colors.textFaint,
+    fontSize: 12, fontFamily: Fonts.pixel, color: colors.textFaint,
     marginTop: -4,
   },
 
@@ -261,7 +262,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: Radii.md,
     borderWidth: 1, borderColor: colors.border,
     padding: 14,
-    fontSize: 14, fontWeight: '600',
+    fontSize: 14,
     color: colors.textPrimary,
     minHeight: 88,
     textAlignVertical: 'top',
@@ -278,7 +279,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingVertical: 14,
   },
   photoBtnIcon: { fontSize: 20 },
-  photoBtnText: { fontSize: 13, fontWeight: '700', color: colors.textDim },
+  photoBtnText: { fontSize: 13, color: colors.textDim },
 
   photoPreviewWrap: { position: 'relative' },
   photoPreview: {
@@ -292,7 +293,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.6)',
     alignItems: 'center', justifyContent: 'center',
   },
-  photoRemoveText: { color: '#fff', fontSize: 13, fontWeight: '900' },
+  photoRemoveText: { color: '#fff', fontSize: 13 },
 
   actions: { gap: 10 },
   confirmBtn: {
@@ -301,13 +302,14 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     padding: 18, alignItems: 'center',
     shadowColor: colors.green,
     shadowOpacity: 0.3, shadowRadius: 10,
+    ...PixelShadow.green,
   },
-  confirmBtnText: { fontSize: 17, fontWeight: '900', color: '#fff' },
+  confirmBtnText: { fontSize: 11, fontFamily: Fonts.pixelBold, color: '#fff' },
   cancelBtn: {
     alignItems: 'center', padding: 14,
     backgroundColor: 'rgba(255,255,255,0.04)',
     borderRadius: Radii.md,
     borderWidth: 1, borderColor: colors.border,
   },
-  cancelBtnText: { fontSize: 14, fontWeight: '700', color: colors.textFaint },
+  cancelBtnText: { fontSize: 14, fontFamily: Fonts.pixel, color: colors.textFaint },
 });

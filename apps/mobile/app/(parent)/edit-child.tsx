@@ -1,7 +1,8 @@
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  View, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, KeyboardAvoidingView, Platform, Modal,
 } from 'react-native';
+import PixelText from '@/components/ui/PixelText';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -23,10 +24,10 @@ const QR_TTL = 30;
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bgScreen },
   navbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.screen, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
-  backBtn:     { fontSize: 22, color: colors.textDim, fontWeight: '700', width: 40 },
-  navTitle:    { fontSize: 16, fontWeight: '900', color: colors.textPrimary },
+  backBtn:     { fontSize: 22, color: colors.textDim, width: 40 },
+  navTitle:    { fontSize: 16, color: colors.textPrimary },
   saveBtn:     { backgroundColor: colors.gold, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 8 },
-  saveBtnText: { fontSize: 13, fontWeight: '900', color: '#1a1000' },
+  saveBtnText: { fontSize: 13, color: '#1a1000' },
 
   content: { padding: Spacing.screen, gap: 12 },
 
@@ -34,7 +35,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   avatarPreviewCircle: { width: 96, height: 96, borderRadius: 48, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   bigEmoji:      { fontSize: 52 },
 
-  childNameDisplay: { fontSize: 20, fontWeight: '900', color: colors.textPrimary },
+  childNameDisplay: { fontSize: 20, color: colors.textPrimary },
 
   rpgCard: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
@@ -46,24 +47,24 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   rpgInfo:       { flex: 1, gap: 4 },
   rpgTitleRow:   { flexDirection: 'row', alignItems: 'center', gap: 7 },
   rpgLevelBadge: { backgroundColor: 'rgba(139,92,246,0.15)', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2, borderWidth: 1, borderColor: 'rgba(139,92,246,0.3)' },
-  rpgLevelText:  { fontSize: 11, fontWeight: '900', color: '#a78bfa' },
-  rpgTitle:      { fontSize: 14, fontWeight: '800', color: colors.textPrimary },
-  rpgClass:      { fontSize: 12, fontWeight: '600', color: colors.textDim },
+  rpgLevelText:  { fontSize: 11, color: '#a78bfa' },
+  rpgTitle:      { fontSize: 14, color: colors.textPrimary },
+  rpgClass:      { fontSize: 12, color: colors.textDim },
 
-  sectionLabel: { fontSize: 11, fontWeight: '900', color: colors.textFaint, textTransform: 'uppercase', letterSpacing: 1.1, marginTop: 4 },
+  sectionLabel: { fontSize: 11, color: colors.textFaint, textTransform: 'uppercase', letterSpacing: 1.1, marginTop: 4 },
   card:         { backgroundColor: colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: colors.border, padding: 16 },
   input:        { fontSize: 17, fontWeight: '700', color: colors.textPrimary },
 
   actionRow:  { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: colors.bgCard, borderRadius: Radii.card, borderWidth: 1, borderColor: colors.border, padding: 16 },
   deleteRow:  { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: 'rgba(239,83,80,0.06)', borderRadius: Radii.card, borderWidth: 1, borderColor: 'rgba(239,83,80,0.18)', padding: 16 },
   actionIcon: { fontSize: 22 },
-  actionText: { flex: 1, fontSize: 15, fontWeight: '700', color: colors.textPrimary },
+  actionText: { flex: 1, fontSize: 15, color: colors.textPrimary },
   actionArrow:{ fontSize: 20, color: colors.textFaint },
 
   pinContent: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, paddingHorizontal: 32 },
-  pinTitle:   { fontSize: 18, fontWeight: '900', color: colors.textPrimary, textAlign: 'center' },
-  pinSub:     { fontSize: 13, fontWeight: '600', color: colors.textDim, textAlign: 'center', marginTop: -8 },
-  pinStep:    { fontSize: 14, fontWeight: '800', color: colors.textDim },
+  pinTitle:   { fontSize: 18, color: colors.textPrimary, textAlign: 'center' },
+  pinSub:     { fontSize: 13, color: colors.textDim, textAlign: 'center', marginTop: -8 },
+  pinStep:    { fontSize: 14, color: colors.textDim },
   dots:       { flexDirection: 'row', gap: 16 },
   dot:        { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: colors.textFaint },
   dotFilled:  { backgroundColor: colors.gold, borderColor: colors.gold },
@@ -71,27 +72,27 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   key:        { width: 82, height: 82, borderRadius: 41, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   keyEmpty:   { width: 82, height: 82 },
   keyDelete:  { backgroundColor: 'transparent', borderColor: 'transparent' },
-  keyText:       { fontSize: 26, fontWeight: '800', color: colors.textPrimary },
+  keyText:       { fontSize: 26, color: colors.textPrimary },
   keyDeleteText: { fontSize: 22, color: colors.textDim },
 
-  goalHint:        { fontSize: 12, fontWeight: '600', color: colors.textFaint, marginBottom: 10 },
+  goalHint:        { fontSize: 12, color: colors.textFaint, marginBottom: 10 },
   goalRow:         { flexDirection: 'row', gap: 8, marginBottom: 10 },
   goalLevelInput:  { width: 56, fontSize: 16, fontWeight: '800', color: colors.textPrimary, borderBottomWidth: 1, borderBottomColor: colors.border, textAlign: 'center', paddingBottom: 4 },
   goalRewardInput: { flex: 1, fontSize: 14, fontWeight: '600', color: colors.textPrimary, borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: 4 },
   goalSaveBtn:     { backgroundColor: 'rgba(255,184,0,0.12)', borderRadius: 10, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,184,0,0.25)' },
-  goalSaveBtnText: { fontSize: 13, fontWeight: '800', color: colors.gold },
+  goalSaveBtnText: { fontSize: 13, color: colors.gold },
 
   qrOverlay:     { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', alignItems: 'center', justifyContent: 'center' },
   qrSheet:       { backgroundColor: colors.bgCard, borderRadius: 28, padding: 28, alignItems: 'center', gap: 16, marginHorizontal: 24, width: 320 },
-  qrTitle:       { fontSize: 20, fontWeight: '900', color: colors.textPrimary, textAlign: 'center' },
-  qrSub:         { fontSize: 13, fontWeight: '600', color: colors.textDim, textAlign: 'center', marginTop: -8 },
+  qrTitle:       { fontSize: 20, color: colors.textPrimary, textAlign: 'center' },
+  qrSub:         { fontSize: 13, color: colors.textDim, textAlign: 'center', marginTop: -8 },
   qrBox:         { backgroundColor: '#fff', padding: 16, borderRadius: 16 },
   qrTimer:       { alignItems: 'center' },
-  qrTimerText:   { fontSize: 14, fontWeight: '800', color: colors.textDim },
+  qrTimerText:   { fontSize: 14, color: colors.textDim },
   qrRefreshBtn:  { backgroundColor: 'rgba(255,184,0,0.12)', borderRadius: 12, paddingHorizontal: 20, paddingVertical: 10, borderWidth: 1, borderColor: 'rgba(255,184,0,0.3)' },
-  qrRefreshText: { fontSize: 14, fontWeight: '800', color: colors.gold },
+  qrRefreshText: { fontSize: 14, color: colors.gold },
   qrCloseBtn:    { paddingVertical: 8 },
-  qrCloseBtnText:{ fontSize: 14, fontWeight: '700', color: colors.textFaint },
+  qrCloseBtnText:{ fontSize: 14, color: colors.textFaint },
 });
 
 export default function EditChildScreen() {
@@ -260,12 +261,12 @@ export default function EditChildScreen() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={styles.navbar}>
           <TouchableOpacity onPress={() => pinMode ? setPinMode(false) : router.back()}>
-            <Text style={styles.backBtn}>←</Text>
+            <PixelText style={styles.backBtn}>←</PixelText>
           </TouchableOpacity>
-          <Text style={styles.navTitle}>{pinMode ? 'Nouveau code' : `Modifier ${name}`}</Text>
+          <PixelText style={styles.navTitle}>{pinMode ? 'Nouveau code' : `Modifier ${name}`}</PixelText>
           {!pinMode && (
             <TouchableOpacity style={[styles.saveBtn, loading && { opacity: 0.5 }]} onPress={save} disabled={loading}>
-              <Text style={styles.saveBtnText}>{loading ? '…' : 'Enregistrer'}</Text>
+              <PixelText style={styles.saveBtnText}>{loading ? '…' : 'Enregistrer'}</PixelText>
             </TouchableOpacity>
           )}
           {pinMode && <View style={{ width: 80 }} />}
@@ -277,54 +278,54 @@ export default function EditChildScreen() {
             {/* Avatar preview */}
             <View style={styles.avatarSection}>
               <View style={[styles.avatarPreviewCircle, { backgroundColor: (childColor ?? '#FFB300') + '33', borderColor: (childColor ?? '#FFB300') + '66' }]}>
-                <Text style={styles.bigEmoji}>{childEmoji ?? '🦊'}</Text>
+                <PixelText style={styles.bigEmoji}>{childEmoji ?? '🦊'}</PixelText>
               </View>
-              <Text style={styles.childNameDisplay}>{name}</Text>
+              <PixelText style={styles.childNameDisplay}>{name}</PixelText>
             </View>
 
             {/* Niveau & classe (lecture seule) */}
             {statsData && (
               <View style={styles.rpgCard}>
-                <Text style={styles.rpgEmoji}>{statsData.levelEmoji}</Text>
+                <PixelText style={styles.rpgEmoji}>{statsData.levelEmoji}</PixelText>
                 <View style={styles.rpgInfo}>
                   <View style={styles.rpgTitleRow}>
                     <View style={styles.rpgLevelBadge}>
-                      <Text style={styles.rpgLevelText}>Niv. {statsData.level}</Text>
+                      <PixelText style={styles.rpgLevelText}>Niv. {statsData.level}</PixelText>
                     </View>
-                    <Text style={styles.rpgTitle}>{statsData.levelTitle}</Text>
+                    <PixelText style={styles.rpgTitle}>{statsData.levelTitle}</PixelText>
                   </View>
-                  <Text style={styles.rpgClass}>
+                  <PixelText style={styles.rpgClass}>
                     {CLASS_EMOJI[statsData.class as ChildClass]} {CLASS_LABELS[statsData.class as ChildClass]}  ·  {statsData.xp} XP
-                  </Text>
+                  </PixelText>
                 </View>
               </View>
             )}
 
             {/* Prénom */}
-            <Text style={styles.sectionLabel}>Prénom</Text>
+            <PixelText style={styles.sectionLabel}>Prénom</PixelText>
             <View style={styles.card}>
               <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Prénom de l'enfant" placeholderTextColor={colors.textFaint} />
             </View>
 
             {/* Actions */}
-            <Text style={styles.sectionLabel}>Sécurité</Text>
+            <PixelText style={styles.sectionLabel}>Sécurité</PixelText>
             <TouchableOpacity style={styles.actionRow} onPress={() => setPinMode(true)} activeOpacity={0.7}>
-              <Text style={styles.actionIcon}>🔢</Text>
-              <Text style={styles.actionText}>Changer le code secret</Text>
-              <Text style={styles.actionArrow}>›</Text>
+              <PixelText style={styles.actionIcon}>🔢</PixelText>
+              <PixelText style={styles.actionText}>Changer le code secret</PixelText>
+              <PixelText style={styles.actionArrow}>›</PixelText>
             </TouchableOpacity>
             <TouchableOpacity ref={qrBtnRef} style={styles.actionRow} onPress={generateQr} activeOpacity={0.7} disabled={qrLoading}>
-              <Text style={styles.actionIcon}>📱</Text>
+              <PixelText style={styles.actionIcon}>📱</PixelText>
               <View style={{ flex: 1 }}>
-                <Text style={styles.actionText}>Connecter le téléphone de {name}</Text>
-                <Text style={{ fontSize: 11, color: colors.textFaint, fontWeight: '600' }}>Génère un QR code valable 30s</Text>
+                <PixelText style={styles.actionText}>Connecter le téléphone de {name}</PixelText>
+                <PixelText style={{ fontSize: 11, color: colors.textFaint }}>Génère un QR code valable 30s</PixelText>
               </View>
-              <Text style={styles.actionArrow}>{qrLoading ? '…' : '›'}</Text>
+              <PixelText style={styles.actionArrow}>{qrLoading ? '…' : '›'}</PixelText>
             </TouchableOpacity>
 
-            <Text style={styles.sectionLabel}>Objectif de niveau</Text>
+            <PixelText style={styles.sectionLabel}>Objectif de niveau</PixelText>
             <View ref={goalRef} collapsable={false} style={styles.card}>
-              <Text style={styles.goalHint}>Quand {name} atteint ce niveau, tu reçois une notification.</Text>
+              <PixelText style={styles.goalHint}>Quand {name} atteint ce niveau, tu reçois une notification.</PixelText>
               <View style={styles.goalRow}>
                 <TextInput
                   style={[styles.goalLevelInput]}
@@ -349,15 +350,15 @@ export default function EditChildScreen() {
                 disabled={goalLoading}
                 activeOpacity={0.8}
               >
-                <Text style={styles.goalSaveBtnText}>{goalLoading ? '…' : 'Enregistrer l\'objectif'}</Text>
+                <PixelText style={styles.goalSaveBtnText}>{goalLoading ? '…' : 'Enregistrer l\'objectif'}</PixelText>
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.sectionLabel}>Zone danger</Text>
+            <PixelText style={styles.sectionLabel}>Zone danger</PixelText>
             <TouchableOpacity style={styles.deleteRow} onPress={confirmDelete} activeOpacity={0.7}>
-              <Text style={styles.actionIcon}>🗑️</Text>
-              <Text style={[styles.actionText, { color: '#EF5350' }]}>Supprimer le profil</Text>
-              <Text style={[styles.actionArrow, { color: '#EF5350' }]}>›</Text>
+              <PixelText style={styles.actionIcon}>🗑️</PixelText>
+              <PixelText style={[styles.actionText, { color: '#EF5350' }]}>Supprimer le profil</PixelText>
+              <PixelText style={[styles.actionArrow, { color: '#EF5350' }]}>›</PixelText>
             </TouchableOpacity>
 
             <View style={{ height: 32 }} />
@@ -365,14 +366,14 @@ export default function EditChildScreen() {
         ) : (
           /* PIN reset mode */
           <View style={styles.pinContent}>
-            <Text style={styles.pinTitle}>Nouveau code pour {name}</Text>
-            <Text style={styles.pinSub}>4 chiffres que {name} devra entrer</Text>
+            <PixelText style={styles.pinTitle}>Nouveau code pour {name}</PixelText>
+            <PixelText style={styles.pinSub}>4 chiffres que {name} devra entrer</PixelText>
             <View style={[styles.avatarPreviewCircle, { backgroundColor: (childColor ?? '#FFB300') + '33', borderColor: (childColor ?? '#FFB300') + '66' }]}>
-              <Text style={styles.bigEmoji}>{childEmoji ?? '🦊'}</Text>
+              <PixelText style={styles.bigEmoji}>{childEmoji ?? '🦊'}</PixelText>
             </View>
 
             {/* Étape */}
-            <Text style={styles.pinStep}>{newPin.length < 4 ? 'Nouveau code' : 'Confirme le code'}</Text>
+            <PixelText style={styles.pinStep}>{newPin.length < 4 ? 'Nouveau code' : 'Confirme le code'}</PixelText>
             <View style={styles.dots}>
               {[0,1,2,3].map(i => {
                 const current = newPin.length < 4 ? newPin : confirm;
@@ -394,14 +395,14 @@ export default function EditChildScreen() {
                   }}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.keyText, k === '⌫' && styles.keyDeleteText]}>{k}</Text>
+                  <PixelText style={[styles.keyText, k === '⌫' && styles.keyDeleteText]}>{k}</PixelText>
                 </TouchableOpacity>
               ))}
             </View>
 
             {newPin.length === 4 && confirm.length === 4 && (
               <TouchableOpacity style={[styles.saveBtn, { width: '100%', alignItems: 'center', padding: 16, borderRadius: Radii.md }, loading && { opacity: 0.5 }]} onPress={resetPin} disabled={loading}>
-                <Text style={styles.saveBtnText}>{loading ? 'Enregistrement…' : 'Valider le nouveau code'}</Text>
+                <PixelText style={styles.saveBtnText}>{loading ? 'Enregistrement…' : 'Valider le nouveau code'}</PixelText>
               </TouchableOpacity>
             )}
           </View>
@@ -418,23 +419,23 @@ export default function EditChildScreen() {
       <Modal visible={!!qrToken} transparent animationType="fade" onRequestClose={closeQr}>
         <TouchableOpacity style={styles.qrOverlay} activeOpacity={1} onPress={closeQr}>
           <TouchableOpacity activeOpacity={1} style={styles.qrSheet} onPress={() => {}}>
-            <Text style={styles.qrTitle}>QR code de {name}</Text>
-            <Text style={styles.qrSub}>Demande à {name} de le scanner depuis son téléphone</Text>
+            <PixelText style={styles.qrTitle}>QR code de {name}</PixelText>
+            <PixelText style={styles.qrSub}>Demande à {name} de le scanner depuis son téléphone</PixelText>
             {qrToken && (
               <View style={styles.qrBox}>
                 <QRCode value={qrToken} size={200} backgroundColor="#fff" color="#000" />
               </View>
             )}
             <View style={styles.qrTimer}>
-              <Text style={[styles.qrTimerText, qrSeconds <= 5 && { color: '#EF5350' }]}>
+              <PixelText style={[styles.qrTimerText, qrSeconds <= 5 && { color: '#EF5350' }]}>
                 Expire dans {qrSeconds}s
-              </Text>
+              </PixelText>
             </View>
             <TouchableOpacity style={styles.qrRefreshBtn} onPress={generateQr} disabled={qrLoading}>
-              <Text style={styles.qrRefreshText}>{qrLoading ? 'Génération…' : '🔄 Nouveau QR'}</Text>
+              <PixelText style={styles.qrRefreshText}>{qrLoading ? 'Génération…' : '🔄 Nouveau QR'}</PixelText>
             </TouchableOpacity>
             <TouchableOpacity style={styles.qrCloseBtn} onPress={closeQr}>
-              <Text style={styles.qrCloseBtnText}>Fermer</Text>
+              <PixelText style={styles.qrCloseBtnText}>Fermer</PixelText>
             </TouchableOpacity>
           </TouchableOpacity>
         </TouchableOpacity>

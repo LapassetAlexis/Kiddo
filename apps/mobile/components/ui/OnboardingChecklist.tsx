@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, StyleSheet, TouchableOpacity, View } from 'react-native';
+import PixelText from '@/components/ui/PixelText';
 import { router } from 'expo-router';
 import { Radii, Spacing } from '@/constants/theme';
 import type { ThemeColors } from '@/constants/theme';
@@ -111,12 +112,12 @@ export default function OnboardingChecklist({ childrenCount }: Props) {
     <Animated.View style={[styles.card, { opacity: fadeAnim }]}>
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.title}>Premiers pas 🚀</Text>
-          <Text style={styles.sub}>{doneCount}/{steps.length} étapes complétées</Text>
+          <PixelText style={styles.title}>Premiers pas 🚀</PixelText>
+          <PixelText style={styles.sub}>{doneCount}/{steps.length} étapes complétées</PixelText>
         </View>
         {!allDone && (
           <TouchableOpacity onPress={dismiss} activeOpacity={0.7} style={styles.skipBtn}>
-            <Text style={styles.skipText}>Passer</Text>
+            <PixelText style={styles.skipText}>Passer</PixelText>
           </TouchableOpacity>
         )}
       </View>
@@ -128,12 +129,12 @@ export default function OnboardingChecklist({ childrenCount }: Props) {
       {steps.map((step, i) => (
         <View key={step.id} style={[styles.row, i < steps.length - 1 && styles.rowBorder]}>
           <View style={[styles.checkbox, step.done && styles.checkboxDone]}>
-            {step.done && <Text style={styles.checkmark}>✓</Text>}
+            {step.done && <PixelText style={styles.checkmark}>✓</PixelText>}
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.label, step.done && styles.labelDone]}>{step.label}</Text>
+            <PixelText style={[styles.label, step.done && styles.labelDone]}>{step.label}</PixelText>
             {step.hint && !step.done && (
-              <Text style={styles.hint}>{step.hint}</Text>
+              <PixelText style={styles.hint}>{step.hint}</PixelText>
             )}
           </View>
           {!step.done && step.route && (
@@ -142,7 +143,7 @@ export default function OnboardingChecklist({ childrenCount }: Props) {
               onPress={() => router.push(step.route as any)}
               activeOpacity={0.8}
             >
-              <Text style={styles.ctaText}>{step.cta} →</Text>
+              <PixelText style={styles.ctaText}>{step.cta} →</PixelText>
             </TouchableOpacity>
           )}
         </View>
@@ -164,7 +165,7 @@ export default function OnboardingChecklist({ childrenCount }: Props) {
             </Animated.Text>
           ))}
           <Animated.View style={[styles.allDoneBanner, { transform: [{ scale: celebScale }] }]}>
-            <Text style={styles.allDoneText}>🎉 Tout est prêt — tu maîtrises Kiddo !</Text>
+            <PixelText style={styles.allDoneText}>🎉 Tout est prêt — tu maîtrises Kiddo !</PixelText>
           </Animated.View>
         </View>
       )}
@@ -187,10 +188,10 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10,
   },
-  title:    { fontSize: 15, fontWeight: '900', color: colors.textPrimary },
-  sub:      { fontSize: 11, fontWeight: '700', color: colors.textFaint, marginTop: 2 },
+  title:    { fontSize: 15, color: colors.textPrimary },
+  sub:      { fontSize: 11, color: colors.textFaint, marginTop: 2 },
   skipBtn:  { paddingHorizontal: 10, paddingVertical: 6 },
-  skipText: { fontSize: 12, fontWeight: '700', color: colors.textDim },
+  skipText: { fontSize: 12, color: colors.textDim },
 
   progressTrack: { height: 3, backgroundColor: 'rgba(255,255,255,0.07)', marginHorizontal: 16, borderRadius: 99, marginBottom: 10, overflow: 'hidden' },
   progressFill:  { height: '100%', borderRadius: 99, backgroundColor: colors.gold },
@@ -200,19 +201,19 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
 
   checkbox:     { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   checkboxDone: { backgroundColor: colors.green, borderColor: colors.green },
-  checkmark:    { fontSize: 12, fontWeight: '900', color: '#fff' },
+  checkmark:    { fontSize: 12, color: '#fff' },
 
-  label:     { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
+  label:     { fontSize: 13, color: colors.textPrimary },
   labelDone: { color: colors.textFaint, textDecorationLine: 'line-through' },
 
-  hint:    { fontSize: 10, fontWeight: '600', color: colors.textFaint, marginTop: 1 },
+  hint:    { fontSize: 10, color: colors.textFaint, marginTop: 1 },
 
   ctaBtn:  { backgroundColor: 'rgba(255,184,0,0.12)', borderRadius: Radii.pill, paddingHorizontal: 12, paddingVertical: 5, borderWidth: 1, borderColor: 'rgba(255,184,0,0.25)' },
-  ctaText: { fontSize: 11, fontWeight: '900', color: colors.gold },
+  ctaText: { fontSize: 11, color: colors.gold },
 
   celebrationZone: { position: 'relative', marginHorizontal: 12, marginTop: 4, marginBottom: 12, height: 80 },
   particle:        { position: 'absolute', bottom: 12, fontSize: 20 },
 
   allDoneBanner: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(76,175,80,0.12)', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: 'rgba(76,175,80,0.25)', alignItems: 'center' },
-  allDoneText:   { fontSize: 13, fontWeight: '800', color: colors.green },
+  allDoneText:   { fontSize: 13, color: colors.green },
 });

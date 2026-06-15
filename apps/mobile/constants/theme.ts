@@ -1,4 +1,8 @@
 // Kiddo Design Tokens
+export const Fonts = {
+  pixel:     'VT323_400Regular',
+  pixelBold: 'PressStart2P_400Regular',
+} as const;
 
 export const darkColors = {
   bgScreen:       '#18181e',
@@ -19,8 +23,8 @@ export const darkColors = {
   textPrimary:    'rgba(255,255,255,0.88)',
   textDim:        'rgba(255,255,255,0.40)',
   textFaint:      'rgba(255,255,255,0.22)',
-  border:         'rgba(255,255,255,0.07)',
-  borderGold:     'rgba(255,184,0,0.20)',
+  border:         'rgba(255,255,255,0.14)',
+  borderGold:     'rgba(255,184,0,0.30)',
 } as const;
 
 export const lightColors = {
@@ -59,26 +63,37 @@ export type ThemeColors = {
 export const Colors = darkColors;
 
 export const Radii = {
-  card:   18,
-  hero:   28,
+  card:   8,
+  hero:   10,
   pill:   99,
-  sm:     10,
-  md:     14,
+  sm:     4,
+  md:     6,
 } as const;
 
 export const Typography = {
   // Points balance — hero size
-  ptsValue:   { fontSize: 68, fontWeight: '900' as const, letterSpacing: -3 },
+  ptsValue:   { fontSize: 52, fontFamily: Fonts.pixelBold, letterSpacing: -1 },
   // Screen title
-  title:      { fontSize: 22, fontWeight: '900' as const },
+  title:      { fontSize: 18, fontFamily: Fonts.pixelBold },
   // Card title
-  taskName:   { fontSize: 15, fontWeight: '800' as const },
+  taskName:   { fontSize: 16, fontFamily: Fonts.pixel },
   // Label / section header
-  label:      { fontSize: 11, fontWeight: '900' as const, letterSpacing: 1.2, textTransform: 'uppercase' as const },
+  label:      { fontSize: 13, fontFamily: Fonts.pixel, letterSpacing: 1.0, textTransform: 'uppercase' as const },
   // Body
-  body:       { fontSize: 14, fontWeight: '600' as const },
+  body:       { fontSize: 16, fontFamily: Fonts.pixel },
   // Caption
-  caption:    { fontSize: 11, fontWeight: '600' as const },
+  caption:    { fontSize: 13, fontFamily: Fonts.pixel },
+  // CTA button text
+  cta:        { fontSize: 14, fontFamily: Fonts.pixelBold },
+} as const;
+
+// Pixel-art button shadow (bottom-right offset = depth effect)
+export const PixelShadow = {
+  gold:   { borderBottomWidth: 3, borderRightWidth: 3, borderBottomColor: '#b37f00', borderRightColor: '#b37f00' },
+  green:  { borderBottomWidth: 3, borderRightWidth: 3, borderBottomColor: '#2e7d32', borderRightColor: '#2e7d32' },
+  orange: { borderBottomWidth: 3, borderRightWidth: 3, borderBottomColor: '#bf4020', borderRightColor: '#bf4020' },
+  red:    { borderBottomWidth: 3, borderRightWidth: 3, borderBottomColor: '#b71c1c', borderRightColor: '#b71c1c' },
+  subtle: { borderBottomWidth: 3, borderRightWidth: 3, borderBottomColor: 'rgba(0,0,0,0.4)', borderRightColor: 'rgba(0,0,0,0.4)' },
 } as const;
 
 export const Spacing = {

@@ -1,6 +1,10 @@
 import { Stack, router, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
+import { View } from 'react-native';
+import { useFonts } from 'expo-font';
+import { VT323_400Regular } from '@expo-google-fonts/vt323';
+import { PressStart2P_400Regular } from '@expo-google-fonts/press-start-2p';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 import { BASE_URL } from '@/lib/api-client';
@@ -76,6 +80,13 @@ function RootNavigator() {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    VT323_400Regular,
+    PressStart2P_400Regular,
+  });
+
+  if (!fontsLoaded) return <View />;
+
   return (
     <ThemeProvider>
       <AuthProvider>

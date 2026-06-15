@@ -1,7 +1,9 @@
 import { useEffect, useRef, useMemo } from 'react';
-import { View, Text, Image, StyleSheet, Animated } from 'react-native';
+import { View, Image, StyleSheet, Animated } from 'react-native';
 import type { ThemeColors } from '@/constants/theme';
+import { Fonts } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
+import PixelText from '@/components/ui/PixelText';
 
 export default function WakeUpScreen() {
   const { colors } = useTheme();
@@ -46,7 +48,7 @@ export default function WakeUpScreen() {
         />
       </Animated.View>
 
-      <Text style={styles.title}>Kiddo</Text>
+      <PixelText style={styles.title}>Kiddo</PixelText>
 
       <View style={styles.dotsRow}>
         {[dot1, dot2, dot3].map((dot, i) => (
@@ -54,7 +56,7 @@ export default function WakeUpScreen() {
         ))}
       </View>
 
-      <Text style={styles.hint}>Le serveur se réveille…</Text>
+      <PixelText style={styles.hint}>Le serveur se réveille…</PixelText>
     </View>
   );
 }
@@ -73,25 +75,25 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: 28,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '900',
+    fontFamily: Fonts.pixelBold,
+    fontSize: 28,
     color: colors.textPrimary,
-    letterSpacing: 1,
+    letterSpacing: 2,
   },
   dotsRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
     marginTop: 8,
   },
   dot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
+    borderRadius: 0,
     backgroundColor: colors.gold,
   },
   hint: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontFamily: Fonts.pixel,
+    fontSize: 16,
     color: colors.textFaint,
     marginTop: -8,
   },

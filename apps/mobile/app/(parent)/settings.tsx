@@ -1,7 +1,8 @@
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, Switch, Share,
+  View, ScrollView, TouchableOpacity, StyleSheet, Switch, Share,
   Modal, Pressable, TextInput, Animated,
 } from 'react-native';
+import PixelText from '@/components/ui/PixelText';
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { transactionsApi } from '@/lib/api/transactions';
@@ -202,50 +203,50 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>Paramètres ⚙️</Text>
+        <PixelText style={styles.title}>Paramètres ⚙️</PixelText>
       </View>
 
       <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
 
         {/* Profil parent */}
-        <Text style={styles.sectionLabel}>Mon profil</Text>
+        <PixelText style={styles.sectionLabel}>Mon profil</PixelText>
         <View style={styles.card}>
           <View style={styles.profileRow}>
             <View style={styles.profileAvatar}>
-              <Text style={styles.profileAvatarText}>{(formatName(profileData?.name, profileData?.email) || '?').charAt(0).toUpperCase()}</Text>
+              <PixelText style={styles.profileAvatarText}>{(formatName(profileData?.name, profileData?.email) || '?').charAt(0).toUpperCase()}</PixelText>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.profileName}>{formatName(profileData?.name, profileData?.email) || 'Mon profil'}</Text>
-              <Text style={styles.profileEmail}>{profileData?.email ?? ''}</Text>
+              <PixelText style={styles.profileName}>{formatName(profileData?.name, profileData?.email) || 'Mon profil'}</PixelText>
+              <PixelText style={styles.profileEmail}>{profileData?.email ?? ''}</PixelText>
             </View>
             <TouchableOpacity
               style={styles.editBtn}
               onPress={() => router.push('/(parent)/edit-profile')}
               activeOpacity={0.7}
             >
-              <Text style={styles.editBtnText}>Modifier</Text>
+              <PixelText style={styles.editBtnText}>Modifier</PixelText>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Enfants */}
-        <Text style={styles.sectionLabel}>Mes enfants</Text>
+        <PixelText style={styles.sectionLabel}>Mes enfants</PixelText>
         <View style={styles.card}>
           {(childrenData ?? []).map((child, i) => (
             <View key={child.id}>
               {i > 0 && <View style={styles.rowDivider} />}
               <View style={styles.childRow}>
                 <View style={styles.childAvatar}>
-                  <Text style={{ fontSize: 22 }}>{child.avatar}</Text>
+                  <PixelText style={{ fontSize: 22 }}>{child.avatar}</PixelText>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.childName}>{child.name}</Text>
+                  <PixelText style={styles.childName}>{child.name}</PixelText>
                   <View style={styles.childMeta}>
-                    <Text style={styles.childLevelEmoji}>{child.levelEmoji}</Text>
+                    <PixelText style={styles.childLevelEmoji}>{child.levelEmoji}</PixelText>
                     <View style={styles.childLevelBadge}>
-                      <Text style={styles.childLevelText}>Niv. {child.level}</Text>
+                      <PixelText style={styles.childLevelText}>Niv. {child.level}</PixelText>
                     </View>
-                    <Text style={styles.childPts}>· 🪙 {childBalances[child.id] ?? 0}</Text>
+                    <PixelText style={styles.childPts}>· 🪙 {childBalances[child.id] ?? 0}</PixelText>
                   </View>
                 </View>
                 <TouchableOpacity
@@ -253,7 +254,7 @@ export default function SettingsScreen() {
                   onPress={() => router.push({ pathname: '/(parent)/edit-child', params: { childId: child.id, childName: child.name, childEmoji: child.avatar } })}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.editBtnText}>Modifier</Text>
+                  <PixelText style={styles.editBtnText}>Modifier</PixelText>
                 </TouchableOpacity>
               </View>
             </View>
@@ -264,12 +265,12 @@ export default function SettingsScreen() {
             onPress={() => router.push('/(parent)/create-child')}
             activeOpacity={0.7}
           >
-            <Text style={styles.addChildText}>＋  Ajouter un enfant</Text>
+            <PixelText style={styles.addChildText}>＋  Ajouter un enfant</PixelText>
           </TouchableOpacity>
         </View>
 
         {/* Parents */}
-        <Text style={styles.sectionLabel}>Gardiens</Text>
+        <PixelText style={styles.sectionLabel}>Gardiens</PixelText>
         <View style={styles.card}>
           {(parentsData ?? []).map((parent, i) => {
             const isSelf = parent.id === user?.id;
@@ -279,20 +280,20 @@ export default function SettingsScreen() {
                 {i > 0 && <View style={styles.rowDivider} />}
                 <View style={styles.parentRow}>
                   <View style={styles.parentAvatar}>
-                    <Text style={styles.parentAvatarText}>
+                    <PixelText style={styles.parentAvatarText}>
                       {displayName.charAt(0).toUpperCase()}
-                    </Text>
+                    </PixelText>
                   </View>
                   <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <Text style={styles.parentName}>{displayName}</Text>
+                      <PixelText style={styles.parentName}>{displayName}</PixelText>
                       {isSelf && (
                         <View style={styles.selfBadge}>
-                          <Text style={styles.selfBadgeText}>Toi</Text>
+                          <PixelText style={styles.selfBadgeText}>Toi</PixelText>
                         </View>
                       )}
                     </View>
-                    <Text style={styles.parentEmail}>{parent.email}</Text>
+                    <PixelText style={styles.parentEmail}>{parent.email}</PixelText>
                   </View>
                 </View>
               </View>
@@ -301,13 +302,13 @@ export default function SettingsScreen() {
         </View>
 
         {/* Invitation */}
-        <Text style={styles.sectionLabel}>Invitation</Text>
+        <PixelText style={styles.sectionLabel}>Invitation</PixelText>
         <View style={styles.card}>
           <View ref={inviteRef} collapsable={false} style={styles.inviteBlock}>
-            <Text style={styles.inviteTitle}>Inviter un gardien</Text>
-            <Text style={styles.inviteDesc}>Partage ce code pour qu'un autre gardien rejoigne ta famille avec les mêmes droits.</Text>
+            <PixelText style={styles.inviteTitle}>Inviter un gardien</PixelText>
+            <PixelText style={styles.inviteDesc}>Partage ce code pour qu'un autre gardien rejoigne ta famille avec les mêmes droits.</PixelText>
             <View style={styles.codeBox}>
-              <Text style={styles.codeText}>{profileData?.inviteCode ?? '——————'}</Text>
+              <PixelText style={styles.codeText}>{profileData?.inviteCode ?? '——————'}</PixelText>
             </View>
             <View style={styles.inviteBtns}>
                           <TouchableOpacity
@@ -315,7 +316,7 @@ export default function SettingsScreen() {
                             activeOpacity={0.7}
                             onPress={() => Share.share({ message: `Code famille Kiddo : ${profileData?.inviteCode}` })}
                           >
-                            <Text style={styles.inviteBtnText}>Partager le code</Text>
+                            <PixelText style={styles.inviteBtnText}>Partager le code</PixelText>
                           </TouchableOpacity>
                           <TouchableOpacity
                             style={[styles.inviteBtn, styles.inviteBtnSecondary]}
@@ -325,7 +326,7 @@ export default function SettingsScreen() {
                               showModal({ icon: '✅', title: 'Code copié !', message: `Le code ${profileData?.inviteCode} a été copié dans le presse-papier.`, buttons: [{ label: 'OK', style: 'default' }] });
                             }}
                           >
-                            <Text style={[styles.inviteBtnText, { color: colors.textDim }]}>Copier le code</Text>
+                            <PixelText style={[styles.inviteBtnText, { color: colors.textDim }]}>Copier le code</PixelText>
                           </TouchableOpacity>
                         </View>
             <TouchableOpacity
@@ -333,13 +334,13 @@ export default function SettingsScreen() {
               activeOpacity={0.7}
               onPress={regenerateCode}
             >
-              <Text style={styles.regenerateBtnText}>🔄  Générer un nouveau code</Text>
+              <PixelText style={styles.regenerateBtnText}>🔄  Générer un nouveau code</PixelText>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Notifications */}
-        <Text style={styles.sectionLabel}>Notifications</Text>
+        <PixelText style={styles.sectionLabel}>Notifications</PixelText>
         <View ref={notifRef} collapsable={false} style={styles.card}>
           <ToggleRow
             label="Quête soumise"
@@ -367,7 +368,7 @@ export default function SettingsScreen() {
         </View>
 
         {/* Apparence */}
-        <Text style={styles.sectionLabel}>Apparence</Text>
+        <PixelText style={styles.sectionLabel}>Apparence</PixelText>
         <View style={styles.card}>
           <View style={styles.themeRow}>
             {THEME_OPTIONS.map(t => (
@@ -377,17 +378,17 @@ export default function SettingsScreen() {
                 onPress={() => setPreference(t.key)}
                 activeOpacity={0.7}
               >
-                <Text style={styles.themeChipEmoji}>{t.emoji}</Text>
-                <Text style={[styles.themeChipLabel, preference === t.key && styles.themeChipLabelActive]}>
+                <PixelText style={styles.themeChipEmoji}>{t.emoji}</PixelText>
+                <PixelText style={[styles.themeChipLabel, preference === t.key && styles.themeChipLabelActive]}>
                   {t.label}
-                </Text>
+                </PixelText>
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
         {/* À propos */}
-        <Text style={styles.sectionLabel}>À propos</Text>
+        <PixelText style={styles.sectionLabel}>À propos</PixelText>
         <View style={styles.card}>
           <InfoRow label="Version" value="0.1.0" />
           <View style={styles.rowDivider} />
@@ -398,8 +399,8 @@ export default function SettingsScreen() {
             onPress={() => router.push({ pathname: '/(parent)/legal', params: { type: 'terms' } })}
             activeOpacity={0.7}
           >
-            <Text style={styles.linkText}>Conditions d'utilisation</Text>
-            <Text style={styles.linkArrow}>›</Text>
+            <PixelText style={styles.linkText}>Conditions d'utilisation</PixelText>
+            <PixelText style={styles.linkArrow}>›</PixelText>
           </TouchableOpacity>
           <View style={styles.rowDivider} />
           <TouchableOpacity
@@ -407,13 +408,13 @@ export default function SettingsScreen() {
             onPress={() => router.push({ pathname: '/(parent)/legal', params: { type: 'privacy' } })}
             activeOpacity={0.7}
           >
-            <Text style={styles.linkText}>Politique de confidentialité</Text>
-            <Text style={styles.linkArrow}>›</Text>
+            <PixelText style={styles.linkText}>Politique de confidentialité</PixelText>
+            <PixelText style={styles.linkArrow}>›</PixelText>
           </TouchableOpacity>
           <View style={styles.rowDivider} />
           <TouchableOpacity style={styles.linkRow} onPress={openContact} activeOpacity={0.7}>
-            <Text style={styles.linkText}>Nous contacter</Text>
-            <Text style={styles.linkArrow}>›</Text>
+            <PixelText style={styles.linkText}>Nous contacter</PixelText>
+            <PixelText style={styles.linkArrow}>›</PixelText>
           </TouchableOpacity>
           <View style={styles.rowDivider} />
           <TouchableOpacity
@@ -421,22 +422,22 @@ export default function SettingsScreen() {
             onPress={() => AsyncStorage.multiRemove(['@kiddo:tour:dashboard', '@kiddo:tour:dashboard-validate', '@kiddo:tour:dashboard-child-login', '@kiddo:tour:tasks', '@kiddo:tour:manage', '@kiddo:tour:child-home', '@kiddo:tour:child-rewards', '@kiddo:onboarding:done', '@kiddo:tour:settings', '@kiddo:tour:edit-child']).then(() => showModal({ icon: '🔄', title: 'Tour réinitialisé', message: 'Recharge le tableau de bord pour relancer le tour guidé.' }))}
             activeOpacity={0.7}
           >
-            <Text style={styles.linkText}>Réinitialiser le tour guidé</Text>
-            <Text style={styles.linkArrow}>›</Text>
+            <PixelText style={styles.linkText}>Réinitialiser le tour guidé</PixelText>
+            <PixelText style={styles.linkArrow}>›</PixelText>
           </TouchableOpacity>
         </View>
 
         {/* Compte */}
-        <Text style={styles.sectionLabel}>Compte</Text>
+        <PixelText style={styles.sectionLabel}>Compte</PixelText>
         <View style={styles.card}>
           <TouchableOpacity style={styles.linkRow} onPress={confirmLogout} activeOpacity={0.7}>
-            <Text style={styles.linkText}>Se déconnecter</Text>
-            <Text style={styles.linkArrow}>›</Text>
+            <PixelText style={styles.linkText}>Se déconnecter</PixelText>
+            <PixelText style={styles.linkArrow}>›</PixelText>
           </TouchableOpacity>
           <View style={styles.rowDivider} />
           <TouchableOpacity style={styles.linkRow} onPress={confirmDeleteAccount} activeOpacity={0.7}>
-            <Text style={[styles.linkText, { color: '#EF5350' }]}>Supprimer le compte</Text>
-            <Text style={[styles.linkArrow, { color: '#EF5350' }]}>›</Text>
+            <PixelText style={[styles.linkText, { color: '#EF5350' }]}>Supprimer le compte</PixelText>
+            <PixelText style={[styles.linkArrow, { color: '#EF5350' }]}>›</PixelText>
           </TouchableOpacity>
         </View>
 
@@ -452,11 +453,11 @@ export default function SettingsScreen() {
               {/* Header */}
               <View style={[styles.contactHeader, { marginTop: 8, marginBottom: 20 }]}>
                 <View style={styles.contactIconWrap}>
-                  <Text style={{ fontSize: 18 }}>✉️</Text>
+                  <PixelText style={{ fontSize: 18 }}>✉️</PixelText>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.contactTitle}>Nous contacter</Text>
-                  <Text style={styles.contactSub}>On lit chaque message — promis !</Text>
+                  <PixelText style={styles.contactTitle}>Nous contacter</PixelText>
+                  <PixelText style={styles.contactSub}>On lit chaque message — promis !</PixelText>
                 </View>
               </View>
 
@@ -475,8 +476,8 @@ export default function SettingsScreen() {
                       onPress={() => setContactCategory(c.key)}
                       activeOpacity={0.7}
                     >
-                      <Text style={styles.chipEmoji}>{c.emoji}</Text>
-                      <Text style={[styles.chipText, active && styles.chipTextActive]}>{c.label}</Text>
+                      <PixelText style={styles.chipEmoji}>{c.emoji}</PixelText>
+                      <PixelText style={[styles.chipText, active && styles.chipTextActive]}>{c.label}</PixelText>
                     </TouchableOpacity>
                   );
                 })}
@@ -494,7 +495,7 @@ export default function SettingsScreen() {
                   maxLength={2000}
                   textAlignVertical="top"
                 />
-                <Text style={styles.contactCounter}>{contactMessage.length} / 2000</Text>
+                <PixelText style={styles.contactCounter}>{contactMessage.length} / 2000</PixelText>
               </View>
 
               <TouchableOpacity
@@ -503,7 +504,7 @@ export default function SettingsScreen() {
                 disabled={contactSending || contactMessage.trim().length < 10}
                 activeOpacity={0.85}
               >
-                <Text style={styles.contactBtnText}>{contactSending ? 'Envoi en cours…' : 'Envoyer le message'}</Text>
+                <PixelText style={styles.contactBtnText}>{contactSending ? 'Envoi en cours…' : 'Envoyer le message'}</PixelText>
               </TouchableOpacity>
             </Pressable>
           </Animated.View>
@@ -527,8 +528,8 @@ function ToggleRow({ label, desc, value, onToggle, disabled }: {
   return (
     <View style={[toggleRowStyle.row, disabled && { opacity: 0.6 }]}>
       <View style={{ flex: 1, paddingRight: 12 }}>
-        <Text style={[toggleRowStyle.label, { color: colors.textPrimary }]}>{label}</Text>
-        <Text style={[toggleRowStyle.desc, { color: colors.textFaint }]}>{desc}</Text>
+        <PixelText style={[toggleRowStyle.label, { color: colors.textPrimary }]}>{label}</PixelText>
+        <PixelText style={[toggleRowStyle.desc, { color: colors.textFaint }]}>{desc}</PixelText>
       </View>
       <Switch
         value={value}
@@ -543,24 +544,24 @@ function ToggleRow({ label, desc, value, onToggle, disabled }: {
 
 const toggleRowStyle = StyleSheet.create({
   row:   { flexDirection: 'row', alignItems: 'center', padding: 16 },
-  label: { fontSize: 14, fontWeight: '800' },
-  desc:  { fontSize: 12, fontWeight: '600', marginTop: 2 },
+  label: { fontSize: 14 },
+  desc:  { fontSize: 12, marginTop: 2 },
 });
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   const { colors } = useTheme();
   return (
     <View style={infoRowStyle.row}>
-      <Text style={[infoRowStyle.label, { color: colors.textPrimary }]}>{label}</Text>
-      <Text style={[infoRowStyle.value, { color: colors.textFaint }]}>{value}</Text>
+      <PixelText style={[infoRowStyle.label, { color: colors.textPrimary }]}>{label}</PixelText>
+      <PixelText style={[infoRowStyle.value, { color: colors.textFaint }]}>{value}</PixelText>
     </View>
   );
 }
 
 const infoRowStyle = StyleSheet.create({
   row:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 14 },
-  label: { fontSize: 14, fontWeight: '700' },
-  value: { fontSize: 13, fontWeight: '700' },
+  label: { fontSize: 14 },
+  value: { fontSize: 13 },
 });
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
@@ -570,12 +571,12 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingHorizontal: Spacing.screen, paddingVertical: 12,
     borderBottomWidth: 1, borderBottomColor: colors.border,
   },
-  title: { fontSize: 20, fontWeight: '900', color: colors.textPrimary },
+  title: { fontSize: 20, color: colors.textPrimary },
 
   content: { padding: Spacing.screen, gap: 10 },
 
   sectionLabel: {
-    fontSize: 11, fontWeight: '900', color: colors.textFaint,
+    fontSize: 11, color: colors.textFaint,
     textTransform: 'uppercase', letterSpacing: 1.1,
     marginTop: 8, marginBottom: 4,
   },
@@ -591,60 +592,60 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
 
   profileRow:       { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 },
   profileAvatar:    { width: 52, height: 52, borderRadius: 26, backgroundColor: 'rgba(255,184,0,0.1)', alignItems: 'center', justifyContent: 'center' },
-  profileAvatarText:{ fontSize: 24, fontWeight: '900', color: colors.gold },
-  profileName:      { fontSize: 16, fontWeight: '900', color: colors.textPrimary },
-  profileEmail:     { fontSize: 12, fontWeight: '600', color: colors.textFaint, marginTop: 2 },
+  profileAvatarText:{ fontSize: 24, color: colors.gold },
+  profileName:      { fontSize: 16, color: colors.textPrimary },
+  profileEmail:     { fontSize: 12, color: colors.textFaint, marginTop: 2 },
 
   editBtn:     { backgroundColor: colors.bgScreen, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: colors.border },
-  editBtnText: { fontSize: 12, fontWeight: '800', color: colors.textDim },
+  editBtnText: { fontSize: 12, color: colors.textDim },
 
   childRow:    { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
   childAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,184,0,0.1)', alignItems: 'center', justifyContent: 'center' },
-  childName:   { fontSize: 15, fontWeight: '800', color: colors.textPrimary },
+  childName:   { fontSize: 15, color: colors.textPrimary },
   childMeta:   { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 3 },
   childLevelEmoji: { fontSize: 13 },
   childLevelBadge: { backgroundColor: 'rgba(139,92,246,0.15)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1, borderWidth: 1, borderColor: 'rgba(139,92,246,0.3)' },
-  childLevelText:  { fontSize: 10, fontWeight: '900', color: '#a78bfa' },
-  childPts:    { fontSize: 12, fontWeight: '700', color: colors.gold, marginTop: 2 },
+  childLevelText:  { fontSize: 10, color: '#a78bfa' },
+  childPts:    { fontSize: 12, color: colors.gold, marginTop: 2 },
   addChildRow: { padding: 16, alignItems: 'center' },
-  addChildText:{ fontSize: 14, fontWeight: '800', color: colors.textDim },
+  addChildText:{ fontSize: 14, color: colors.textDim },
 
   infoRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 14 },
-  infoLabel: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
-  infoValue: { fontSize: 13, fontWeight: '700', color: colors.textFaint },
+  infoLabel: { fontSize: 14, color: colors.textPrimary },
+  infoValue: { fontSize: 13, color: colors.textFaint },
 
   linkRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 },
-  linkText:  { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
-  linkArrow: { fontSize: 20, color: colors.textFaint, fontWeight: '300' },
+  linkText:  { fontSize: 14, color: colors.textPrimary },
+  linkArrow: { fontSize: 20, color: colors.textFaint },
 
   parentsBlock:     { padding: 16, gap: 10 },
-  parentsTitle:     { fontSize: 12, fontWeight: '800', color: colors.textFaint, textTransform: 'uppercase', letterSpacing: 0.8 },
+  parentsTitle:     { fontSize: 12, color: colors.textFaint, textTransform: 'uppercase', letterSpacing: 0.8 },
   parentDivider:    { height: 1, backgroundColor: colors.border, marginVertical: 4 },
   parentRow:        { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 },
   parentAvatar:     { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,184,0,0.1)', alignItems: 'center', justifyContent: 'center' },
-  parentAvatarText: { fontSize: 24, fontWeight: '900', color: colors.gold },
-  parentName:       { fontSize: 15, fontWeight: '900', color: colors.textPrimary },
-  parentEmail:      { fontSize: 12, fontWeight: '600', color: colors.textFaint, marginTop: 2 },
+  parentAvatarText: { fontSize: 24, color: colors.gold },
+  parentName:       { fontSize: 15, color: colors.textPrimary },
+  parentEmail:      { fontSize: 12, color: colors.textFaint, marginTop: 2 },
   selfBadge:        { backgroundColor: 'rgba(255,184,0,0.15)', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2, borderWidth: 1, borderColor: 'rgba(255,184,0,0.3)' },
-  selfBadgeText:    { fontSize: 10, fontWeight: '900', color: colors.gold },
+  selfBadgeText:    { fontSize: 10, color: colors.gold },
 
   inviteBlock:      { padding: 16, gap: 10 },
-  inviteTitle:      { fontSize: 15, fontWeight: '900', color: colors.textPrimary },
-  inviteDesc:       { fontSize: 12, fontWeight: '600', color: colors.textFaint, lineHeight: 18 },
+  inviteTitle:      { fontSize: 15, color: colors.textPrimary },
+  inviteDesc:       { fontSize: 12, color: colors.textFaint, lineHeight: 18 },
   codeBox:          { backgroundColor: 'rgba(255,184,0,0.08)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,184,0,0.2)', paddingVertical: 14, alignItems: 'center' },
-  codeText:         { fontSize: 28, fontWeight: '900', color: colors.gold, letterSpacing: 6 },
+  codeText:         { fontSize: 28, color: colors.gold, letterSpacing: 6 },
   inviteBtns:       { flexDirection: 'row', gap: 8 },
   inviteBtn:        { flex: 1, backgroundColor: colors.gold, borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
   inviteBtnSecondary: { backgroundColor: colors.bgScreen, borderWidth: 1, borderColor: colors.border },
-  inviteBtnText:    { fontSize: 13, fontWeight: '900', color: '#1a1000' },
+  inviteBtnText:    { fontSize: 13, color: '#1a1000' },
   regenerateBtn:    { alignItems: 'center', paddingVertical: 10, borderTopWidth: 1, borderTopColor: colors.border, marginTop: 4 },
-  regenerateBtnText:{ fontSize: 12, fontWeight: '700', color: colors.textFaint },
+  regenerateBtnText:{ fontSize: 12, color: colors.textFaint },
 
   themeRow:          { flexDirection: 'row', padding: 14, gap: 8 },
   themeChip:         { flex: 1, alignItems: 'center', gap: 6, paddingVertical: 12, borderRadius: 12, backgroundColor: colors.bgScreen, borderWidth: 1, borderColor: colors.border },
   themeChipActive:   { backgroundColor: 'rgba(255,184,0,0.12)', borderColor: 'rgba(255,184,0,0.4)' },
   themeChipEmoji:    { fontSize: 20 },
-  themeChipLabel:    { fontSize: 12, fontWeight: '800', color: colors.textDim },
+  themeChipLabel:    { fontSize: 12, color: colors.textDim },
   themeChipLabelActive: { color: colors.gold },
 
   contactOverlay:   { flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', justifyContent: 'flex-end' },
@@ -652,18 +653,18 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   contactHandle:    { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 4 },
   contactHeader:    { flexDirection: 'row', alignItems: 'center', gap: 14 },
   contactIconWrap:  { width: 38, height: 38, borderRadius: 10, backgroundColor: 'rgba(255,184,0,0.1)', borderWidth: 1, borderColor: 'rgba(255,184,0,0.2)', alignItems: 'center', justifyContent: 'center' },
-  contactTitle:     { fontSize: 16, fontWeight: '900', color: colors.textPrimary },
-  contactSub:       { fontSize: 12, fontWeight: '600', color: colors.textFaint, marginTop: 2 },
+  contactTitle:     { fontSize: 16, color: colors.textPrimary },
+  contactSub:       { fontSize: 12, color: colors.textFaint, marginTop: 2 },
   chipRow:          { flexDirection: 'row', gap: 8 },
   chip:             { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: colors.bgScreen, borderWidth: 1, borderColor: colors.border },
   chipActive:       { backgroundColor: 'rgba(255,184,0,0.12)', borderColor: 'rgba(255,184,0,0.4)' },
   chipEmoji:        { fontSize: 14 },
-  chipText:         { fontSize: 12, fontWeight: '800', color: colors.textDim },
+  chipText:         { fontSize: 12, color: colors.textDim },
   chipTextActive:   { color: colors.gold },
   contactInputWrap: { backgroundColor: colors.bgScreen, borderRadius: 14, borderWidth: 1, borderColor: colors.border, padding: 14, gap: 8 },
   contactInput:     { color: colors.textPrimary, fontSize: 14, fontWeight: '500', minHeight: 100, lineHeight: 20 },
-  contactCounter:   { fontSize: 10, fontWeight: '700', color: colors.textFaint, textAlign: 'right' },
+  contactCounter:   { fontSize: 10, color: colors.textFaint, textAlign: 'right' },
   contactBtn:       { backgroundColor: colors.gold, borderRadius: Radii.pill, paddingVertical: 15, alignItems: 'center', marginTop: 2 },
   contactBtnDisabled: { backgroundColor: 'rgba(255,184,0,0.25)' },
-  contactBtnText:   { fontSize: 15, fontWeight: '900', color: '#1a1000' },
+  contactBtnText:   { fontSize: 15, color: '#1a1000' },
 });

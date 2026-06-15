@@ -17,6 +17,14 @@ jest.mock('@/constants/theme', () => ({
     orange: '#FF7040',
   },
   Radii: { md: 14, card: 18, hero: 28, pill: 99, sm: 10 },
+  Fonts: { pixel: 'VT323_400Regular', pixelBold: 'PressStart2P_400Regular' },
+  PixelShadow: {
+    gold:   { borderBottomWidth: 3, borderRightWidth: 3, borderBottomColor: '#b37f00', borderRightColor: '#b37f00' },
+    green:  { borderBottomWidth: 3, borderRightWidth: 3, borderBottomColor: '#2e7d32', borderRightColor: '#2e7d32' },
+    orange: { borderBottomWidth: 3, borderRightWidth: 3, borderBottomColor: '#bf4020', borderRightColor: '#bf4020' },
+    red:    { borderBottomWidth: 3, borderRightWidth: 3, borderBottomColor: '#b71c1c', borderRightColor: '#b71c1c' },
+    subtle: { borderBottomWidth: 3, borderRightWidth: 3, borderBottomColor: 'rgba(0,0,0,0.4)', borderRightColor: 'rgba(0,0,0,0.4)' },
+  },
 }));
 
 jest.mock('@/lib/api/tasks', () => ({

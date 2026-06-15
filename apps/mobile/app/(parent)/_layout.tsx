@@ -1,15 +1,17 @@
 import { Tabs } from 'expo-router';
 import { useMemo } from 'react';
-import { Radii, Spacing } from '@/constants/theme';
+import { View } from 'react-native';
+import { Radii, Spacing, Fonts } from '@/constants/theme';
 import type { ThemeColors } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import PixelText from '@/components/ui/PixelText';
 
 const makeStyles = (colors: ThemeColors) => ({
   tabBarStyle: {
     backgroundColor: colors.bgNav,
     borderTopColor: colors.border,
-    borderTopWidth: 1,
+    borderTopWidth: 2,
   },
   tabBarActiveTintColor: colors.gold,
   tabBarInactiveTintColor: colors.textFaint,
@@ -31,7 +33,7 @@ export default function ParentLayout() {
         },
         tabBarActiveTintColor: themed.tabBarActiveTintColor,
         tabBarInactiveTintColor: themed.tabBarInactiveTintColor,
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '800' },
+        tabBarLabelStyle: { fontSize: 11, fontFamily: Fonts.pixel },
       }}
     >
       <Tabs.Screen name="dashboard"    options={{ title: 'Tableau de bord', tabBarIcon: ({ color }) => <TabIcon emoji="🏠" color={color} /> }} />
@@ -49,7 +51,12 @@ export default function ParentLayout() {
 }
 
 function TabIcon({ emoji, color }: { emoji: string; color: string }) {
-  const { Text } = require('react-native');
   const { colors } = useTheme();
-  return <Text style={{ fontSize: 22, opacity: color === colors.gold ? 1 : 0.4 }}>{emoji}</Text>;
+  const isActive = color === colors.gold;
+  return (
+    <View style={{ alignItems: 'center', gap: 3 }}>
+      <PixelText style={{ fontSize: 22, opacity: isActive ? 1 : 0.4 }}>{emoji}</PixelText>
+      <View style={{ width: 4, height: 4, backgroundColor: isActive ? colors.gold : 'transparent', borderRadius: 0 }} />
+    </View>
+  );
 }
