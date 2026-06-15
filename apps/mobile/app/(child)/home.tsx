@@ -42,8 +42,8 @@ const BG_BY_CHAPTER = [
 const BG_NATIVE_W = 128;
 const BG_NATIVE_H = 160;
 const SCENE_H     = 220;
-const SPRITE_SIZE = 80;
-const GROUND_OFF  = -4;
+const SPRITE_SIZE = 128;
+const GROUND_OFF  = 0;
 
 // ── Static styles for HeroScene (no theme colors) ────────────────────────────
 const sceneStyles = StyleSheet.create({
@@ -87,7 +87,12 @@ function HeroScene({ path, avatarConfig, chapterIndex }: {
         ))}
       </Animated.View>
       <View style={sceneStyles.sceneGradient} />
-      <View style={sceneStyles.spriteAnchor}>
+      <View style={{
+        position: 'absolute',
+        bottom: -42,
+        left: '50%',
+        marginLeft: -(SPRITE_SIZE / 2),
+      }}>
         <SpriteCharacter
           path={path}
           avatarConfig={avatarConfig}
