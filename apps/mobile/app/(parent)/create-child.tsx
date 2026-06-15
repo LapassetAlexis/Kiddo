@@ -9,13 +9,25 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { childrenApi } from '@/lib/api/children';
 import { ApiError } from '@/lib/api-client';
-import { Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing, Fonts, PixelShadow } from '@/constants/theme';
 import type { ThemeColors } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
-import HeroSprite from '@/components/HeroSprite';
-import { CHARACTER_PRESETS, DEFAULT_PRESET, getPresetById, CLASS_META } from '@/lib/character-presets';
+import SpriteCharacter, { type AvatarConfig } from '@/components/SpriteCharacter';
+import { CLASS_DEFAULTS, SPRITE_ASSETS, type ChildPath, type LayerKey } from '@/constants/sprites';
 
-type Step = 'name' | 'character' | 'pin' | 'confirm';
+type Step = 'name' | 'path' | 'customize' | 'pin' | 'confirm';
+
+type CustomizeCategory = { key: LayerKey; label: string; nullable?: boolean };
+const CUSTOMIZE_CATEGORIES: CustomizeCategory[] = [
+  { key: 'head',    label: 'Tête' },
+  { key: 'hair',    label: 'Cheveux' },
+  { key: 'hat',     label: 'Chapeau', nullable: true },
+  { key: 'top',     label: 'Haut' },
+  { key: 'bottom',  label: 'Bas' },
+  { key: 'weapon',  label: 'Arme', nullable: true },
+];
+
+const PATHS: ChildPath[] = ['warrior', 'rogue', 'archer', 'mage'];
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bgScreen },
@@ -29,11 +41,10 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   navTitle: { fontSize: 16, color: colors.textPrimary },
 
   steps: { flexDirection: 'row', justifyContent: 'center', gap: 8, paddingVertical: 14 },
-  stepDot:      { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border },
+  stepDot:      { width: 8, height: 8, borderRadius: 0, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border },
   stepDotActive:{ backgroundColor: colors.gold, borderColor: colors.gold },
   stepDotDone:  { backgroundColor: 'rgba(255,184,0,0.3)', borderColor: 'rgba(255,184,0,0.4)' },
 
-  // Étape 1 : nom
   content:   { padding: Spacing.screen, gap: 20 },
   stepTitle: { fontSize: 26, color: colors.textPrimary, lineHeight: 32 },
   stepSub:   { fontSize: 14, color: colors.textDim, marginTop: -12 },
@@ -41,77 +52,101 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.bgCard, borderRadius: Radii.md,
     borderWidth: 1, borderColor: colors.border,
     padding: 18, fontSize: 22, color: colors.textPrimary,
+    fontFamily: Fonts.pixel,
   },
 
-  // Étape 2 : personnage
-  characterList:   { padding: Spacing.screen, gap: 10 },
-  characterHeader: { gap: 6, marginBottom: 8 },
-  characterCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 14,
-    backgroundColor: colors.bgCard, borderRadius: Radii.card,
-    borderWidth: 1.5, borderColor: colors.border, padding: 14,
+  // Path selection
+  pathGrid:  { padding: Spacing.screen, gap: 12 },
+  pathCard: {
+    borderRadius: Radii.card, borderWidth: 2, borderColor: colors.border,
+    backgroundColor: colors.bgCard, padding: 18, gap: 6,
   },
-  characterCardSelected: {
-    borderColor: colors.gold, backgroundColor: 'rgba(255,184,0,0.05)',
-  },
-  spriteWrap:         { width: 72, height: 80, borderRadius: 16, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.04)', alignItems: 'center', justifyContent: 'center' },
-  spriteWrapSelected: { backgroundColor: 'rgba(255,184,0,0.1)' },
-  characterInfo:     { flex: 1, gap: 4 },
-  characterNameRow:  { gap: 2 },
-  characterName:     { fontSize: 17, color: colors.textDim },
-  characterNameSelected: { color: colors.textPrimary },
-  characterTagline:  { fontSize: 12, color: colors.textFaint },
-  classBadge:        { alignSelf: 'flex-start', borderRadius: 99, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 2, marginTop: 6 },
-  classBadgeText:    { fontSize: 11 },
-  characterStory:    { fontSize: 13, color: colors.textDim, lineHeight: 18, marginTop: 4 },
-  radioOuter:        { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: colors.textFaint, alignItems: 'center', justifyContent: 'center' },
-  radioOuterActive:  { borderColor: colors.gold },
-  radioInner:        { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.gold },
+  pathCardSelected: { borderColor: colors.gold, backgroundColor: 'rgba(255,184,0,0.05)' },
+  pathEmoji: { fontSize: 32 },
+  pathLabel: { fontSize: 14, fontFamily: Fonts.pixelBold, color: colors.textPrimary },
+  pathDesc:  { fontSize: 13, fontFamily: Fonts.pixel, color: colors.textDim, lineHeight: 18 },
 
-  nextBtn:     { backgroundColor: colors.gold, borderRadius: Radii.md, padding: 16, alignItems: 'center' },
-  nextBtnText: { fontSize: 16, color: '#1a1000' },
+  // Customize
+  customizeRoot: { flex: 1 },
+  previewArea: {
+    alignItems: 'center', justifyContent: 'center',
+    paddingVertical: 24, gap: 8,
+    borderBottomWidth: 1, borderBottomColor: colors.border,
+  },
+  previewName:   { fontSize: 18, fontFamily: Fonts.pixelBold, color: colors.textPrimary },
+  categoryTabs:  { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
+  categoryTab:   {
+    paddingHorizontal: 12, paddingVertical: 6,
+    borderRadius: Radii.sm, borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.bgCard,
+  },
+  categoryTabActive: { borderColor: colors.gold, backgroundColor: 'rgba(255,184,0,0.1)' },
+  categoryTabText:   { fontSize: 12, fontFamily: Fonts.pixel, color: colors.textDim },
+  categoryTabTextActive: { color: colors.gold },
+  itemGrid: { paddingHorizontal: 16, paddingBottom: 16, gap: 8, flexDirection: 'row', flexWrap: 'wrap' },
+  itemBtn: {
+    width: 64, height: 64, borderRadius: Radii.sm,
+    borderWidth: 1.5, borderColor: colors.border,
+    backgroundColor: colors.bgCard,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  itemBtnActive: { borderColor: colors.gold, backgroundColor: 'rgba(255,184,0,0.1)' },
+  itemBtnNone:   { borderStyle: 'dashed' },
+  itemBtnNoneText: { fontSize: 20, color: colors.textFaint },
+
+  nextBtn:     { backgroundColor: colors.gold, borderRadius: Radii.md, padding: 16, alignItems: 'center', ...PixelShadow.gold },
+  nextBtnText: { fontSize: 14, fontFamily: Fonts.pixelBold, color: '#1a1000' },
+  nextBtnWrap: { padding: Spacing.screen },
 
   // PIN
   pinContent:     { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 18, paddingHorizontal: 32, paddingBottom: 24 },
-  pinTitle:       { fontSize: 20, color: colors.textPrimary, textAlign: 'center' },
-  pinSub:         { fontSize: 13, color: colors.textDim, textAlign: 'center', lineHeight: 18, marginTop: -10 },
-  spriteContainer: { width: 100, height: 100, borderRadius: 16, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  pinTitle:       { fontSize: 20, fontFamily: Fonts.pixel, color: colors.textPrimary, textAlign: 'center' },
+  pinSub:         { fontSize: 13, fontFamily: Fonts.pixel, color: colors.textDim, textAlign: 'center', lineHeight: 18, marginTop: -10 },
   pinCharPreview: { alignItems: 'center', gap: 6 },
-  pinCharName:    { fontSize: 14, color: colors.textDim },
+  pinCharName:    { fontSize: 14, fontFamily: Fonts.pixel, color: colors.textDim },
   dots: { flexDirection: 'row', gap: 16 },
-  dot:       { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: colors.textFaint, backgroundColor: 'transparent' },
+  dot:       { width: 16, height: 16, borderRadius: 0, borderWidth: 2, borderColor: colors.textFaint, backgroundColor: 'transparent' },
   dotFilled: { backgroundColor: colors.gold, borderColor: colors.gold },
   numpad:    { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center', width: '100%' },
   key:       { width: 84, height: 84, borderRadius: Radii.hero, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   keyEmpty:  { width: 84, height: 84 },
   keyDelete: { backgroundColor: 'transparent', borderColor: 'transparent' },
-  keyText:       { fontSize: 26, color: colors.textPrimary },
-  keyDeleteText: { fontSize: 22, color: colors.textDim },
+  keyText:       { fontSize: 26, fontFamily: Fonts.pixel, color: colors.textPrimary },
+  keyDeleteText: { fontSize: 22, fontFamily: Fonts.pixel, color: colors.textDim },
 });
 
 export default function CreateChildScreen() {
-  const [step, setStep]         = useState<Step>('name');
-  const [name, setName]         = useState('');
-  const [character, setCharacter] = useState(DEFAULT_PRESET);
-  const [pin, setPin]           = useState('');
+  const [step, setStep]       = useState<Step>('name');
+  const [name, setName]       = useState('');
+  const [path, setPath]       = useState<ChildPath>('warrior');
+  const [avatarConfig, setAvatarConfig] = useState<AvatarConfig>({});
+  const [activeCategory, setActiveCategory] = useState<LayerKey>('head');
+  const [pin, setPin]         = useState('');
   const [pinConfirm, setPinConfirm] = useState('');
-  const [loading, setLoading]   = useState(false);
+  const [loading, setLoading] = useState(false);
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
 
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
-  const selectedChar = getPresetById(character)!;
+  const defaults = CLASS_DEFAULTS[path];
+  const effectiveConfig: AvatarConfig = { ...defaults, ...avatarConfig };
 
   function submitName() {
     if (!name.trim()) {
       showModal({ icon: '✏️', title: 'Prénom requis', message: 'Entre le prénom ou pseudo de l\'enfant.' });
       return;
     }
-    setStep('character');
+    setStep('path');
   }
 
-  function submitCharacter() {
+  function submitPath() {
+    setAvatarConfig({});
+    setActiveCategory('head');
+    setStep('customize');
+  }
+
+  function submitCustomize() {
     setStep('pin');
   }
 
@@ -139,10 +174,11 @@ export default function CreateChildScreen() {
     setLoading(true);
     try {
       await childrenApi.create({
-        name: name.trim(),
-        avatar: selectedChar.emoji,
-        color: '#FFB300',
-        sprite: character,
+        name:         name.trim(),
+        avatar:       defaults.emoji,
+        color:        defaults.color,
+        class:        path,
+        avatarConfig: effectiveConfig,
         pin,
       });
     } catch (err) {
@@ -152,9 +188,9 @@ export default function CreateChildScreen() {
     }
     setLoading(false);
     showModal({
-      icon: selectedChar.emoji,
+      icon: defaults.emoji,
       title: `${name} est prêt·e !`,
-      message: `${selectedChar.name} t'attend pour de nouvelles aventures.`,
+      message: `Bonne aventure, ${defaults.label} !`,
       buttons: [{ label: 'C\'est parti !', style: 'default', onPress: () => router.back() }],
     });
   }
@@ -163,22 +199,29 @@ export default function CreateChildScreen() {
   const currentPin    = step === 'pin' ? pin : pinConfirm;
   const currentSetter = step === 'pin' ? 'pin' : 'confirm';
 
-  const steps: Step[] = ['name', 'character', 'pin'];
-  const stepIndex = { name: 0, character: 1, pin: 2, confirm: 2 };
+  const steps: Step[] = ['name', 'path', 'customize', 'pin'];
+  const stepIndex: Record<Step, number> = { name: 0, path: 1, customize: 2, pin: 3, confirm: 3 };
 
   function goBack() {
     if (step === 'name')      router.back();
-    else if (step === 'character') setStep('name');
-    else if (step === 'pin')       setStep('character');
+    else if (step === 'path')     setStep('name');
+    else if (step === 'customize') setStep('path');
+    else if (step === 'pin')       setStep('customize');
     else if (step === 'confirm')   setStep('pin');
   }
 
-  const navTitle = {
-    name: 'Nouvel enfant',
-    character: 'Choisir un personnage',
-    pin: 'Code secret',
-    confirm: 'Confirmer le code',
-  }[step];
+  const navTitle: Record<Step, string> = {
+    name:      'Nouvel enfant',
+    path:      'Choisir une voie',
+    customize: 'Créer le personnage',
+    pin:       'Code secret',
+    confirm:   'Confirmer le code',
+  };
+
+  // Items available for active category
+  const categoryAssets = SPRITE_ASSETS[activeCategory] ?? {};
+  const categoryOptions = Object.keys(categoryAssets);
+  const activeCat = CUSTOMIZE_CATEGORIES.find(c => c.key === activeCategory);
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
@@ -189,11 +232,11 @@ export default function CreateChildScreen() {
           <TouchableOpacity onPress={goBack}>
             <PixelText style={styles.backBtn}>←</PixelText>
           </TouchableOpacity>
-          <PixelText style={styles.navTitle}>{navTitle}</PixelText>
+          <PixelText style={styles.navTitle}>{navTitle[step]}</PixelText>
           <View style={{ width: 40 }} />
         </View>
 
-        {/* Indicateur d'étapes */}
+        {/* Step dots */}
         <View style={styles.steps}>
           {steps.map((s, i) => (
             <View key={s} style={[
@@ -210,7 +253,6 @@ export default function CreateChildScreen() {
             <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
               <PixelText style={styles.stepTitle}>Comment s'appelle{'\n'}ton héros ?</PixelText>
               <PixelText style={styles.stepSub}>Entre le prénom ou pseudo de l'enfant</PixelText>
-
               <TextInput
                 style={styles.nameInput}
                 placeholder="Ex : Lucas, Doudou, Princesse…"
@@ -222,73 +264,124 @@ export default function CreateChildScreen() {
                 onSubmitEditing={submitName}
                 maxLength={24}
               />
-
               <TouchableOpacity style={styles.nextBtn} onPress={submitName} activeOpacity={0.85}>
-                <PixelText style={styles.nextBtnText}>Choisir son personnage →</PixelText>
+                <PixelText style={styles.nextBtnText}>Choisir sa voie →</PixelText>
               </TouchableOpacity>
             </ScrollView>
           </KeyboardAvoidingView>
         )}
 
-        {/* ── Étape 2 : personnage ── */}
-        {step === 'character' && (
+        {/* ── Étape 2 : voie ── */}
+        {step === 'path' && (
           <FlatList
-            data={CHARACTER_PRESETS}
-            keyExtractor={item => item.id}
-            contentContainerStyle={styles.characterList}
+            data={PATHS}
+            keyExtractor={p => p}
+            contentContainerStyle={styles.pathGrid}
+            numColumns={2}
+            columnWrapperStyle={{ gap: 12 }}
             showsVerticalScrollIndicator={false}
             ListHeaderComponent={
-              <View style={styles.characterHeader}>
-                <PixelText style={styles.stepTitle}>Qui sera{'\n'}{name} ?</PixelText>
-                <PixelText style={styles.stepSub}>Chaque héros a sa propre histoire</PixelText>
+              <View style={{ gap: 6, marginBottom: 8 }}>
+                <PixelText style={styles.stepTitle}>Quelle est{'\n'}la voie de {name} ?</PixelText>
+                <PixelText style={styles.stepSub}>Elle définit son style de jeu</PixelText>
               </View>
             }
             ListFooterComponent={
-              <TouchableOpacity
-                style={[styles.nextBtn, { marginTop: 8, marginBottom: 8 }]}
-                onPress={submitCharacter}
-                activeOpacity={0.85}
-              >
-                <PixelText style={styles.nextBtnText}>Choisir un code secret →</PixelText>
-              </TouchableOpacity>
+              <View style={{ marginTop: 12 }}>
+                <TouchableOpacity style={styles.nextBtn} onPress={submitPath} activeOpacity={0.85}>
+                  <PixelText style={styles.nextBtnText}>Créer le personnage →</PixelText>
+                </TouchableOpacity>
+              </View>
             }
-            renderItem={({ item }) => {
-              const selected = character === item.id;
+            renderItem={({ item: p }) => {
+              const def = CLASS_DEFAULTS[p];
+              const selected = path === p;
               return (
                 <TouchableOpacity
-                  style={[styles.characterCard, selected && styles.characterCardSelected]}
-                  onPress={() => setCharacter(item.id)}
+                  style={[styles.pathCard, { flex: 1 }, selected && styles.pathCardSelected]}
+                  onPress={() => setPath(p)}
                   activeOpacity={0.75}
                 >
-                  <View style={[styles.spriteWrap, selected && styles.spriteWrapSelected]}>
-                    <HeroSprite source={item.baseStrip} size={64} direction="south" />
-                  </View>
-                  <View style={styles.characterInfo}>
-                    <View style={styles.characterNameRow}>
-                      <PixelText style={[styles.characterName, selected && styles.characterNameSelected]}>
-                        {item.name}
-                      </PixelText>
-                      <PixelText style={styles.characterTagline}>{item.tagline}</PixelText>
-                    </View>
-                    <View style={[styles.classBadge, { backgroundColor: CLASS_META[item.class].color + '22', borderColor: CLASS_META[item.class].color + '55' }]}>
-                      <PixelText style={[styles.classBadgeText, { color: CLASS_META[item.class].color }]}>
-                        {CLASS_META[item.class].icon} {CLASS_META[item.class].label}
-                      </PixelText>
-                    </View>
-                    {selected && (
-                      <PixelText style={styles.characterStory}>{item.chapters[0]?.text}</PixelText>
-                    )}
-                  </View>
-                  <View style={[styles.radioOuter, selected && styles.radioOuterActive]}>
-                    {selected && <View style={styles.radioInner} />}
-                  </View>
+                  <PixelText style={styles.pathEmoji}>{def.emoji}</PixelText>
+                  <PixelText style={[styles.pathLabel, selected && { color: colors.gold }]}>{def.label}</PixelText>
+                  <PixelText style={styles.pathDesc}>{def.description}</PixelText>
                 </TouchableOpacity>
               );
             }}
           />
         )}
 
-        {/* ── Étapes 3 & 4 : PIN ── */}
+        {/* ── Étape 3 : personnalisation ── */}
+        {step === 'customize' && (
+          <View style={styles.customizeRoot}>
+            {/* Preview */}
+            <View style={styles.previewArea}>
+              <SpriteCharacter
+                path={path}
+                avatarConfig={effectiveConfig}
+                animation="walk"
+                direction="south"
+                size={120}
+                fps={6}
+              />
+              <PixelText style={styles.previewName}>{name}</PixelText>
+            </View>
+
+            {/* Category tabs */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryTabs}>
+              {CUSTOMIZE_CATEGORIES.map(cat => (
+                <TouchableOpacity
+                  key={cat.key}
+                  style={[styles.categoryTab, activeCategory === cat.key && styles.categoryTabActive]}
+                  onPress={() => setActiveCategory(cat.key)}
+                  activeOpacity={0.75}
+                >
+                  <PixelText style={[styles.categoryTabText, activeCategory === cat.key && styles.categoryTabTextActive]}>
+                    {cat.label}
+                  </PixelText>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            {/* Item grid */}
+            <ScrollView contentContainerStyle={styles.itemGrid}>
+              {activeCat?.nullable && (
+                <TouchableOpacity
+                  style={[styles.itemBtn, styles.itemBtnNone, effectiveConfig[activeCategory] == null && styles.itemBtnActive]}
+                  onPress={() => setAvatarConfig(cfg => ({ ...cfg, [activeCategory]: null }))}
+                  activeOpacity={0.75}
+                >
+                  <PixelText style={styles.itemBtnNoneText}>✕</PixelText>
+                </TouchableOpacity>
+              )}
+              {categoryOptions.map(key => (
+                <TouchableOpacity
+                  key={key}
+                  style={[styles.itemBtn, effectiveConfig[activeCategory] === key && styles.itemBtnActive]}
+                  onPress={() => setAvatarConfig(cfg => ({ ...cfg, [activeCategory]: key }))}
+                  activeOpacity={0.75}
+                >
+                  <SpriteCharacter
+                    path={path}
+                    avatarConfig={{ ...effectiveConfig, [activeCategory]: key }}
+                    animation="idle"
+                    direction="south"
+                    size={52}
+                    fps={1}
+                  />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <View style={styles.nextBtnWrap}>
+              <TouchableOpacity style={styles.nextBtn} onPress={submitCustomize} activeOpacity={0.85}>
+                <PixelText style={styles.nextBtnText}>Choisir un code secret →</PixelText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* ── Étapes 4 & 5 : PIN ── */}
         {(step === 'pin' || step === 'confirm') && (
           <View style={styles.pinContent}>
             <PixelText style={styles.pinTitle}>
@@ -301,10 +394,14 @@ export default function CreateChildScreen() {
             </PixelText>
 
             <View style={styles.pinCharPreview}>
-              <View style={styles.spriteContainer}>
-                <HeroSprite source={selectedChar.baseStrip} size={80} direction="south" />
-              </View>
-              <PixelText style={styles.pinCharName}>{selectedChar.name}</PixelText>
+              <SpriteCharacter
+                path={path}
+                avatarConfig={effectiveConfig}
+                animation="idle"
+                direction="south"
+                size={96}
+              />
+              <PixelText style={styles.pinCharName}>{name} · {defaults.label}</PixelText>
             </View>
 
             <View style={styles.dots}>

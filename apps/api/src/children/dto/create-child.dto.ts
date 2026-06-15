@@ -1,5 +1,5 @@
-import { IsString, IsNotEmpty, IsOptional, IsIn, Length, Matches } from 'class-validator';
-import type { ChildClass } from '../child.entity';
+import { IsString, IsNotEmpty, IsOptional, IsIn, IsObject, Length, Matches } from 'class-validator';
+import type { ChildClass, AvatarConfig } from '../child.entity';
 
 export class CreateChildDto {
   @IsString()
@@ -16,8 +16,12 @@ export class CreateChildDto {
 
   @IsString()
   @IsOptional()
-  @IsIn(['warrior','archer','mage','rogue','paladin'])
+  @IsIn(['warrior', 'archer', 'mage', 'rogue'])
   class?: ChildClass;
+
+  @IsObject()
+  @IsOptional()
+  avatarConfig?: AvatarConfig;
 
   @IsString()
   @IsOptional()
