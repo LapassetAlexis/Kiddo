@@ -15,6 +15,7 @@ export type AvatarConfig = {
   bottom?: string;
   weapon?: string | null;
   shadow?: string;
+  skinTone?: string; // e.g. 'tone1', 'green', 'blue' — applied to all skin-bearing layers
 };
 
 type Props = {
@@ -24,6 +25,7 @@ type Props = {
   direction?: Direction;
   size?: number;
   fps?: number;
+  bare?: boolean; // skip class defaults — show only what's in avatarConfig
 };
 
 const LAYER_ORDER = ['shadow', 'backhair', 'bottom', 'top', 'head', 'hair', 'hat', 'weapon'] as const;
@@ -38,9 +40,10 @@ export default function SpriteCharacter({
   direction = 'south',
   size = 96,
   fps = 6,
+  bare = false,
 }: Props) {
   const defaults = CLASS_DEFAULTS[path];
-  const cfg: AvatarConfig = { ...defaults, ...avatarConfig };
+  const cfg: AvatarConfig = bare ? (avatarConfig ?? {}) : { ...defaults, ...avatarConfig };
 
   const anim     = ANIMATIONS[animation];
   const rowIndex = DIRECTIONS[direction];
@@ -78,12 +81,15 @@ export default function SpriteCharacter({
   const offsetX = -col * Math.round(FRAME_W * scale);
   const offsetY = -rowIndex * Math.round(FRAME_H * scale);
 
+  const skinTone = cfg.skinTone;
+
   return (
     <View style={[styles.clip, { width: frameW, height: frameH }]}>
       {LAYER_ORDER.map((layer, i) => {
         const key = layerKeys[i];
         if (!key) return null;
-        const src = getSpriteAsset(layer, key);
+        const tonedKey = skinTone ? `${key}_${skinTone}` : key;
+        const src = getSpriteAsset(layer, tonedKey) ?? getSpriteAsset(layer, key);
         if (src === undefined) return null;
         return (
           <Image

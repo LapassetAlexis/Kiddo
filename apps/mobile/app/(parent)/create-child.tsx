@@ -17,14 +17,24 @@ import { CLASS_DEFAULTS, SPRITE_ASSETS, type ChildPath, type LayerKey } from '@/
 
 type Step = 'name' | 'path' | 'customize' | 'pin' | 'confirm';
 
-type CustomizeCategory = { key: LayerKey; label: string; nullable?: boolean };
+type CustomizeCategory = { key: LayerKey | 'skin'; label: string; nullable?: boolean };
 const CUSTOMIZE_CATEGORIES: CustomizeCategory[] = [
-  { key: 'head',    label: 'Tête' },
-  { key: 'hair',    label: 'Cheveux' },
-  { key: 'hat',     label: 'Chapeau', nullable: true },
-  { key: 'top',     label: 'Haut' },
-  { key: 'bottom',  label: 'Bas' },
-  { key: 'weapon',  label: 'Arme', nullable: true },
+  { key: 'skin',  label: 'Peau' },
+  { key: 'head',  label: 'Tête' },
+  { key: 'hair',  label: 'Cheveux' },
+];
+
+type SkinTone = '' | 'tone1' | 'tone2' | 'tone3' | 'green' | 'blue' | 'purple' | 'grey';
+
+const SKIN_OPTIONS: { tone: SkinTone; color: string }[] = [
+  { tone: '',       color: '#f4d29c' },
+  { tone: 'tone1',  color: '#d49149' },
+  { tone: 'tone2',  color: '#b97e50' },
+  { tone: 'tone3',  color: '#986743' },
+  { tone: 'green',  color: '#82cb60' },
+  { tone: 'blue',   color: '#70b4e0' },
+  { tone: 'purple', color: '#a878d0' },
+  { tone: 'grey',   color: '#a0a0a0' },
 ];
 
 const PATHS: ChildPath[] = ['warrior', 'rogue', 'archer', 'mage'];
@@ -62,30 +72,44 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.bgCard, padding: 18, gap: 6,
   },
   pathCardSelected: { borderColor: colors.gold, backgroundColor: 'rgba(255,184,0,0.05)' },
-  pathEmoji: { fontSize: 32 },
-  pathLabel: { fontSize: 14, fontFamily: Fonts.pixelBold, color: colors.textPrimary },
-  pathDesc:  { fontSize: 13, fontFamily: Fonts.pixel, color: colors.textDim, lineHeight: 18 },
+  pathEmoji: { fontSize: 32, textAlign: 'center', alignSelf: 'center' },
+  pathLabel: { fontSize: 14, fontFamily: Fonts.pixelBold, color: colors.textPrimary, textAlign: 'center' },
+  pathDesc:  { fontSize: 13, fontFamily: Fonts.pixel, color: colors.textDim, lineHeight: 18, textAlign: 'center' },
 
   // Customize
   customizeRoot: { flex: 1 },
   previewArea: {
-    alignItems: 'center', justifyContent: 'center',
-    paddingVertical: 24, gap: 8,
+    alignItems: 'center', paddingTop: 20, paddingBottom: 16, gap: 8,
     borderBottomWidth: 1, borderBottomColor: colors.border,
   },
-  previewName:   { fontSize: 18, fontFamily: Fonts.pixelBold, color: colors.textPrimary },
-  categoryTabs:  { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
+  previewMeta:   { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  skinPicker:    { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  skinLabel:     { fontSize: 11, fontFamily: Fonts.pixel, color: colors.textDim },
+  skinDot:       { width: 26, height: 26, borderRadius: 13, borderWidth: 2, borderColor: 'transparent' },
+  skinDotActive: { borderColor: colors.gold },
+  previewPath:   { fontSize: 12, fontFamily: Fonts.pixel, color: colors.textDim },
+  previewName:   { fontSize: 20, fontFamily: Fonts.pixelBold, color: colors.textPrimary },
+  categoryTabs:  { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8, gap: 8 },
   categoryTab:   {
-    paddingHorizontal: 12, paddingVertical: 6,
-    borderRadius: Radii.sm, borderWidth: 1, borderColor: colors.border,
+    flex: 1, paddingVertical: 10, alignItems: 'center',
+    borderRadius: Radii.pill, borderWidth: 1, borderColor: colors.border,
     backgroundColor: colors.bgCard,
   },
   categoryTabActive: { borderColor: colors.gold, backgroundColor: 'rgba(255,184,0,0.1)' },
-  categoryTabText:   { fontSize: 12, fontFamily: Fonts.pixel, color: colors.textDim },
+  categoryTabText:   { fontSize: 13, fontFamily: Fonts.pixel, color: colors.textDim },
   categoryTabTextActive: { color: colors.gold },
-  itemGrid: { paddingHorizontal: 16, paddingBottom: 16, gap: 8, flexDirection: 'row', flexWrap: 'wrap' },
+  itemGrid: { paddingHorizontal: 12, paddingTop: 10, paddingBottom: 16, gap: 10, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' },
+  skinGrid: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 16, gap: 12, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' },
+  skinCard: {
+    width: 64, height: 64, borderRadius: 32,
+    borderWidth: 3, borderColor: 'transparent',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  skinCardActive: { borderColor: colors.gold },
+  skinCircle: { width: 56, height: 56, borderRadius: 28 },
+  skinCardLabel: { fontSize: 10, fontFamily: Fonts.pixel, color: colors.textDim },
   itemBtn: {
-    width: 64, height: 64, borderRadius: Radii.sm,
+    width: 80, height: 80, borderRadius: Radii.card,
     borderWidth: 1.5, borderColor: colors.border,
     backgroundColor: colors.bgCard,
     alignItems: 'center', justifyContent: 'center',
@@ -95,7 +119,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   itemBtnNoneText: { fontSize: 20, color: colors.textFaint },
 
   nextBtn:     { backgroundColor: colors.gold, borderRadius: Radii.md, padding: 16, alignItems: 'center', ...PixelShadow.gold },
-  nextBtnText: { fontSize: 14, fontFamily: Fonts.pixelBold, color: '#1a1000' },
+  nextBtnText: { fontSize: 11, fontFamily: Fonts.pixelBold, color: '#1a1000' },
   nextBtnWrap: { padding: Spacing.screen },
 
   // PIN
@@ -120,7 +144,7 @@ export default function CreateChildScreen() {
   const [name, setName]       = useState('');
   const [path, setPath]       = useState<ChildPath>('warrior');
   const [avatarConfig, setAvatarConfig] = useState<AvatarConfig>({});
-  const [activeCategory, setActiveCategory] = useState<LayerKey>('head');
+  const [activeCategory, setActiveCategory] = useState<LayerKey | 'skin'>('skin');
   const [pin, setPin]         = useState('');
   const [pinConfirm, setPinConfirm] = useState('');
   const [loading, setLoading] = useState(false);
@@ -142,8 +166,12 @@ export default function CreateChildScreen() {
 
   function submitPath() {
     setAvatarConfig({});
-    setActiveCategory('head');
+    setActiveCategory('skin');
     setStep('customize');
+  }
+
+  function changeSkinTone(tone: SkinTone) {
+    setAvatarConfig(cfg => ({ ...cfg, skinTone: tone || undefined }));
   }
 
   function submitCustomize() {
@@ -219,8 +247,8 @@ export default function CreateChildScreen() {
   };
 
   // Items available for active category
-  const categoryAssets = SPRITE_ASSETS[activeCategory] ?? {};
-  const categoryOptions = Object.keys(categoryAssets);
+  const categoryAssets = activeCategory !== 'skin' ? (SPRITE_ASSETS[activeCategory] ?? {}) : {};
+  const categoryOptions = Object.keys(categoryAssets).filter(k => !/_(?:tone\d|green|blue|purple|grey)$/.test(k));
   const activeCat = CUSTOMIZE_CATEGORIES.find(c => c.key === activeCategory);
 
   return (
@@ -318,17 +346,18 @@ export default function CreateChildScreen() {
             <View style={styles.previewArea}>
               <SpriteCharacter
                 path={path}
-                avatarConfig={effectiveConfig}
+                avatarConfig={{ ...effectiveConfig, hat: null }}
                 animation="walk"
                 direction="south"
-                size={120}
+                size={160}
                 fps={6}
               />
               <PixelText style={styles.previewName}>{name}</PixelText>
+              <PixelText style={styles.previewPath}>{defaults.emoji} {defaults.label}</PixelText>
             </View>
 
             {/* Category tabs */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryTabs}>
+            <View style={styles.categoryTabs}>
               {CUSTOMIZE_CATEGORIES.map(cat => (
                 <TouchableOpacity
                   key={cat.key}
@@ -341,37 +370,43 @@ export default function CreateChildScreen() {
                   </PixelText>
                 </TouchableOpacity>
               ))}
-            </ScrollView>
+            </View>
 
             {/* Item grid */}
-            <ScrollView contentContainerStyle={styles.itemGrid}>
-              {activeCat?.nullable && (
-                <TouchableOpacity
-                  style={[styles.itemBtn, styles.itemBtnNone, effectiveConfig[activeCategory] == null && styles.itemBtnActive]}
-                  onPress={() => setAvatarConfig(cfg => ({ ...cfg, [activeCategory]: null }))}
-                  activeOpacity={0.75}
-                >
-                  <PixelText style={styles.itemBtnNoneText}>✕</PixelText>
-                </TouchableOpacity>
-              )}
+            {activeCategory === 'skin' ? (
+              <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.skinGrid}>
+                {SKIN_OPTIONS.map(({ tone, color }, i) => (
+                  <TouchableOpacity
+                    key={i}
+                    style={[styles.skinCard, (avatarConfig.skinTone ?? '') === tone && styles.skinCardActive]}
+                    onPress={() => changeSkinTone(tone)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={[styles.skinCircle, { backgroundColor: color }]} />
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            ) : (
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.itemGrid}>
               {categoryOptions.map(key => (
                 <TouchableOpacity
                   key={key}
-                  style={[styles.itemBtn, effectiveConfig[activeCategory] === key && styles.itemBtnActive]}
+                  style={[styles.itemBtn, effectiveConfig[activeCategory as LayerKey] === key && styles.itemBtnActive]}
                   onPress={() => setAvatarConfig(cfg => ({ ...cfg, [activeCategory]: key }))}
                   activeOpacity={0.75}
                 >
                   <SpriteCharacter
                     path={path}
-                    avatarConfig={{ ...effectiveConfig, [activeCategory]: key }}
+                    avatarConfig={{ ...effectiveConfig, hat: null, [activeCategory]: key }}
                     animation="idle"
                     direction="south"
-                    size={52}
+                    size={72}
                     fps={1}
                   />
                 </TouchableOpacity>
               ))}
             </ScrollView>
+            )}
 
             <View style={styles.nextBtnWrap}>
               <TouchableOpacity style={styles.nextBtn} onPress={submitCustomize} activeOpacity={0.85}>
