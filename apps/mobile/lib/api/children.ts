@@ -10,6 +10,8 @@ export interface AvatarConfig {
   bottom?: string;
   weapon?: string | null;
   shadow?: string;
+  skinTone?: string;
+  hairColor?: string;
 }
 
 export interface Child {

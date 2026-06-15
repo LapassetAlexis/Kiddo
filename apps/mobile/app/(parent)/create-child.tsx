@@ -115,17 +115,18 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   categoryTabTextActive: { color: colors.gold },
   itemGrid: { paddingHorizontal: 12, paddingTop: 10, paddingBottom: 16, gap: 10, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' },
   hairColorBar: {
-    flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap',
-    gap: 6, paddingHorizontal: 12, paddingVertical: 8,
     borderTopWidth: 1, borderTopColor: colors.border,
   },
+  hairColorScroll: {
+    paddingHorizontal: 12, paddingVertical: 10, gap: 8,
+  },
   hairDot: {
-    width: 40, height: 40, borderRadius: 20,
-    borderWidth: 2, borderColor: 'transparent',
+    width: 56, height: 56, borderRadius: 28,
+    borderWidth: 3, borderColor: 'transparent',
     alignItems: 'center', justifyContent: 'center',
   },
   hairDotActive: { borderColor: colors.gold },
-  hairDotInner: { width: 34, height: 34, borderRadius: 17 },
+  hairDotInner: { width: 48, height: 48, borderRadius: 24 },
   skinGrid: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 16, gap: 12, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' },
   skinCard: {
     width: 64, height: 64, borderRadius: 32,
@@ -440,16 +441,18 @@ export default function CreateChildScreen() {
               </ScrollView>
               {activeCategory === 'hair' && (
                 <View style={styles.hairColorBar}>
-                  {HAIR_COLOR_OPTIONS.map(({ color, hex }) => (
-                    <TouchableOpacity
-                      key={color || 'default'}
-                      style={[styles.hairDot, (avatarConfig.hairColor ?? '') === color && styles.hairDotActive]}
-                      onPress={() => changeHairColor(color)}
-                      activeOpacity={0.8}
-                    >
-                      <View style={[styles.hairDotInner, { backgroundColor: hex }]} />
-                    </TouchableOpacity>
-                  ))}
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hairColorScroll}>
+                    {HAIR_COLOR_OPTIONS.map(({ color, hex }) => (
+                      <TouchableOpacity
+                        key={color || 'default'}
+                        style={[styles.hairDot, (avatarConfig.hairColor ?? '') === color && styles.hairDotActive]}
+                        onPress={() => changeHairColor(color)}
+                        activeOpacity={0.8}
+                      >
+                        <View style={[styles.hairDotInner, { backgroundColor: hex }]} />
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
                 </View>
               )}
             </View>
@@ -478,7 +481,7 @@ export default function CreateChildScreen() {
             <View style={styles.pinCharPreview}>
               <SpriteCharacter
                 path={path}
-                avatarConfig={effectiveConfig}
+                avatarConfig={{ ...effectiveConfig, hat: null }}
                 animation="idle"
                 direction="south"
                 size={96}
