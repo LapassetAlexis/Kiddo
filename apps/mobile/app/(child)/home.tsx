@@ -16,19 +16,20 @@ import type { ThemeColors } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
 import TaskCompleteSheet from '@/components/ui/TaskCompleteSheet';
 import LevelUpModal from '@/components/LevelUpModal';
-import HeroSprite from '@/components/HeroSprite';
 import { LoadingScreen, ErrorScreen } from '@/components/ui/LoadingScreen';
 import { useAuth } from '@/contexts/AuthContext';
 import { useApiData } from '@/lib/useApiData';
 import { tasksApi, Task } from '@/lib/api/tasks';
 import { transactionsApi } from '@/lib/api/transactions';
 import { rewardsApi } from '@/lib/api/rewards';
-import { childrenApi } from '@/lib/api/children';
+import { childrenApi, type AvatarConfig } from '@/lib/api/children';
 import { XP_BY_DIFFICULTY, getXpProgress, type ChildClass } from '@/lib/rpg';
 import {
-  getPresetById, getUnlockedChapters, getEquippedItems,
-  getEquippedBehindItems, DEFAULT_PRESET,
+  getPresetById, getUnlockedChapters,
+  DEFAULT_PRESET,
 } from '@/lib/character-presets';
+import SpriteCharacter from '@/components/SpriteCharacter';
+import { CLASS_DEFAULTS, type ChildPath } from '@/constants/sprites';
 
 // ── Chapter backgrounds ──────────────────────────────────────────────────────
 const BG_BY_CHAPTER = [
@@ -41,8 +42,8 @@ const BG_BY_CHAPTER = [
 const BG_NATIVE_W = 128;
 const BG_NATIVE_H = 160;
 const SCENE_H     = 220;
-const SPRITE_SIZE = 80;
-const GROUND_OFF  = -4;
+const SPRITE_SIZE = 128;
+const GROUND_OFF  = 0;
 
 // ── Static styles for HeroScene (no theme colors) ────────────────────────────
 const sceneStyles = StyleSheet.create({
@@ -53,9 +54,9 @@ const sceneStyles = StyleSheet.create({
 });
 
 // ── HeroScene ────────────────────────────────────────────────────────────────
-function HeroScene({ preset, level, chapterIndex }: {
-  preset: ReturnType<typeof getPresetById> & {};
-  level: number;
+function HeroScene({ path, avatarConfig, chapterIndex }: {
+  path: ChildPath;
+  avatarConfig?: AvatarConfig | null;
   chapterIndex: number;
 }) {
   const { width } = useWindowDimensions();
@@ -86,13 +87,19 @@ function HeroScene({ preset, level, chapterIndex }: {
         ))}
       </Animated.View>
       <View style={sceneStyles.sceneGradient} />
-      <View style={sceneStyles.spriteAnchor}>
-        <HeroSprite
-          source={preset.baseStrip}
-          items={getEquippedItems(preset, level)}
-          behindItems={getEquippedBehindItems(preset, level)}
+      <View style={{
+        position: 'absolute',
+        bottom: -42,
+        left: '50%',
+        marginLeft: -(SPRITE_SIZE / 2),
+      }}>
+        <SpriteCharacter
+          path={path}
+          avatarConfig={avatarConfig}
+          animation="walk"
+          direction="east"
           size={SPRITE_SIZE}
-          direction="right"
+          fps={8}
         />
       </View>
     </View>
@@ -222,7 +229,11 @@ export default function ChildHomeScreen() {
 
         {/* ── Zone héros ── */}
         <View style={styles.heroZone}>
-          <HeroScene preset={preset} level={level} chapterIndex={unlocked.length - 1} />
+          <HeroScene
+          path={(statsData?.class ?? 'warrior') as ChildPath}
+          avatarConfig={statsData?.avatarConfig}
+          chapterIndex={unlocked.length - 1}
+        />
 
           {/* HUD top: Nom + Gold */}
           <View style={[styles.hudTop, { top: top + 8 }]}>

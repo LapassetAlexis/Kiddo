@@ -9,13 +9,50 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { childrenApi } from '@/lib/api/children';
 import { ApiError } from '@/lib/api-client';
-import { Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing, Fonts, PixelShadow } from '@/constants/theme';
 import type { ThemeColors } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
-import HeroSprite from '@/components/HeroSprite';
-import { CHARACTER_PRESETS, DEFAULT_PRESET, getPresetById, CLASS_META } from '@/lib/character-presets';
+import SpriteCharacter, { type AvatarConfig } from '@/components/SpriteCharacter';
+import { CLASS_DEFAULTS, SPRITE_ASSETS, type ChildPath, type LayerKey } from '@/constants/sprites';
 
-type Step = 'name' | 'character' | 'pin' | 'confirm';
+type Step = 'name' | 'path' | 'customize' | 'pin' | 'confirm';
+
+type CustomizeCategory = { key: LayerKey | 'skin'; label: string; nullable?: boolean };
+const CUSTOMIZE_CATEGORIES: CustomizeCategory[] = [
+  { key: 'skin',  label: 'Peau' },
+  { key: 'head',  label: 'Tête' },
+  { key: 'hair',  label: 'Cheveux' },
+];
+
+type SkinTone  = '' | 'tone1' | 'tone2' | 'tone3' | 'green' | 'blue' | 'purple' | 'grey';
+type HairColor = '' | 'c1' | 'c2' | 'c3' | 'c4' | 'c5' | 'c6' | 'c7' | 'c8' | 'c9' | 'c10';
+
+const HAIR_COLOR_OPTIONS: { color: HairColor; hex: string }[] = [
+  { color: '',    hex: '#f9a31b' },
+  { color: 'c1',  hex: '#5b5f8a' },
+  { color: 'c2',  hex: '#995c33' },
+  { color: 'c3',  hex: '#b25110' },
+  { color: 'c4',  hex: '#cc301e' },
+  { color: 'c5',  hex: '#ab58c2' },
+  { color: 'c6',  hex: '#33ac2f' },
+  { color: 'c7',  hex: '#249fde' },
+  { color: 'c8',  hex: '#252525' },
+  { color: 'c9',  hex: '#888888' },
+  { color: 'c10', hex: '#e8e8e8' },
+];
+
+const SKIN_OPTIONS: { tone: SkinTone; color: string }[] = [
+  { tone: '',       color: '#f4d29c' },
+  { tone: 'tone1',  color: '#d49149' },
+  { tone: 'tone2',  color: '#b97e50' },
+  { tone: 'tone3',  color: '#986743' },
+  { tone: 'green',  color: '#82cb60' },
+  { tone: 'blue',   color: '#70b4e0' },
+  { tone: 'purple', color: '#a878d0' },
+  { tone: 'grey',   color: '#a0a0a0' },
+];
+
+const PATHS: ChildPath[] = ['warrior', 'rogue', 'archer', 'mage'];
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bgScreen },
@@ -29,11 +66,10 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   navTitle: { fontSize: 16, color: colors.textPrimary },
 
   steps: { flexDirection: 'row', justifyContent: 'center', gap: 8, paddingVertical: 14 },
-  stepDot:      { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border },
+  stepDot:      { width: 8, height: 8, borderRadius: 0, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border },
   stepDotActive:{ backgroundColor: colors.gold, borderColor: colors.gold },
   stepDotDone:  { backgroundColor: 'rgba(255,184,0,0.3)', borderColor: 'rgba(255,184,0,0.4)' },
 
-  // Étape 1 : nom
   content:   { padding: Spacing.screen, gap: 20 },
   stepTitle: { fontSize: 26, color: colors.textPrimary, lineHeight: 32 },
   stepSub:   { fontSize: 14, color: colors.textDim, marginTop: -12 },
@@ -41,77 +77,137 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.bgCard, borderRadius: Radii.md,
     borderWidth: 1, borderColor: colors.border,
     padding: 18, fontSize: 22, color: colors.textPrimary,
+    fontFamily: Fonts.pixel,
   },
 
-  // Étape 2 : personnage
-  characterList:   { padding: Spacing.screen, gap: 10 },
-  characterHeader: { gap: 6, marginBottom: 8 },
-  characterCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 14,
-    backgroundColor: colors.bgCard, borderRadius: Radii.card,
-    borderWidth: 1.5, borderColor: colors.border, padding: 14,
+  // Path selection
+  pathGrid:  { padding: Spacing.screen, gap: 12 },
+  pathCard: {
+    borderRadius: Radii.card, borderWidth: 2, borderColor: colors.border,
+    backgroundColor: colors.bgCard, padding: 18, gap: 6,
   },
-  characterCardSelected: {
-    borderColor: colors.gold, backgroundColor: 'rgba(255,184,0,0.05)',
-  },
-  spriteWrap:         { width: 72, height: 80, borderRadius: 16, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.04)', alignItems: 'center', justifyContent: 'center' },
-  spriteWrapSelected: { backgroundColor: 'rgba(255,184,0,0.1)' },
-  characterInfo:     { flex: 1, gap: 4 },
-  characterNameRow:  { gap: 2 },
-  characterName:     { fontSize: 17, color: colors.textDim },
-  characterNameSelected: { color: colors.textPrimary },
-  characterTagline:  { fontSize: 12, color: colors.textFaint },
-  classBadge:        { alignSelf: 'flex-start', borderRadius: 99, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 2, marginTop: 6 },
-  classBadgeText:    { fontSize: 11 },
-  characterStory:    { fontSize: 13, color: colors.textDim, lineHeight: 18, marginTop: 4 },
-  radioOuter:        { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: colors.textFaint, alignItems: 'center', justifyContent: 'center' },
-  radioOuterActive:  { borderColor: colors.gold },
-  radioInner:        { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.gold },
+  pathCardSelected: { borderColor: colors.gold, backgroundColor: 'rgba(255,184,0,0.05)' },
+  pathEmoji: { fontSize: 32, textAlign: 'center', alignSelf: 'center' },
+  pathLabel: { fontSize: 14, fontFamily: Fonts.pixelBold, color: colors.textPrimary, textAlign: 'center' },
+  pathDesc:  { fontSize: 13, fontFamily: Fonts.pixel, color: colors.textDim, lineHeight: 18, textAlign: 'center' },
 
-  nextBtn:     { backgroundColor: colors.gold, borderRadius: Radii.md, padding: 16, alignItems: 'center' },
-  nextBtnText: { fontSize: 16, color: '#1a1000' },
+  // Customize
+  customizeRoot: { flex: 1 },
+  previewArea: {
+    alignItems: 'center', paddingTop: 8, paddingBottom: 8, gap: 2,
+    borderBottomWidth: 1, borderBottomColor: colors.border,
+  },
+  previewMeta:   { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  skinPicker:    { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  skinLabel:     { fontSize: 11, fontFamily: Fonts.pixel, color: colors.textDim },
+  skinDot:       { width: 26, height: 26, borderRadius: 13, borderWidth: 2, borderColor: 'transparent' },
+  skinDotActive: { borderColor: colors.gold },
+  previewPath:   { fontSize: 12, fontFamily: Fonts.pixel, color: colors.textDim },
+  previewName:   { fontSize: 20, fontFamily: Fonts.pixelBold, color: colors.textPrimary },
+  categoryTabs:  { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8, gap: 8 },
+  categoryTab:   {
+    flex: 1, paddingVertical: 14, alignItems: 'center',
+    borderRadius: Radii.pill, borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.bgCard,
+  },
+  categoryTabActive: { borderColor: colors.gold, backgroundColor: 'rgba(255,184,0,0.1)' },
+  categoryTabText:   { fontSize: 20, fontFamily: Fonts.pixel, color: colors.textDim },
+  categoryTabTextActive: { color: colors.gold },
+  itemGrid: { paddingHorizontal: 12, paddingTop: 10, paddingBottom: 16, gap: 10, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' },
+  hairColorBar: {
+    borderTopWidth: 1, borderTopColor: colors.border,
+  },
+  hairColorScroll: {
+    paddingHorizontal: 12, paddingVertical: 10, gap: 8,
+  },
+  hairDot: {
+    width: 56, height: 56, borderRadius: 28,
+    borderWidth: 3, borderColor: 'transparent',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  hairDotActive: { borderColor: colors.gold },
+  hairDotInner: { width: 48, height: 48, borderRadius: 24 },
+  skinGrid: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 16, gap: 12, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' },
+  skinCard: {
+    width: 64, height: 64, borderRadius: 32,
+    borderWidth: 3, borderColor: 'transparent',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  skinCardActive: { borderColor: colors.gold },
+  skinCircle: { width: 56, height: 56, borderRadius: 28 },
+  skinCardLabel: { fontSize: 10, fontFamily: Fonts.pixel, color: colors.textDim },
+  itemBtn: {
+    width: 80, height: 80, borderRadius: Radii.card,
+    borderWidth: 1.5, borderColor: colors.border,
+    backgroundColor: colors.bgCard,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  itemBtnActive: { borderColor: colors.gold, backgroundColor: 'rgba(255,184,0,0.1)' },
+  itemBtnNone:   { borderStyle: 'dashed' },
+  itemBtnNoneText: { fontSize: 20, color: colors.textFaint },
+
+  nextBtn:     { backgroundColor: colors.gold, borderRadius: Radii.md, padding: 16, alignItems: 'center', ...PixelShadow.gold },
+  nextBtnText: { fontSize: 11, fontFamily: Fonts.pixelBold, color: '#1a1000' },
+  nextBtnWrap: { padding: Spacing.screen },
 
   // PIN
   pinContent:     { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 18, paddingHorizontal: 32, paddingBottom: 24 },
-  pinTitle:       { fontSize: 20, color: colors.textPrimary, textAlign: 'center' },
-  pinSub:         { fontSize: 13, color: colors.textDim, textAlign: 'center', lineHeight: 18, marginTop: -10 },
-  spriteContainer: { width: 100, height: 100, borderRadius: 16, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  pinTitle:       { fontSize: 20, fontFamily: Fonts.pixel, color: colors.textPrimary, textAlign: 'center' },
+  pinSub:         { fontSize: 13, fontFamily: Fonts.pixel, color: colors.textDim, textAlign: 'center', lineHeight: 18, marginTop: -10 },
   pinCharPreview: { alignItems: 'center', gap: 6 },
-  pinCharName:    { fontSize: 14, color: colors.textDim },
+  pinCharName:    { fontSize: 14, fontFamily: Fonts.pixel, color: colors.textDim },
   dots: { flexDirection: 'row', gap: 16 },
-  dot:       { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: colors.textFaint, backgroundColor: 'transparent' },
+  dot:       { width: 16, height: 16, borderRadius: 0, borderWidth: 2, borderColor: colors.textFaint, backgroundColor: 'transparent' },
   dotFilled: { backgroundColor: colors.gold, borderColor: colors.gold },
-  numpad:    { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center', width: '100%' },
-  key:       { width: 84, height: 84, borderRadius: Radii.hero, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
-  keyEmpty:  { width: 84, height: 84 },
+  numpad:    { width: '100%', gap: 10 },
+  numRow:    { flexDirection: 'row', gap: 10 },
+  key:       { flex: 1, aspectRatio: 1, borderRadius: Radii.hero, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  keyEmpty:  { flex: 1, aspectRatio: 1 },
   keyDelete: { backgroundColor: 'transparent', borderColor: 'transparent' },
-  keyText:       { fontSize: 26, color: colors.textPrimary },
-  keyDeleteText: { fontSize: 22, color: colors.textDim },
+  keyText:       { fontSize: 26, fontFamily: Fonts.pixel, color: colors.textPrimary },
+  keyDeleteText: { fontSize: 22, fontFamily: Fonts.pixel, color: colors.textDim },
 });
 
 export default function CreateChildScreen() {
-  const [step, setStep]         = useState<Step>('name');
-  const [name, setName]         = useState('');
-  const [character, setCharacter] = useState(DEFAULT_PRESET);
-  const [pin, setPin]           = useState('');
+  const [step, setStep]       = useState<Step>('name');
+  const [name, setName]       = useState('');
+  const [path, setPath]       = useState<ChildPath>('warrior');
+  const [avatarConfig, setAvatarConfig] = useState<AvatarConfig>({});
+  const [activeCategory, setActiveCategory] = useState<LayerKey | 'skin'>('skin');
+  const [pin, setPin]         = useState('');
   const [pinConfirm, setPinConfirm] = useState('');
-  const [loading, setLoading]   = useState(false);
+  const [loading, setLoading] = useState(false);
   const { config: modalCfg, show: showModal, hide: hideModal } = useAppModal();
 
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
-  const selectedChar = getPresetById(character)!;
+  const defaults = CLASS_DEFAULTS[path];
+  const effectiveConfig: AvatarConfig = { ...defaults, ...avatarConfig };
 
   function submitName() {
     if (!name.trim()) {
       showModal({ icon: '✏️', title: 'Prénom requis', message: 'Entre le prénom ou pseudo de l\'enfant.' });
       return;
     }
-    setStep('character');
+    setStep('path');
   }
 
-  function submitCharacter() {
+  function submitPath() {
+    setAvatarConfig({});
+    setActiveCategory('skin');
+    setStep('customize');
+  }
+
+  function changeSkinTone(tone: SkinTone) {
+    setAvatarConfig(cfg => ({ ...cfg, skinTone: tone || undefined }));
+  }
+
+  function changeHairColor(color: HairColor) {
+    setAvatarConfig(cfg => ({ ...cfg, hairColor: color || undefined }));
+  }
+
+  function submitCustomize() {
     setStep('pin');
   }
 
@@ -139,10 +235,11 @@ export default function CreateChildScreen() {
     setLoading(true);
     try {
       await childrenApi.create({
-        name: name.trim(),
-        avatar: selectedChar.emoji,
-        color: '#FFB300',
-        sprite: character,
+        name:         name.trim(),
+        avatar:       defaults.emoji,
+        color:        defaults.color,
+        class:        path,
+        avatarConfig: effectiveConfig,
         pin,
       });
     } catch (err) {
@@ -152,33 +249,39 @@ export default function CreateChildScreen() {
     }
     setLoading(false);
     showModal({
-      icon: selectedChar.emoji,
+      icon: defaults.emoji,
       title: `${name} est prêt·e !`,
-      message: `${selectedChar.name} t'attend pour de nouvelles aventures.`,
+      message: `Bonne aventure, ${defaults.label} !`,
       buttons: [{ label: 'C\'est parti !', style: 'default', onPress: () => router.back() }],
     });
   }
 
-  const KEYS = ['1','2','3','4','5','6','7','8','9','','0','⌫'];
   const currentPin    = step === 'pin' ? pin : pinConfirm;
   const currentSetter = step === 'pin' ? 'pin' : 'confirm';
 
-  const steps: Step[] = ['name', 'character', 'pin'];
-  const stepIndex = { name: 0, character: 1, pin: 2, confirm: 2 };
+  const steps: Step[] = ['name', 'path', 'customize', 'pin'];
+  const stepIndex: Record<Step, number> = { name: 0, path: 1, customize: 2, pin: 3, confirm: 3 };
 
   function goBack() {
     if (step === 'name')      router.back();
-    else if (step === 'character') setStep('name');
-    else if (step === 'pin')       setStep('character');
+    else if (step === 'path')     setStep('name');
+    else if (step === 'customize') setStep('path');
+    else if (step === 'pin')       setStep('customize');
     else if (step === 'confirm')   setStep('pin');
   }
 
-  const navTitle = {
-    name: 'Nouvel enfant',
-    character: 'Choisir un personnage',
-    pin: 'Code secret',
-    confirm: 'Confirmer le code',
-  }[step];
+  const navTitle: Record<Step, string> = {
+    name:      'Nouvel enfant',
+    path:      'Choisir une voie',
+    customize: 'Créer le personnage',
+    pin:       'Code secret',
+    confirm:   'Confirmer le code',
+  };
+
+  // Items available for active category
+  const categoryAssets = activeCategory !== 'skin' ? (SPRITE_ASSETS[activeCategory] ?? {}) : {};
+  const categoryOptions = Object.keys(categoryAssets).filter(k => !/_(?:c\d+|tone\d|green|blue|purple|grey)$/.test(k));
+  const activeCat = CUSTOMIZE_CATEGORIES.find(c => c.key === activeCategory);
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
@@ -189,11 +292,11 @@ export default function CreateChildScreen() {
           <TouchableOpacity onPress={goBack}>
             <PixelText style={styles.backBtn}>←</PixelText>
           </TouchableOpacity>
-          <PixelText style={styles.navTitle}>{navTitle}</PixelText>
+          <PixelText style={styles.navTitle}>{navTitle[step]}</PixelText>
           <View style={{ width: 40 }} />
         </View>
 
-        {/* Indicateur d'étapes */}
+        {/* Step dots */}
         <View style={styles.steps}>
           {steps.map((s, i) => (
             <View key={s} style={[
@@ -210,7 +313,6 @@ export default function CreateChildScreen() {
             <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
               <PixelText style={styles.stepTitle}>Comment s'appelle{'\n'}ton héros ?</PixelText>
               <PixelText style={styles.stepSub}>Entre le prénom ou pseudo de l'enfant</PixelText>
-
               <TextInput
                 style={styles.nameInput}
                 placeholder="Ex : Lucas, Doudou, Princesse…"
@@ -222,73 +324,149 @@ export default function CreateChildScreen() {
                 onSubmitEditing={submitName}
                 maxLength={24}
               />
-
               <TouchableOpacity style={styles.nextBtn} onPress={submitName} activeOpacity={0.85}>
-                <PixelText style={styles.nextBtnText}>Choisir son personnage →</PixelText>
+                <PixelText style={styles.nextBtnText}>Choisir sa voie →</PixelText>
               </TouchableOpacity>
             </ScrollView>
           </KeyboardAvoidingView>
         )}
 
-        {/* ── Étape 2 : personnage ── */}
-        {step === 'character' && (
+        {/* ── Étape 2 : voie ── */}
+        {step === 'path' && (
           <FlatList
-            data={CHARACTER_PRESETS}
-            keyExtractor={item => item.id}
-            contentContainerStyle={styles.characterList}
+            data={PATHS}
+            keyExtractor={p => p}
+            contentContainerStyle={styles.pathGrid}
+            numColumns={2}
+            columnWrapperStyle={{ gap: 12 }}
             showsVerticalScrollIndicator={false}
             ListHeaderComponent={
-              <View style={styles.characterHeader}>
-                <PixelText style={styles.stepTitle}>Qui sera{'\n'}{name} ?</PixelText>
-                <PixelText style={styles.stepSub}>Chaque héros a sa propre histoire</PixelText>
+              <View style={{ gap: 6, marginBottom: 8 }}>
+                <PixelText style={styles.stepTitle}>Quelle est{'\n'}la voie de {name} ?</PixelText>
+                <PixelText style={styles.stepSub}>Elle définit son style de jeu</PixelText>
               </View>
             }
             ListFooterComponent={
-              <TouchableOpacity
-                style={[styles.nextBtn, { marginTop: 8, marginBottom: 8 }]}
-                onPress={submitCharacter}
-                activeOpacity={0.85}
-              >
-                <PixelText style={styles.nextBtnText}>Choisir un code secret →</PixelText>
-              </TouchableOpacity>
+              <View style={{ marginTop: 12 }}>
+                <TouchableOpacity style={styles.nextBtn} onPress={submitPath} activeOpacity={0.85}>
+                  <PixelText style={styles.nextBtnText}>Créer le personnage →</PixelText>
+                </TouchableOpacity>
+              </View>
             }
-            renderItem={({ item }) => {
-              const selected = character === item.id;
+            renderItem={({ item: p }) => {
+              const def = CLASS_DEFAULTS[p];
+              const selected = path === p;
               return (
                 <TouchableOpacity
-                  style={[styles.characterCard, selected && styles.characterCardSelected]}
-                  onPress={() => setCharacter(item.id)}
+                  style={[styles.pathCard, { flex: 1 }, selected && styles.pathCardSelected]}
+                  onPress={() => setPath(p)}
                   activeOpacity={0.75}
                 >
-                  <View style={[styles.spriteWrap, selected && styles.spriteWrapSelected]}>
-                    <HeroSprite source={item.baseStrip} size={64} direction="south" />
-                  </View>
-                  <View style={styles.characterInfo}>
-                    <View style={styles.characterNameRow}>
-                      <PixelText style={[styles.characterName, selected && styles.characterNameSelected]}>
-                        {item.name}
-                      </PixelText>
-                      <PixelText style={styles.characterTagline}>{item.tagline}</PixelText>
-                    </View>
-                    <View style={[styles.classBadge, { backgroundColor: CLASS_META[item.class].color + '22', borderColor: CLASS_META[item.class].color + '55' }]}>
-                      <PixelText style={[styles.classBadgeText, { color: CLASS_META[item.class].color }]}>
-                        {CLASS_META[item.class].icon} {CLASS_META[item.class].label}
-                      </PixelText>
-                    </View>
-                    {selected && (
-                      <PixelText style={styles.characterStory}>{item.chapters[0]?.text}</PixelText>
-                    )}
-                  </View>
-                  <View style={[styles.radioOuter, selected && styles.radioOuterActive]}>
-                    {selected && <View style={styles.radioInner} />}
-                  </View>
+                  <PixelText style={styles.pathEmoji}>{def.emoji}</PixelText>
+                  <PixelText style={[styles.pathLabel, selected && { color: colors.gold }]}>{def.label}</PixelText>
+                  <PixelText style={styles.pathDesc}>{def.description}</PixelText>
                 </TouchableOpacity>
               );
             }}
           />
         )}
 
-        {/* ── Étapes 3 & 4 : PIN ── */}
+        {/* ── Étape 3 : personnalisation ── */}
+        {step === 'customize' && (
+          <View style={styles.customizeRoot}>
+            {/* Preview */}
+            <View style={styles.previewArea}>
+              <SpriteCharacter
+                path={path}
+                avatarConfig={{ ...effectiveConfig, hat: null }}
+                animation="walk"
+                direction="south"
+                size={120}
+                fps={6}
+              />
+              <PixelText style={styles.previewName}>{name}</PixelText>
+              <PixelText style={styles.previewPath}>{defaults.emoji} {defaults.label}</PixelText>
+            </View>
+
+            {/* Category tabs */}
+            <View style={styles.categoryTabs}>
+              {CUSTOMIZE_CATEGORIES.map(cat => (
+                <TouchableOpacity
+                  key={cat.key}
+                  style={[styles.categoryTab, activeCategory === cat.key && styles.categoryTabActive]}
+                  onPress={() => setActiveCategory(cat.key)}
+                  activeOpacity={0.75}
+                >
+                  <PixelText style={[styles.categoryTabText, activeCategory === cat.key && styles.categoryTabTextActive]}>
+                    {cat.label}
+                  </PixelText>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Item grid */}
+            {activeCategory === 'skin' ? (
+              <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.skinGrid}>
+                {SKIN_OPTIONS.map(({ tone, color }, i) => (
+                  <TouchableOpacity
+                    key={i}
+                    style={[styles.skinCard, (avatarConfig.skinTone ?? '') === tone && styles.skinCardActive]}
+                    onPress={() => changeSkinTone(tone)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={[styles.skinCircle, { backgroundColor: color }]} />
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            ) : (
+            <View style={{ flex: 1 }}>
+              <ScrollView contentContainerStyle={styles.itemGrid}>
+                {categoryOptions.map(key => (
+                  <TouchableOpacity
+                    key={key}
+                    style={[styles.itemBtn, effectiveConfig[activeCategory as LayerKey] === key && styles.itemBtnActive]}
+                    onPress={() => setAvatarConfig(cfg => ({ ...cfg, [activeCategory]: key }))}
+                    activeOpacity={0.75}
+                  >
+                    <SpriteCharacter
+                      path={path}
+                      avatarConfig={{ ...effectiveConfig, hat: null, [activeCategory]: key }}
+                      animation="idle"
+                      direction="south"
+                      size={72}
+                      fps={1}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+              {activeCategory === 'hair' && (
+                <View style={styles.hairColorBar}>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hairColorScroll}>
+                    {HAIR_COLOR_OPTIONS.map(({ color, hex }) => (
+                      <TouchableOpacity
+                        key={color || 'default'}
+                        style={[styles.hairDot, (avatarConfig.hairColor ?? '') === color && styles.hairDotActive]}
+                        onPress={() => changeHairColor(color)}
+                        activeOpacity={0.8}
+                      >
+                        <View style={[styles.hairDotInner, { backgroundColor: hex }]} />
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+            </View>
+            )}
+
+            <View style={styles.nextBtnWrap}>
+              <TouchableOpacity style={styles.nextBtn} onPress={submitCustomize} activeOpacity={0.85}>
+                <PixelText style={styles.nextBtnText}>Choisir un code secret →</PixelText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* ── Étapes 4 & 5 : PIN ── */}
         {(step === 'pin' || step === 'confirm') && (
           <View style={styles.pinContent}>
             <PixelText style={styles.pinTitle}>
@@ -301,10 +479,14 @@ export default function CreateChildScreen() {
             </PixelText>
 
             <View style={styles.pinCharPreview}>
-              <View style={styles.spriteContainer}>
-                <HeroSprite source={selectedChar.baseStrip} size={80} direction="south" />
-              </View>
-              <PixelText style={styles.pinCharName}>{selectedChar.name}</PixelText>
+              <SpriteCharacter
+                path={path}
+                avatarConfig={{ ...effectiveConfig, hat: null }}
+                animation="idle"
+                direction="south"
+                size={96}
+              />
+              <PixelText style={styles.pinCharName}>{name} · {defaults.label}</PixelText>
             </View>
 
             <View style={styles.dots}>
@@ -314,17 +496,21 @@ export default function CreateChildScreen() {
             </View>
 
             <View style={styles.numpad}>
-              {KEYS.map((k, i) => k === '' ? (
-                <View key={i} style={styles.keyEmpty} />
-              ) : (
-                <TouchableOpacity
-                  key={i}
-                  style={[styles.key, k === '⌫' && styles.keyDelete]}
-                  onPress={() => k === '⌫' ? pressDelete(currentSetter as any) : pressDigit(k, currentSetter as any)}
-                  activeOpacity={0.7}
-                >
-                  <PixelText style={[styles.keyText, k === '⌫' && styles.keyDeleteText]}>{k}</PixelText>
-                </TouchableOpacity>
+              {[['1','2','3'],['4','5','6'],['7','8','9'],['','0','⌫']].map((row, ri) => (
+                <View key={ri} style={styles.numRow}>
+                  {row.map((k, i) => k === '' ? (
+                    <View key={i} style={styles.keyEmpty} />
+                  ) : (
+                    <TouchableOpacity
+                      key={i}
+                      style={[styles.key, k === '⌫' && styles.keyDelete]}
+                      onPress={() => k === '⌫' ? pressDelete(currentSetter as any) : pressDigit(k, currentSetter as any)}
+                      activeOpacity={0.7}
+                    >
+                      <PixelText style={[styles.keyText, k === '⌫' && styles.keyDeleteText]}>{k}</PixelText>
+                    </TouchableOpacity>
+                  ))}
+                </View>
               ))}
             </View>
 

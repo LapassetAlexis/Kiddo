@@ -44,27 +44,27 @@ const LEVEL_TIERS: LevelTier[] = [
   {
     minLevel: 1,
     title: 'Apprenti',
-    emoji: { warrior: '🧒⚔️', archer: '🧒🏹', mage: '🧒✨', rogue: '🧒🗡️', paladin: '🧒🛡️' },
+    emoji: { warrior: '🧒⚔️', archer: '🧒🏹', mage: '🧒✨', rogue: '🧒🗡️' },
   },
   {
     minLevel: 5,
     title: 'Aventurier',
-    emoji: { warrior: '🧑⚔️', archer: '🧑🏹', mage: '🧑✨', rogue: '🧑🗡️', paladin: '🧑🛡️' },
+    emoji: { warrior: '🧑⚔️', archer: '🧑🏹', mage: '🧑✨', rogue: '🧑🗡️' },
   },
   {
     minLevel: 10,
     title: 'Héros',
-    emoji: { warrior: '🦸⚔️', archer: '🦸🏹', mage: '🦸✨', rogue: '🦸🗡️', paladin: '🦸🛡️' },
+    emoji: { warrior: '🦸⚔️', archer: '🦸🏹', mage: '🦸✨', rogue: '🦸🗡️' },
   },
   {
     minLevel: 20,
     title: 'Champion',
-    emoji: { warrior: '👑⚔️', archer: '👑🏹', mage: '👑✨', rogue: '👑🗡️', paladin: '👑🛡️' },
+    emoji: { warrior: '👑⚔️', archer: '👑🏹', mage: '👑✨', rogue: '👑🗡️' },
   },
   {
     minLevel: 35,
     title: 'Légende',
-    emoji: { warrior: '🌟⚔️', archer: '🌟🏹', mage: '🌟✨', rogue: '🌟🗡️', paladin: '🌟🛡️' },
+    emoji: { warrior: '🌟⚔️', archer: '🌟🏹', mage: '🌟✨', rogue: '🌟🗡️' },
   },
 ];
 

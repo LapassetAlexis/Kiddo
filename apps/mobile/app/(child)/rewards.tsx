@@ -302,7 +302,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
 
   card: {
-    width: '47%',
+    width: '48%',
     backgroundColor: colors.bgCard, borderRadius: Radii.card,
     borderWidth: 1, borderColor: colors.border,
     padding: 16, alignItems: 'center', gap: 8,

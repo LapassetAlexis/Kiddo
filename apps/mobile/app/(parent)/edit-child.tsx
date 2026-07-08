@@ -68,9 +68,10 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   dots:       { flexDirection: 'row', gap: 16 },
   dot:        { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: colors.textFaint },
   dotFilled:  { backgroundColor: colors.gold, borderColor: colors.gold },
-  numpad:     { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center', width: '100%' },
-  key:        { width: 82, height: 82, borderRadius: 41, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
-  keyEmpty:   { width: 82, height: 82 },
+  numpad:     { width: '100%', gap: 10 },
+  numRow:     { flexDirection: 'row', gap: 10 },
+  key:        { flex: 1, aspectRatio: 1, borderRadius: 41, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  keyEmpty:   { flex: 1, aspectRatio: 1 },
   keyDelete:  { backgroundColor: 'transparent', borderColor: 'transparent' },
   keyText:       { fontSize: 26, color: colors.textPrimary },
   keyDeleteText: { fontSize: 22, color: colors.textDim },
@@ -83,7 +84,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   goalSaveBtnText: { fontSize: 13, color: colors.gold },
 
   qrOverlay:     { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', alignItems: 'center', justifyContent: 'center' },
-  qrSheet:       { backgroundColor: colors.bgCard, borderRadius: 28, padding: 28, alignItems: 'center', gap: 16, marginHorizontal: 24, width: 320 },
+  qrSheet:       { backgroundColor: colors.bgCard, borderRadius: 28, padding: 28, alignItems: 'center', gap: 16, marginHorizontal: 24, maxWidth: 320, alignSelf: 'stretch' },
   qrTitle:       { fontSize: 20, color: colors.textPrimary, textAlign: 'center' },
   qrSub:         { fontSize: 13, color: colors.textDim, textAlign: 'center', marginTop: -8 },
   qrBox:         { backgroundColor: '#fff', padding: 16, borderRadius: 16 },
@@ -254,7 +255,6 @@ export default function EditChildScreen() {
     });
   }
 
-  const KEYS = ['1','2','3','4','5','6','7','8','9','','0','⌫'];
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
@@ -382,21 +382,25 @@ export default function EditChildScreen() {
             </View>
 
             <View style={styles.numpad}>
-              {KEYS.map((k, i) => k === '' ? <View key={i} style={styles.keyEmpty} /> : (
-                <TouchableOpacity key={i} style={[styles.key, k === '⌫' && styles.keyDelete]}
-                  onPress={() => {
-                    if (k === '⌫') {
-                      if (newPin.length < 4) setNewPin(p => p.slice(0,-1));
-                      else setConfirm(p => p.slice(0,-1));
-                    } else {
-                      if (newPin.length < 4) setNewPin(p => p + k);
-                      else if (confirm.length < 4) setConfirm(p => p + k);
-                    }
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <PixelText style={[styles.keyText, k === '⌫' && styles.keyDeleteText]}>{k}</PixelText>
-                </TouchableOpacity>
+              {[['1','2','3'],['4','5','6'],['7','8','9'],['','0','⌫']].map((row, ri) => (
+                <View key={ri} style={styles.numRow}>
+                {row.map((k, i) => k === '' ? <View key={i} style={styles.keyEmpty} /> : (
+                  <TouchableOpacity key={i} style={[styles.key, k === '⌫' && styles.keyDelete]}
+                    onPress={() => {
+                      if (k === '⌫') {
+                        if (newPin.length < 4) setNewPin(p => p.slice(0,-1));
+                        else setConfirm(p => p.slice(0,-1));
+                      } else {
+                        if (newPin.length < 4) setNewPin(p => p + k);
+                        else if (confirm.length < 4) setConfirm(p => p + k);
+                      }
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <PixelText style={[styles.keyText, k === '⌫' && styles.keyDeleteText]}>{k}</PixelText>
+                  </TouchableOpacity>
+                ))}
+                </View>
               ))}
             </View>
 

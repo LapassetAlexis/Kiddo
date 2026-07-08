@@ -1,6 +1,19 @@
 import { api } from '../api-client';
 import type { ChildClass } from '../rpg';
 
+export interface AvatarConfig {
+  head?: string;
+  hair?: string;
+  backhair?: string;
+  hat?: string | null;
+  top?: string;
+  bottom?: string;
+  weapon?: string | null;
+  shadow?: string;
+  skinTone?: string;
+  hairColor?: string;
+}
+
 export interface Child {
   id: string;
   name: string;
@@ -9,6 +22,7 @@ export interface Child {
   sprite?: string;
   xp: number;
   class: ChildClass;
+  avatarConfig?: AvatarConfig | null;
   level: number;
   levelTitle: string;
   levelEmoji: string;
@@ -39,10 +53,10 @@ export const childrenApi = {
 
   get: (id: string) => api.get<ChildStats>(`/children/${id}`),
 
-  create: (data: { name: string; avatar: string; color: string; pin: string; class?: ChildClass; sprite?: string }) =>
+  create: (data: { name: string; avatar: string; color: string; pin: string; class?: ChildClass; sprite?: string; avatarConfig?: AvatarConfig }) =>
     api.post<Child>('/children', data),
 
-  update: (id: string, data: { name?: string; avatar?: string; color?: string; sprite?: string }) =>
+  update: (id: string, data: { name?: string; avatar?: string; color?: string; sprite?: string; class?: ChildClass; avatarConfig?: AvatarConfig }) =>
     api.patch<Child>(`/children/${id}`, data),
 
   delete: (id: string) =>

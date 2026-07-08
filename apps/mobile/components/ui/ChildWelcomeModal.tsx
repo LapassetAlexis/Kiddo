@@ -98,7 +98,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   card: {
     width: '100%',
-    backgroundColor: '#1e1e26',
+    backgroundColor: colors.bgCard,
     borderRadius: 28,
     padding: 28,
     alignItems: 'center',

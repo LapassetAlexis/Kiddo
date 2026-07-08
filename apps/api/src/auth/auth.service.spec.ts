@@ -186,7 +186,7 @@ describe('AuthService', () => {
         transactions: [],
         pinAttempts: [],
         createdAt: new Date(),
-        sprite: null, pendingLevelUp: null, levelGoal: null, levelGoalReward: null,
+        sprite: null, pendingLevelUp: null, levelGoal: null, levelGoalReward: null, avatarConfig: null,
       } as Child;
     }
 
@@ -466,7 +466,7 @@ describe('AuthService', () => {
         transactions: [],
         pinAttempts: [],
         createdAt: new Date(),
-        sprite: null, pendingLevelUp: null, levelGoal: null, levelGoalReward: null,
+        sprite: null, pendingLevelUp: null, levelGoal: null, levelGoalReward: null, avatarConfig: null,
       };
       childRepo.findOne.mockResolvedValue(mockChild);
 
