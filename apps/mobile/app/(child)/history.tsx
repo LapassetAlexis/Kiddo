@@ -298,7 +298,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 4,
   },
   heroRow:  { flexDirection: 'row', alignItems: 'flex-end', gap: 4, marginBottom: 14 },
-  heroValue:{ fontSize: 64, color: colors.gold, lineHeight: 58, letterSpacing: -3 },
+  heroValue:{ fontSize: 52, color: colors.gold, lineHeight: 50, letterSpacing: -2 },
   heroUnit: { fontSize: 20, color: colors.goldDim, marginBottom: 8 },
 
   progressWrap: {

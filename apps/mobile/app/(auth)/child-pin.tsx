@@ -102,7 +102,7 @@ export default function ChildPinScreen() {
     }
   }
 
-  const KEYS = ['1','2','3','4','5','6','7','8','9','','0','⌫'];
+
 
   return (
     <View style={styles.root}>
@@ -124,18 +124,22 @@ export default function ChildPinScreen() {
 
       {/* Numpad */}
       <View style={[styles.numpad, isValidating && styles.numpadDisabled]}>
-        {KEYS.map((k, i) => k === '' ? (
-          <View key={i} style={styles.keyEmpty} />
-        ) : (
-          <TouchableOpacity
-            key={i}
-            style={[styles.key, k === '⌫' && styles.keyDelete]}
-            onPress={() => k === '⌫' ? pressDelete() : pressDigit(k)}
-            activeOpacity={0.7}
-            disabled={isValidating}
-          >
-            <PixelText style={[styles.keyText, k === '⌫' && styles.keyDeleteText]}>{k}</PixelText>
-          </TouchableOpacity>
+        {[['1','2','3'],['4','5','6'],['7','8','9'],['','0','⌫']].map((row, ri) => (
+          <View key={ri} style={styles.numRow}>
+            {row.map((k, i) => k === '' ? (
+              <View key={i} style={styles.keyEmpty} />
+            ) : (
+              <TouchableOpacity
+                key={i}
+                style={[styles.key, k === '⌫' && styles.keyDelete]}
+                onPress={() => k === '⌫' ? pressDelete() : pressDigit(k)}
+                activeOpacity={0.7}
+                disabled={isValidating}
+              >
+                <PixelText style={[styles.keyText, k === '⌫' && styles.keyDeleteText]}>{k}</PixelText>
+              </TouchableOpacity>
+            ))}
+          </View>
         ))}
       </View>
 
@@ -237,15 +241,10 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   numpadDisabled: {
     opacity: 0.4,
   },
-  numpad: {
-    width: '100%',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    justifyContent: 'center',
-  },
+  numpad: { width: '100%', gap: 10 },
+  numRow: { flexDirection: 'row', gap: 10 },
   key: {
-    width: 84, height: 84,
+    flex: 1, aspectRatio: 1,
     borderRadius: Radii.hero,
     backgroundColor: colors.bgCard,
     borderWidth: 1,
@@ -253,9 +252,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  keyEmpty: {
-    width: 84, height: 84,
-  },
+  keyEmpty: { flex: 1, aspectRatio: 1 },
   keyDelete: {
     backgroundColor: 'transparent',
     borderColor: 'transparent',
@@ -290,7 +287,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.gold,
   },
   qrOverlay:     { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', alignItems: 'center', justifyContent: 'center' },
-  qrSheet:       { backgroundColor: colors.bgCard, borderRadius: 28, padding: 28, alignItems: 'center', gap: 16, marginHorizontal: 24, width: 320 },
+  qrSheet:       { backgroundColor: colors.bgCard, borderRadius: 28, padding: 28, alignItems: 'center', gap: 16, marginHorizontal: 24, maxWidth: 320, alignSelf: 'stretch' },
   qrTitle:       { fontSize: 20, color: colors.textPrimary, textAlign: 'center' },
   qrSub:         { fontSize: 13, color: colors.textDim, textAlign: 'center', marginTop: -8 },
   qrBox:         { backgroundColor: '#fff', padding: 16, borderRadius: 16 },

@@ -322,7 +322,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   // Stats
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   statCard: {
-    width: '47%',
+    width: '48%',
     backgroundColor: colors.bgCard, borderRadius: Radii.card,
     borderWidth: 1, borderColor: colors.border,
     padding: 16, alignItems: 'center', gap: 6,
@@ -339,7 +339,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bgCard, borderRadius: Radii.card,
     borderWidth: 1, borderColor: colors.border,
-    paddingVertical: 12, paddingHorizontal: 4,
+    paddingVertical: 10, paddingHorizontal: 2,
     alignItems: 'center', gap: 5,
     position: 'relative',
   },

@@ -159,9 +159,10 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   dots: { flexDirection: 'row', gap: 16 },
   dot:       { width: 16, height: 16, borderRadius: 0, borderWidth: 2, borderColor: colors.textFaint, backgroundColor: 'transparent' },
   dotFilled: { backgroundColor: colors.gold, borderColor: colors.gold },
-  numpad:    { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center', width: '100%' },
-  key:       { width: 84, height: 84, borderRadius: Radii.hero, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
-  keyEmpty:  { width: 84, height: 84 },
+  numpad:    { width: '100%', gap: 10 },
+  numRow:    { flexDirection: 'row', gap: 10 },
+  key:       { flex: 1, aspectRatio: 1, borderRadius: Radii.hero, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  keyEmpty:  { flex: 1, aspectRatio: 1 },
   keyDelete: { backgroundColor: 'transparent', borderColor: 'transparent' },
   keyText:       { fontSize: 26, fontFamily: Fonts.pixel, color: colors.textPrimary },
   keyDeleteText: { fontSize: 22, fontFamily: Fonts.pixel, color: colors.textDim },
@@ -255,7 +256,6 @@ export default function CreateChildScreen() {
     });
   }
 
-  const KEYS = ['1','2','3','4','5','6','7','8','9','','0','⌫'];
   const currentPin    = step === 'pin' ? pin : pinConfirm;
   const currentSetter = step === 'pin' ? 'pin' : 'confirm';
 
@@ -496,17 +496,21 @@ export default function CreateChildScreen() {
             </View>
 
             <View style={styles.numpad}>
-              {KEYS.map((k, i) => k === '' ? (
-                <View key={i} style={styles.keyEmpty} />
-              ) : (
-                <TouchableOpacity
-                  key={i}
-                  style={[styles.key, k === '⌫' && styles.keyDelete]}
-                  onPress={() => k === '⌫' ? pressDelete(currentSetter as any) : pressDigit(k, currentSetter as any)}
-                  activeOpacity={0.7}
-                >
-                  <PixelText style={[styles.keyText, k === '⌫' && styles.keyDeleteText]}>{k}</PixelText>
-                </TouchableOpacity>
+              {[['1','2','3'],['4','5','6'],['7','8','9'],['','0','⌫']].map((row, ri) => (
+                <View key={ri} style={styles.numRow}>
+                  {row.map((k, i) => k === '' ? (
+                    <View key={i} style={styles.keyEmpty} />
+                  ) : (
+                    <TouchableOpacity
+                      key={i}
+                      style={[styles.key, k === '⌫' && styles.keyDelete]}
+                      onPress={() => k === '⌫' ? pressDelete(currentSetter as any) : pressDigit(k, currentSetter as any)}
+                      activeOpacity={0.7}
+                    >
+                      <PixelText style={[styles.keyText, k === '⌫' && styles.keyDeleteText]}>{k}</PixelText>
+                    </TouchableOpacity>
+                  ))}
+                </View>
               ))}
             </View>
 
