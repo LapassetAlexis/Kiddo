@@ -32,7 +32,7 @@ export class Child {
   @Column({ type: 'int', nullable: true, default: null }) pendingLevelUp: number | null;
   @Column({ type: 'int', nullable: true, default: null }) levelGoal: number | null;
   @Column({ type: 'varchar', nullable: true, default: null }) levelGoalReward: string | null;
-  @Column({ type: 'jsonb', nullable: true, default: null }) avatarConfig: AvatarConfig | null;
+  @Column({ type: 'jsonb', nullable: true, default: null, name: 'avatar_config' }) avatarConfig: AvatarConfig | null;
   @ManyToOne(() => Family, f => f.children, { onDelete: 'CASCADE' }) family: Family;
   @OneToMany(() => Task, t => t.child)         tasks: Task[];
   @OneToMany(() => Reward, r => r.family)      rewards: Reward[];
